@@ -33,12 +33,10 @@
       -moz-osx-font-smoothing: grayscale;
     }
 
-    .container { max-width: 640px; margin: 0 auto; padding: 0 1.5rem; }
+    .container { max-width: 720px; margin: 0 auto; padding: 0 1.5rem; }
 
-    .hero {
-      padding: 5rem 0 3rem;
-      text-align: center;
-    }
+    /* Hero */
+    .hero { padding: 5rem 0 3rem; text-align: center; }
 
     .hero-icon {
       width: 56px; height: 56px;
@@ -74,73 +72,7 @@
       letter-spacing: 0.02em;
     }
 
-    .skills-list {
-      list-style: none;
-      padding: 0 0 3rem;
-    }
-
-    .skill-item {
-      border-bottom: 1px solid var(--border);
-      transition: background 200ms var(--ease-out);
-    }
-
-    .skill-item:first-child { border-top: 1px solid var(--border); }
-
-    .skill-link {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-      padding: 1.25rem 0.25rem;
-      text-decoration: none;
-      color: inherit;
-      transition: padding-left 200ms var(--ease-out);
-    }
-
-    .skill-link:hover { padding-left: 0.75rem; }
-    .skill-link:hover .skill-arrow { opacity: 1; transform: translateX(0); }
-
-    .skill-name {
-      font-family: var(--mono);
-      font-size: 0.875rem;
-      font-weight: 600;
-      color: var(--accent);
-      background: var(--accent-glow);
-      border-radius: 6px;
-      padding: 0.25rem 0.5rem;
-      flex-shrink: 0;
-      min-width: 3.5rem;
-      text-align: center;
-    }
-
-    .skill-title {
-      font-size: 1rem;
-      font-weight: 600;
-      letter-spacing: -0.01em;
-      flex-grow: 1;
-    }
-
-    .skill-auto {
-      font-family: var(--mono);
-      font-size: 0.625rem;
-      font-weight: 600;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      color: #4ade80;
-      background: rgba(74, 222, 128, 0.1);
-      border: 1px solid rgba(74, 222, 128, 0.25);
-      border-radius: 999px;
-      padding: 0.1875rem 0.5rem;
-      flex-shrink: 0;
-    }
-
-    .skill-arrow {
-      color: var(--text-muted);
-      opacity: 0;
-      transform: translateX(-4px);
-      transition: opacity 200ms var(--ease-out), transform 200ms var(--ease-out);
-      flex-shrink: 0;
-    }
-
+    /* Search */
     .search-wrap {
       max-width: 360px;
       margin: 0.5rem auto 0;
@@ -169,12 +101,114 @@
 
     .search-wrap svg {
       position: absolute;
-      left: 1rem;
-      top: 50%;
+      left: 1rem; top: 50%;
       transform: translateY(-50%);
       width: 16px; height: 16px;
       color: var(--text-muted);
       pointer-events: none;
+    }
+
+    /* Skills grid */
+    .skills-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+      gap: 1rem;
+      padding-bottom: 3rem;
+    }
+
+    .skill-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.5rem;
+      text-decoration: none;
+      color: inherit;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      position: relative;
+      overflow: hidden;
+      transition: transform 200ms var(--ease-out), border-color 200ms var(--ease-out), background 200ms var(--ease-out);
+    }
+
+    .skill-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at top right, var(--accent-glow), transparent 60%);
+      opacity: 0;
+      transition: opacity 300ms var(--ease-out);
+      pointer-events: none;
+    }
+
+    .skill-card:hover {
+      transform: translateY(-3px);
+      border-color: rgba(99, 102, 241, 0.4);
+      background: var(--surface-hover);
+    }
+
+    .skill-card:hover::before { opacity: 1; }
+    .skill-card:active { transform: translateY(-1px) scale(0.99); }
+
+    .skill-icon-wrap {
+      width: 44px; height: 44px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .skill-icon-wrap svg { width: 24px; height: 24px; }
+
+    .skill-card-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .skill-card h2 {
+      font-size: 1.125rem;
+      font-weight: 600;
+      letter-spacing: -0.015em;
+      line-height: 1.3;
+    }
+
+    .skill-card p {
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      line-height: 1.55;
+      flex-grow: 1;
+    }
+
+    .skill-card-footer {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-top: 0.25rem;
+    }
+
+    .skill-tag {
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--accent);
+      background: var(--accent-glow);
+      border-radius: 6px;
+      padding: 0.1875rem 0.4375rem;
+    }
+
+    .skill-auto {
+      font-family: var(--mono);
+      font-size: 0.625rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #4ade80;
+      background: rgba(74, 222, 128, 0.1);
+      border: 1px solid rgba(74, 222, 128, 0.25);
+      border-radius: 999px;
+      padding: 0.1875rem 0.5rem;
     }
 
     .no-results {
@@ -185,6 +219,97 @@
       display: none;
     }
 
+    /* Setup section */
+    .setup-section {
+      padding: 3rem 0 4rem;
+      border-top: 1px solid var(--border);
+    }
+
+    .setup-section h2 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.5rem;
+    }
+
+    .setup-section .subtitle {
+      font-size: 0.9375rem;
+      color: var(--text-muted);
+      margin-bottom: 2rem;
+    }
+
+    .step {
+      display: flex;
+      gap: 1rem;
+      padding: 1.25rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .step:last-child { border-bottom: none; }
+
+    .step-num {
+      flex-shrink: 0;
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: var(--accent-glow);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .step-body { flex-grow: 1; }
+
+    .step-body h3 {
+      font-size: 0.9375rem;
+      font-weight: 600;
+      margin-bottom: 0.375rem;
+    }
+
+    .step-body p {
+      font-size: 0.8125rem;
+      color: var(--text-muted);
+      line-height: 1.55;
+      margin-bottom: 0.5rem;
+    }
+
+    .code-block {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      font-family: var(--mono);
+      font-size: 0.8125rem;
+      color: var(--text);
+      overflow-x: auto;
+      white-space: nowrap;
+      position: relative;
+    }
+
+    .code-block .copy-btn {
+      position: absolute;
+      top: 0.5rem; right: 0.5rem;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text-muted);
+      font-family: var(--sans);
+      font-size: 0.6875rem;
+      padding: 0.25rem 0.5rem;
+      cursor: pointer;
+      transition: color 200ms var(--ease-out), border-color 200ms var(--ease-out);
+    }
+
+    .code-block .copy-btn:hover {
+      color: var(--accent);
+      border-color: rgba(99, 102, 241, 0.4);
+    }
+
+    /* Footer */
     footer {
       padding: 2rem 0 3rem;
       text-align: center;
@@ -205,8 +330,7 @@
 
     @media (max-width: 768px) {
       .hero { padding: 3.5rem 0 2.5rem; }
-      .skill-link { gap: 0.75rem; }
-      .skill-auto { display: none; }
+      .skills-grid { grid-template-columns: 1fr; }
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -230,8 +354,73 @@
       </div>
     </header>
 
-    <ul class="skills-list" id="skills-list"></ul>
+    <div class="skills-grid" id="skills-grid"></div>
     <div class="no-results" id="no-results">No skills match your search.</div>
+
+    <section class="setup-section">
+      <h2>Setup</h2>
+      <p class="subtitle">Get these skills running on your machine in under a minute.</p>
+
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <h3>Clone the repo</h3>
+          <p>Anywhere on your machine. This is your single source of truth.</p>
+          <div class="code-block">
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+            <span>git clone https://github.com/its-ash/skills.git ~/skills</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <h3>Run the setup script</h3>
+          <p>Symlinks every skill and the global instructions file into <code>~/.copilot/</code> and <code>~/.claude/</code>. Existing files are backed up automatically.</p>
+          <div class="code-block">
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+            <span>cd ~/skills &amp;&amp; ./setup.sh</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <h3>Verify the links</h3>
+          <p>Check that everything is connected.</p>
+          <div class="code-block">
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+            <span>./setup.sh --status</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <h3>Edit and push</h3>
+          <p>Change any skill here, and it is instantly live in both Copilot and Claude. Push to share with your team.</p>
+          <div class="code-block">
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+            <span>git add -A &amp;&amp; git commit -m "update skill" &amp;&amp; git push</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num">5</div>
+        <div class="step-body">
+          <h3>Uninstall</h3>
+          <p>Remove all symlinks. Your backups stay in place.</p>
+          <div class="code-block">
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+            <span>./setup.sh --unlink</span>
+          </div>
+        </div>
+      </div>
+    </section>
 
     <footer>
       <p><a href="https://github.com/its-ash/skills">GitHub</a></p>
@@ -240,30 +429,58 @@
 
   <script>
     const skills = [
-      { name: "design", title: "Frontend design", path: "design/SKILL.md", auto: true },
-      { name: "node", title: "Node.js conventions", path: "node/SKILL.md", auto: true },
-      { name: "perf", title: "Web performance audit", path: "perf/SKILL.md", auto: false }
+      {
+        name: "design",
+        title: "Frontend design",
+        desc: "Brief inference, three-dial system, design-system selection, anti-slop discipline, accessibility, motion mechanics, spring physics, gesture interactions, component craftsmanship, Apple fluid interfaces, typography, layout, performance, redesign protocol, and pre-flight check.",
+        path: "design/SKILL.md",
+        auto: true,
+        icon: '<svg viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 2 7l10 5 10-5-10-5Z"/><path d="m2 17 10 5 10-5"/><path d="m2 12 10 5 10-5"/></svg>',
+        bg: "rgba(99, 102, 241, 0.1)"
+      },
+      {
+        name: "node",
+        title: "Node.js conventions",
+        desc: ".nvmrc, package.json scripts, Makefile targets, build/deploy, TypeScript, env files, and project scaffolding for Nuxt, Next.js, Express, Vite, CLI tools, and more.",
+        path: "node/SKILL.md",
+        auto: true,
+        icon: '<svg viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M2 7l10 5 10-5M2 17l10 5 10-5"/></svg>',
+        bg: "rgba(74, 222, 128, 0.1)"
+      },
+      {
+        name: "perf",
+        title: "Web performance audit",
+        desc: "Core Web Vitals (LCP, INP, CLS), render-blocking resources, network dependency chains, layout shifts, caching issues, and accessibility gaps via Chrome DevTools MCP.",
+        path: "perf/SKILL.md",
+        auto: false,
+        icon: '<svg viewBox="0 0 24 24" fill="none" stroke="#fb923c" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m13 2-3 7h4l-3 7"/><path d="M3 12h4l-2 5h4"/><circle cx="12" cy="12" r="10"/></svg>',
+        bg: "rgba(251, 146, 60, 0.1)"
+      }
     ];
 
-    const list = document.getElementById("skills-list");
+    const grid = document.getElementById("skills-grid");
     const noResults = document.getElementById("no-results");
     const searchInput = document.getElementById("search");
 
     function render(items) {
-      list.innerHTML = "";
+      grid.innerHTML = "";
       noResults.style.display = items.length === 0 ? "block" : "none";
       items.forEach(s => {
-        const li = document.createElement("li");
-        li.className = "skill-item";
+        const card = document.createElement("a");
+        card.className = "skill-card";
+        card.href = s.path;
         const auto = s.auto ? '<span class="skill-auto">Auto</span>' : "";
-        li.innerHTML =
-          '<a class="skill-link" href="' + s.path + '">' +
-          '<span class="skill-name">' + s.name + "</span>" +
-          '<span class="skill-title">' + s.title + "</span>" +
+        card.innerHTML =
+          '<div class="skill-card-header">' +
+          '<div class="skill-icon-wrap" style="background:' + s.bg + '">' + s.icon + "</div>" +
+          '<h2>' + s.title + "</h2>" +
+          "</div>" +
+          "<p>" + s.desc + "</p>" +
+          '<div class="skill-card-footer">' +
+          '<span class="skill-tag">' + s.name + "</span>" +
           auto +
-          '<svg class="skill-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>' +
-          "</a>";
-        list.appendChild(li);
+          "</div>";
+        grid.appendChild(card);
       });
     }
 
@@ -274,9 +491,18 @@
       if (!q) return render(skills);
       render(skills.filter(s =>
         s.name.toLowerCase().includes(q) ||
-        s.title.toLowerCase().includes(q)
+        s.title.toLowerCase().includes(q) ||
+        s.desc.toLowerCase().includes(q)
       ));
     });
+
+    function copyCode(btn) {
+      const text = btn.parentElement.querySelector("span").textContent;
+      navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = "Copied";
+        setTimeout(() => { btn.textContent = "Copy"; }, 1500);
+      });
+    }
   </script>
 </body>
 </html>
