@@ -6,6 +6,7 @@ run:
 build:
 	@chmod +x setup.sh
 	@./setup.sh
+	@touch docs/.nojekyll
 
 deploy: build
 	@git checkout main
