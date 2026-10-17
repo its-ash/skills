@@ -13,8 +13,9 @@ skills/
 ├── Makefile                      # run / build / deploy
 ├── docs/                         # GitHub Pages site (index.html, favicon)
 ├── design/SKILL.md               # unified frontend design skill (auto-invoked)
+├── design/references/css/        # CSS reference files loaded on demand by design (Section 25)
 ├── node/SKILL.md                 # Node.js project conventions
-├── perf/SKILL.md                 # web performance audit (Core Web Vitals)
+├── performance/SKILL.md          # web performance audit (Core Web Vitals)
 ├── …other skills…/SKILL.md
 ```
 
@@ -24,13 +25,15 @@ skills/
 
 The unified skill for any website design, redesign, landing page, dashboard, product UI, app shell, component build, animation, or frontend UI work. Merges design-foundation rules (accessibility, motion, typography, content discipline), layout composition (hero discipline, section rhythm, grid mechanics, responsive collapse), and engineering depth (animation framework, spring physics, gesture interactions, component craftsmanship, Apple fluid interfaces, performance, redesign protocol, UI library selection, prototyping).
 
-Covers: brief inference (Section 0), three-dial system (Section 1), design-system selection (Section 2), default architecture (Section 3), bias correction directives (Section 4), animation decision framework (Section 5), motion mechanics (Section 6), component building (Section 7), performance guardrails (Section 8), accessibility (Section 9), anti-slop content discipline (Section 10), dial definitions (Section 11), context-aware proactivity (Section 12), UI library selection (Section 13), redesign protocol (Section 14), progressive enhancement (Section 15), debugging (Section 16), component principles (Section 17), Apple design foundations (Section 18), reference vocabulary (Section 19), scope (Section 20), final pre-flight check (Section 21), review checklist (Section 22), prototyping (Section 23), default site packs (Section 24).
+Covers: brief inference (Section 0), three-dial system (Section 1), design-system selection (Section 2), default architecture (Section 3), bias correction directives (Section 4), animation decision framework (Section 5), motion mechanics (Section 6), component building (Section 7), performance guardrails (Section 8), accessibility (Section 9), anti-slop content discipline (Section 10), dial definitions (Section 11), context-aware proactivity (Section 12), UI library selection (Section 13), redesign protocol (Section 14), progressive enhancement (Section 15), debugging (Section 16), component principles (Section 17), Apple design foundations (Section 18), reference vocabulary (Section 19), scope (Section 20), final pre-flight check (Section 21), review checklist (Section 22), prototyping (Section 23), default site packs (Section 24), CSS implementation (Section 25).
+
+Section 25 holds the CSS core rules, a technique decision guide, and a CSS pre-flight checklist. Detail lives in `design/references/css/`: layout, responsive, selectors and cascade, custom properties and math, color, visual effects, typography, animation, native UI components, SVG, accessibility, performance, architecture and tooling, frontend JS, and browser support.
 
 ### node (auto-invoked)
 
 Node.js project conventions and setup rules. `.nvmrc`, `package.json` scripts, Makefile targets, build/deploy, TypeScript, env files, and project scaffolding for Nuxt, Next.js, Express, Vite, CLI tools, and more.
 
-### perf
+### performance
 
 Analyzes web performance using Chrome DevTools MCP. Measures Core Web Vitals (LCP, INP, CLS) and supplementary metrics (FCP, TBT, Speed Index), identifies render-blocking resources, network dependency chains, layout shifts, caching issues, and accessibility gaps.
 

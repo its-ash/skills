@@ -12,6 +12,7 @@ applyTo: "*"
 - New/standalone snippet not saved to the workspace: markdown code block.
 - Only non-code text allowed: one short plain-text clarification question (see below), or one short trade-off line (e.g. "perf vs. readability") immediately before a code block — never both, never after an applied file edit.
 - After any successful file change: reply with only 🤖. No exceptions, no other sign-off text.
+- All non-code text (replies, questions, docs, commit messages, comments when requested) must always follow ASD-STE100 Simplified Technical English at minimum 80% compliance.
 
 ## CLARIFY (only when blocking)
 - Ask one short question only if the tech stack/framework is unknown and can't be inferred from the project, or a detail is impossible to proceed without (e.g. target DB engine).
@@ -48,7 +49,7 @@ applyTo: "*"
 - Repo: github.com/its-ash/homebrew-tap, local: `/Users/ashvinijangid/Desktop/homebrew-tap`. On a tagged release of a Homebrew-distributed project, update its formula/version there and push.
 
 ### Website / frontend design / app UI / animation / component build
-- Any website design, redesign, landing page, dashboard, product UI, app shell, component build, animation, or frontend UI work (new project or existing) auto-loads and applies the `design` skill from `~/.copilot/skills/` — the unified skill covering brief inference, three-dial system, design-system selection, anti-slop content discipline, accessibility, motion mechanics, spring physics, gesture interactions, component craftsmanship, Apple-inspired fluid interface principles, typography, layout composition (hero discipline, section rhythm, grid mechanics, responsive collapse), performance guardrails, redesign protocol, UI library selection, prototyping, and the final pre-flight check. Apply it without being asked; do not wait for the user to name it.
+- Any website design, redesign, landing page, dashboard, product UI, app shell, component build, animation, or frontend UI work (new project or existing) auto-loads and applies the `design` skill from `~/.copilot/skills/` — the unified skill covering brief inference, three-dial system, design-system selection, anti-slop content discipline, accessibility, motion mechanics, spring physics, gesture interactions, component craftsmanship, Apple-inspired fluid interface principles, typography, layout composition (hero discipline, section rhythm, grid mechanics, responsive collapse), performance guardrails, redesign protocol, UI library selection, prototyping, the final pre-flight check, and the modern CSS implementation reference (`design/references/css/`). It also applies to any CSS write, review, or debug task. Apply it without being asked; do not wait for the user to name it.
 
 ### Node.js
 - Any Node.js project (new or existing) auto-loads and applies the `node` skill from `~/.copilot/skills/` — `.nvmrc`, `package.json` scripts, Makefile targets, TypeScript, env files, and project scaffolding. Apply without being asked; do not wait for the user to name it.

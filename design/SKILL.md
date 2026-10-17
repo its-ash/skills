@@ -1,6 +1,6 @@
 ---
 name: design
-description: Unified frontend design skill covering the full lifecycle from brief inference to production. Combines anti-slop content discipline, accessibility, motion mechanics, typography, performance, layout composition (hero discipline, section rhythm, grid mechanics, responsive collapse), animation decision frameworks, spring physics, gesture interactions, component craftsmanship, Apple-inspired fluid interface principles, progressive enhancement, and design-system selection. Auto-invoke for any website design, redesign, landing page, dashboard, product UI, app shell, component build, animation, or frontend UI work (new project or existing).
+description: Unified frontend design skill covering the full lifecycle from brief inference to production. Combines anti-slop content discipline, accessibility, motion mechanics, typography, performance, layout composition (hero discipline, section rhythm, grid mechanics, responsive collapse), animation decision frameworks, spring physics, gesture interactions, component craftsmanship, Apple-inspired fluid interface principles, progressive enhancement, design-system selection, and a modern CSS implementation reference (layout, Grid/subgrid, container queries, cascade layers, :has(), custom properties, oklch color, visual effects, font loading, scroll-driven and view transitions, native dialog/popover/anchor positioning, SVG, architecture and tooling, browser support with fallbacks). Auto-invoke for any website design, redesign, landing page, dashboard, product UI, app shell, component build, animation, or frontend UI work (new project or existing), and when writing, reviewing, or debugging CSS or styling-related HTML/JS.
 ---
 
 # Design
@@ -48,7 +48,16 @@ Ask exactly **one** clarifying question - never a multi-question dump - and only
 
 Do not default to: AI-purple gradients, centered hero over dark mesh, three equal feature cards, generic glassmorphism on everything, infinite-loop micro-animations everywhere, Inter + slate-900. These are the LLM defaults. Reach past them deliberately based on the design read.
 
-**Refinement preserves; redesign replaces.** Refinement keeps the incumbent identity, behavior, copy, and everything outside scope - ask before replacing factual copy or adding claims. Redesign keeps product truth and function but treats the old look as anti-reference.
+**Refinement preserves; redesign replaces.** Refinement keeps the incumbent identity, behavior, copy, and everything outside scope - ask before replacing factual copy or adding claims. Redesign keeps product truth and function but treats the old look as anti-reference. Never split the difference into polish-on-the-discarded-look.
+
+### 0.E Choose the Layout Mode from the Surface, Not the Product
+
+The mode names what the visitor's success looks like on *this specific surface* - a tool's landing page and its dashboard are different modes even in the same product:
+
+- **Persuade** (landing pages, marketing, pricing): the visitor decides and acts. Design is the product. Earn attention.
+- **Operate** (app UI, dashboards, editors, settings): the visitor completes a task. Scanability and native expectations outrank expression. Brand lives in precise details, not big gestures.
+- **Read** (docs, articles, changelogs): structure for comprehension first, then make staying worthwhile.
+- **Experience** (portfolios, galleries, showcases): the visitor is inside the work. Let the artifact lead from the first viewport.
 
 ---
 
@@ -133,7 +142,7 @@ Unless the design read picks a real design system (Section 2.A), these are the d
 ### 3.A Stack
 
 * **Framework:** React or Next.js. Default to Server Components (RSC). Wrap providers in `"use client"`. Any component using Motion, scroll listeners, or pointer physics MUST be an isolated leaf with `'use client'`.
-* **Styling:** Tailwind v4 (default). Tailwind v3 only if the existing project demands it. For v4: use `@tailwindcss/postcss` or the Vite plugin, not the `tailwindcss` plugin in `postcss.config.js`.
+* **Styling:** Tailwind v4 (default). Tailwind v3 only if the existing project demands it. For v4: use `@tailwindcss/postcss` or the Vite plugin, not the `tailwindcss` plugin in `postcss.config.js`. For raw CSS technique, syntax, and support data, apply Section 25 and its `references/css/` files.
 * **Animation:** Motion (formerly Framer Motion). Import from `motion/react`.
 * **Fonts:** Always use `next/font` (Next.js) or self-host with `@font-face` + `font-display: swap`. Never link Google Fonts via `<link>` in production.
 
@@ -249,6 +258,10 @@ LLMs default to "static successful state only." Always implement full cycles:
 * **SPLIT-HEADER BAN (mandatory).** "Left big headline + right small explainer paragraph" as a section header is **banned by default**. Sections should have ONE focused message. If you genuinely need both a headline and an explainer, stack them vertically (headline on top, body below, max-width 65ch).
 * **Bento Background Diversity (mandatory).** At least 2-3 cells in any multi-cell grid need real visual variation (image, gradient, pattern, tinted background). An all-white-card grid with only typography inside reads as the AI default.
 * **Mobile collapse must be explicit per section.** For every multi-column layout, declare the `<768px` fallback in the same component. No "it'll work, Tailwind handles it" assumptions.
+  * **Asymmetric bento** -> single column (`grid-cols-1`), generous vertical gaps, all `col-span` overrides reset to 1.
+  * **Overlapping / rotated "Z-axis cascade" cards** -> remove rotation and negative-margin overlap entirely below 768px; stack vertically with standard spacing (overlaps become touch-target conflicts on mobile).
+  * **Editorial split (headline + interactive content side by side)** -> full-width vertical stack; typography block on top, content flows below (keep horizontal scroll on the content block if that is how it degrades best).
+  * **Universal floor:** any asymmetric layout falls back to `w-full px-4 py-8` below 768px.
 
 ### 4.8 Image & Visual Asset Strategy
 
@@ -257,7 +270,7 @@ LLMs default to "static successful state only." Always implement full cycles:
 2. **Real web images second.** Use `https://picsum.photos/seed/{descriptive-seed}/{w}/{h}` for placeholders, actual stock or brand URLs when provided, open-license sources if explicitly allowed.
 3. **Last resort: tell the user.** Leave clearly-labeled placeholder slots and tell the user exactly what's missing and where.
 
-* **Even minimalist sites need real images.** A pure-text page is not minimalism. It is incomplete work.
+* **Even minimalist sites need real images.** A pure-text page is not minimalism. It is incomplete work. A restrained aesthetic still needs 2-3 real images, just quieter ones.
 * **Real company logos for social proof.** Use actual SVG marks (Simple Icons CDN: `https://cdn.simpleicons.org/{slug}`, devicon for tech-stack logos). For invented brand names, generate a simple monogram SVG rather than plain text wordmarks.
 * **LOGO-ONLY rule (mandatory):** logo wall = logos and nothing else. Do NOT print industry / category labels below each logo.
 * **Hand-rolled decorative SVG illustrations are strongly discouraged** except for simple geometric marks the user explicitly requested.
@@ -1313,3 +1326,105 @@ When exploring design directions, build several genuinely different versions beh
 10. Pricing
 11. FAQ
 12. CTA + footer
+
+---
+
+## 25. CSS Implementation
+
+Practical rules for writing modern, accessible, fast CSS. This section has the core rules and a decision guide. For details, syntax, support data, and gotchas, read the matching file in `references/css/`.
+
+### 25.A How to Use
+1. Apply the core rules below to every CSS task.
+2. Use the decision guide to pick a technique.
+3. Before you write non-trivial code in an area, read that area's reference file. Read `references/css/browser-support.md` before you ship any feature marked partial or experimental.
+
+### 25.B Core Rules
+1. Use native HTML and CSS before JavaScript: `<dialog>`, `popover`, `<details name>`, `:has()`, anchor positioning, scroll-driven animation, view transitions.
+2. Structure the cascade with `@layer reset, base, components, utilities;`. Keep selectors to one class. Use `:where()` for resets. Do not use IDs for styling, and use `!important` only in utilities.
+3. Choose Grid for two-dimensional layout and Flexbox for one-dimensional flow. Space items with `gap`, not child margins.
+4. Prefer intrinsic layouts (`repeat(auto-fill, minmax(min(100%, 16rem), 1fr))`, flex wrap, `clamp()`) over breakpoints. Use container queries for components and media queries for page-level and preference features.
+5. Use logical properties (`margin-inline`, `padding-block`, `inset-inline-start`, `inline-size`).
+6. Size text in `rem` and fluid type with `clamp(min, rem + vi, max)`. Limit line length to about 65ch. Use unitless line-height.
+7. Use `100dvh`/`100svh` instead of `100vh`, and `100%` or a full-bleed grid instead of `100vw`.
+8. Store design tokens as custom properties with role-based names. Theme by swapping semantic tokens, not by overriding components.
+9. Define colors in `oklch()`. Derive states with relative color syntax or `color-mix(in oklab, …)`. Set `color-scheme: light dark` and use `light-dark()` for themes.
+10. Keep text contrast at 4.5:1 (3:1 for large text and UI parts). Never remove focus outlines without a `:focus-visible` replacement. Make targets at least 24×24px (44×44 for touch).
+11. Keep DOM order equal to visual order. Do not use `order`, `row-reverse`, or `dense` to reorder interactive content.
+12. Animate `transform` and `opacity` (and the individual `translate`/`rotate`/`scale` properties). Keep UI transitions at 150-300ms. Wrap movement in `@media (prefers-reduced-motion: no-preference)`.
+13. Animate entry and exit of hidden elements with `@starting-style` + `transition-behavior: allow-discrete` (also transition `display` and `overlay`).
+14. Register a custom property with `@property` before you animate it.
+15. Reserve space for media and late content (`width`/`height` attributes, `aspect-ratio`, `contain-intrinsic-size`) to avoid CLS.
+16. Give the LCP image `fetchpriority="high"` and never lazy-load it. Lazy-load everything below the fold.
+17. Self-host subset WOFF2 fonts, preload at most two, set `font-display`, and add a metric-matched fallback.
+18. Use `content-visibility: auto` with `contain-intrinsic-size: auto <size>` for long off-screen sections.
+19. Put enhancements behind `@supports` or a value fallback (`height: 100vh; height: 100dvh;`). A missing feature must never hide content or block interaction.
+20. Inline SVG icons with `currentColor`. Hide decorative SVG with `aria-hidden="true"`, and label meaningful SVG with `role="img"` + `<title>`.
+21. Never insert untrusted strings with `innerHTML`. Pass dynamic values to CSS through custom properties (`el.style.setProperty('--x', v)`), and toggle state with attributes.
+22. Gate hover effects with `@media (hover: hover)`, and give every hover interaction a focus and tap equivalent.
+
+### 25.C Decision Guide
+| Need | Use | Avoid |
+|---|---|---|
+| Card grid that wraps | `grid-template-columns: repeat(auto-fill, minmax(min(100%, 16rem), 1fr))` | Fixed breakpoints per column count |
+| Align rows across sibling cards | `grid-template-rows: subgrid` | Fixed heights, JS equalizers |
+| Masonry | `display: grid-lanes` in `@supports`, fallback grid/columns | JS masonry as the only path |
+| Component adapts to its slot | Container queries + `cqi` units | Viewport media queries |
+| Fluid type and spacing | `clamp(1rem, .9rem + .5vi, 1.25rem)` | Pure `vw` sizes |
+| Full-height mobile section | `min-block-size: 100svh` / `100dvh` | `100vh` |
+| Full-bleed row in content column | Named grid lines (`full`/`content`) | `100vw` + negative margins |
+| Style a parent by its children | `:has()` | JS class toggling |
+| Override third-party CSS | `@import url(x.css) layer(vendor)` | Specificity escalation, `!important` |
+| Scope component styles | `@scope (.card) to (.slot)`, CSS Modules | Long descendant chains |
+| Theming and dark mode | Semantic tokens + `color-scheme` + `light-dark()` | Duplicated component rules per theme |
+| Hover and active colors | `oklch(from var(--c) calc(l - .08) c h)` / `color-mix()` | Hand-picked hex per state |
+| Text color on a dynamic background | `contrast-color()` with an OKLCH fallback | Hard-coded white |
+| Modal | `<dialog>` + `showModal()` | Checkbox hack, `:target`, custom traps |
+| Menu, toast, tooltip | `popover` (+ `popover="hint"`) | z-index stacks + JS outside-click |
+| Position popup next to trigger | Anchor positioning + `position-try-fallbacks` | JS coordinate math |
+| Accordion | `<details name="group">` + `::details-content` | ARIA re-implementation |
+| Auto-growing textarea | `field-sizing: content` | JS height syncing |
+| Styled select | `appearance: base-select` | Div-based fake selects |
+| Carousel | Scroll snap + `::scroll-button()` / `::scroll-marker` | JS-only sliders, autoplay without pause |
+| Entry/exit animation | `@starting-style` + `allow-discrete` | `setTimeout` class juggling |
+| Animate to `height: auto` | `interpolate-size: allow-keywords` or grid `0fr → 1fr` | Measuring height in JS |
+| Scroll-linked effects | `animation-timeline: scroll()` / `view()` | Scroll event listeners |
+| Page and state transitions | View Transitions API | Manual FLIP for whole pages |
+| Spring or bounce easing | `linear()` | JS physics for simple UI |
+| Gradient border with radius | `padding-box` / `border-box` background layers | `border-image` (ignores radius) |
+| Non-rectangular shadow | `filter: drop-shadow()` | `box-shadow` on clipped shapes |
+| Responsive custom shape | `clip-path: shape()` / `polygon()` with % | `path()` in px |
+| Icons | Inline SVG `<symbol>`/`<use>` + `currentColor` | Icon fonts |
+| Optical text centering | `text-box: trim-both cap alphabetic` | Magic padding offsets |
+| Heading line breaks | `text-wrap: balance` (`pretty` for paragraphs) | Manual `<br>` |
+| Long off-screen content | `content-visibility: auto` + `contain-intrinsic-size` | Rendering everything eagerly |
+| Stagger by index | `sibling-index()` with `--i` fallback | Long `:nth-child` lists |
+| Design tokens at scale | DTCG JSON → Style Dictionary → custom properties | Hard-coded values |
+| Zero-runtime styling | Tailwind v4, CSS Modules, vanilla-extract | Runtime CSS-in-JS in server components |
+
+### 25.D References
+| File | Read when |
+|---|---|
+| [layout.md](references/css/layout.md) | Flexbox, Grid, subgrid, masonry, multi-column, sizing keywords, centering, positioning, stacking, overflow |
+| [responsive.md](references/css/responsive.md) | Media, container (size, style, scroll-state) queries, fluid sizing, viewport units, responsive images, user preferences |
+| [selectors-cascade.md](references/css/selectors-cascade.md) | Specificity, `@layer`, `@scope`, nesting, `:has()`, pseudo-classes and elements, resets |
+| [custom-properties-math.md](references/css/custom-properties-math.md) | Variables, `@property`, `calc()` and math functions, `if()`, `@function`, typed `attr()`, `sibling-index()`, `random()` |
+| [color.md](references/css/color.md) | OKLCH, wide gamut, relative color, `color-mix()`, dark mode, contrast, color fonts |
+| [visual-effects.md](references/css/visual-effects.md) | Gradients, gradient borders, shadows, `corner-shape`, `clip-path`, `shape()`, masks, filters, blend modes, images |
+| [typography.md](references/css/typography.md) | Font stacks, `@font-face`, loading, variable fonts, type scales, wrapping, `text-box`, decoration, long-form reading |
+| [animation-motion.md](references/css/animation-motion.md) | Transitions, easing, keyframes, `@starting-style`, animating `auto`, scroll-driven, view transitions, 3D, motion paths, WAAPI/GSAP |
+| [components-ui.md](references/css/components-ui.md) | Forms, customizable select, dialog, popover, anchor positioning, tooltips, accordions, carousels, cards, scrollbars |
+| [svg.md](references/css/svg.md) | Embedding, icon systems, styling, stroke drawing, masks, filters, animation, SVG accessibility |
+| [accessibility.md](references/css/accessibility.md) | Focus, hiding content, forms, ARIA, dialogs, landmarks, forced colors, text spacing, testing |
+| [performance.md](references/css/performance.md) | CSS delivery, priority hints, containment, animation cost, images, fonts, CLS, INP |
+| [architecture-tooling.md](references/css/architecture-tooling.md) | Methodologies, tokens, Tailwind, Sass, Lightning CSS, CSS Modules, CSS-in-JS, linting, WordPress `theme.json` |
+| [frontend-js.md](references/css/frontend-js.md) | DOM, events, observers, CSS from JS, web components and shadow DOM styling, view transitions in JS, framework styling |
+| [browser-support.md](references/css/browser-support.md) | Baseline, `@supports` patterns, support snapshot (Oct 2026), polyfills, browser quirks, testing |
+
+### 25.E CSS Pre-Flight Checklist
+- [ ] Works without the newest features (fallbacks in place, content visible).
+- [ ] Keyboard path works, focus is visible, DOM order matches visual order.
+- [ ] Contrast passes in light, dark, and forced-colors modes.
+- [ ] Motion respects `prefers-reduced-motion`.
+- [ ] Layout holds at 320px width and at 200% zoom.
+- [ ] No CLS from images, fonts, or late content. The LCP image is not lazy-loaded.
+- [ ] No hard-coded colors or spacing where tokens exist. Selectors stay flat.
