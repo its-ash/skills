@@ -84,6 +84,9 @@ do_install() {
     link "$COPILOT_INSTRUCTIONS_FILE" "$CLAUDE_INSTRUCTIONS_FILE"
   fi
 
+  # --- Skill router index (SKILLS.md → ~/.copilot/skills/SKILLS.md) ---
+  link "$REPO_DIR/SKILLS.md" "$COPILOT_SKILLS_DIR/SKILLS.md"
+
   # --- Skills (repo skill dirs → ~/.copilot/skills, then Claude links to Copilot) ---
   for skill_dir in "$REPO_DIR"/*/; do
     local name
@@ -121,6 +124,7 @@ do_unlink() {
   info "Unlinking all symlinks"
   unlink_path "$COPILOT_INSTRUCTIONS_FILE"
   unlink_path "$CLAUDE_INSTRUCTIONS_FILE"
+  unlink_path "$COPILOT_SKILLS_DIR/SKILLS.md"
   for skill_dir in "$REPO_DIR"/*/; do
     local name
     name="$(basename "$skill_dir")"
@@ -137,6 +141,7 @@ do_status() {
   info "Current link state"
   status_path "$COPILOT_INSTRUCTIONS_FILE"
   status_path "$CLAUDE_INSTRUCTIONS_FILE"
+  status_path "$COPILOT_SKILLS_DIR/SKILLS.md"
   for skill_dir in "$REPO_DIR"/*/; do
     local name
     name="$(basename "$skill_dir")"

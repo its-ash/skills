@@ -24,6 +24,14 @@ applyTo: "*"
 - No placeholders, no TODOs, no incomplete implementations.
 - Concise identifiers (`res`, `i`, `fn`) except where framework convention requires longer names (e.g. React handler props). Prefer ternaries/built-ins over verbose control flow, but keep it readable.
 
+## SKILLS (auto-invoke)
+
+- Before starting any task, match it against the trigger table in `~/.copilot/skills/SKILLS.md` (repo: `SKILLS.md`). Load every `SKILL.md` whose triggers match — more than one is normal.
+- Then follow the matched skill's `## Related skills` list one hop and load those that apply to the task.
+- Load `<skill>/references/*.md` only when that sub-topic comes up.
+- Do this silently and without being asked. Do not wait for the user to name a skill, and do not list the skills you loaded.
+- The skill content governs the work. If a skill conflicts with these instructions, these instructions win.
+
 ## PROJECT CONVENTIONS
 
 ### General
