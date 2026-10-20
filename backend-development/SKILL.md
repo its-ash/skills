@@ -1,0 +1,259 @@
+---
+name: backend-development
+description: "Guides designing building and operating scalable backend services and APIs covering REST GraphQL gRPC contract design microservice decomposition event-driven messaging security resilience observability testing and cloud-native deployment with sub-topics for API design Node.js patterns multi-tenant SaaS and serverless architectures. Use when defining OpenAPI specs GraphQL schemas gRPC proto files microservice boundaries Kafka RabbitMQ event buses JWT OAuth authentication rate limiting circuit breakers retries distributed tracing Prometheus Grafana logging health checks PostgreSQL migrations Prisma Drizzle ORM connection pooling Redis caching background workers BullMQ serverless AWS Lambda API Gateway DynamoDB Azure Functions Docker Kubernetes CI/CD pipelines."
+---
+
+# Backend Development
+
+Design and operate backend systems that are **scalable**, **resilient**, and **maintainable**. The skill covers API contracts, service boundaries, integration patterns, security, observability, testing, and deployment for modern stacks (Node.js, Python, Go, Java, .NET, etc.).
+
+---
+
+## When to use
+- You need to design a new service, API, or microservice ecosystem.
+- You must define service boundaries, data contracts, or integration patterns.
+- You are planning resilience, scaling, observability, or security for a backend.
+- You are refactoring existing code to follow layered architecture, DI, or repository patterns.
+
+---
+
+## Architecture & Service Design
+1. **Capture requirements** – business domain, latency, throughput, consistency, availability.
+2. **Define bounded contexts** – use Domain‑Driven Design to split the domain into services.
+3. **Choose service granularity** – start with coarse‑grained services; split only when a clear domain boundary exists.
+4. **Document decisions** – create an Architectural Decision Record (ADR) with trade‑offs.
+5. **Statelessness** – keep services stateless to enable horizontal scaling.
+6. **Deployment unit** – each service is packaged as a Docker image and deployed to Kubernetes (or equivalent).
+
+---
+
+## API Design & Contracts
+| Aspect | Recommendation |
+|--------|----------------|
+| **Style** | REST for CRUD, GraphQL for flexible queries, gRPC for high‑performance internal RPC. |
+| **Versioning** | URL versioning (`/v1/users`) or header versioning (`Accept: application/vnd.myapi.v2+json`). Deprecate with clear timeline. |
+| **Pagination** | Use cursor‑based pagination for large datasets. |
+| **Filtering & Sorting** | Encode as query parameters (`?status=active&sort=created`). |
+| **Error model** | Return structured JSON `{ error: { code, message, details } }` with appropriate HTTP status. |
+| **Documentation** | OpenAPI/Swagger for REST, GraphQL SDL for GraphQL. Generate SDKs with `openapi-generator` or `graphql-codegen`. |
+| **Contract testing** | Use Pact or Spring Cloud Contract to verify provider‑consumer contracts. |
+
+**Example OpenAPI snippet**
+```yaml
+paths:
+  /orders:
+    get:
+      summary: List orders
+      parameters:
+        - in: query
+          name: cursor
+          schema: { type: string }
+      responses:
+        '200':
+          description: Paginated list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderPage'
+``` 
+---
+
+## Microservices & Integration Patterns
+- **Synchronous calls** – REST or gRPC for low‑latency request/response.
+- **Asynchronous calls** – Message queues (RabbitMQ, AWS SQS) or event streams (Kafka, NATS) for decoupling.
+- **Service discovery** – Kubernetes DNS, Consul, or Eureka.
+- **API Gateway** – Kong, Envoy, AWS API Gateway for routing, auth, rate limiting, and request transformation.
+- **Service mesh** – Istio or Linkerd for traffic management, mutual TLS, and observability.
+- **Backend‑for‑Frontend (BFF)** – Create thin services that aggregate data for specific UI clients.
+- **Strangler pattern** – Incrementally replace legacy monolith endpoints with new microservice routes.
+- **Saga pattern** – Manage distributed transactions with choreography (event‑driven) or orchestration (central coordinator).
+- **CQRS** – Separate command (write) and query (read) models; pair with event sourcing when auditability is required.
+
+---
+
+## Event‑Driven Architecture
+- **Message queues** – RabbitMQ, SQS for point‑to‑point work queues.
+- **Event streaming** – Kafka, Kinesis for high‑throughput log of events.
+- **Pub/Sub patterns** – Topic‑based routing, fan‑out, content‑based filtering.
+- **Event sourcing** – Store state changes as immutable events; rebuild state by replaying.
+- **Dead‑letter queues** – Capture failed messages; implement retry with exponential backoff.
+- **Exactly‑once delivery** – Ensure idempotent handlers; use deduplication keys.
+
+---
+
+## Security & Authorization
+1. **Transport security** – Enforce TLS everywhere; use mTLS for service‑to‑service calls.
+2. **Authentication** – OAuth 2.0 (authorization code, client credentials) or OpenID Connect for user identity.
+3. **Token handling** – Use JWTs with short expiry; rotate signing keys.
+4. **Authorization** – RBAC for role‑based checks; ABAC for attribute‑based policies.
+5. **API keys** – Issue per‑consumer keys; rotate regularly; enforce rate limits.
+6. **Input validation** – Schema validation (Zod, Joi, JSON Schema); whitelist allowed values.
+7. **Rate limiting** – Token‑bucket or leaky‑bucket algorithm; implement at gateway or service level.
+8. **Secrets management** – Store secrets in Vault, AWS Secrets Manager, or environment variables injected at runtime.
+
+---
+
+## Resilience & Fault Tolerance
+| Pattern | When to apply |
+|---------|---------------|
+| **Circuit breaker** | External service latency spikes or failures. |
+| **Retry with exponential backoff** | Transient network errors; limit retries to avoid overload. |
+| **Bulkhead** | Isolate resources (thread pools, DB connections) per service. |
+| **Timeouts** | Set request and connection timeouts; propagate deadlines. |
+| **Graceful degradation** | Return cached or default data when downstream is unavailable. |
+| **Idempotency** | Ensure repeatable POST/PUT operations using request IDs. |
+| **Chaos engineering** | Periodically inject failures (e.g., `chaos-mesh`) to validate resilience. |
+
+**Circuit breaker example (Node.js with `resilience4j`‑like logic)**
+```ts
+class CircuitBreaker {
+  private failures = 0;
+  private state: 'CLOSED' | 'OPEN' | 'HALF_OPEN' = 'CLOSED';
+  async call<T>(fn: () => Promise<T>): Promise<T> {
+    if (this.state === 'OPEN') throw new Error('Circuit open');
+    try {
+      const result = await fn();
+      this.failures = 0;
+      this.state = 'CLOSED';
+      return result;
+    } catch (e) {
+      this.failures++;
+      if (this.failures >= 5) this.state = 'OPEN';
+      throw e;
+    }
+  }
+}
+``` 
+---
+
+## Observability & Monitoring
+- **Logging** – Structured JSON logs; include `traceId`, `spanId`, `userId`. Use centralized log aggregation (ELK, Loki, CloudWatch).
+- **Metrics** – Export Prometheus metrics; follow RED (Rate, Errors, Duration) plus custom business metrics.
+- **Tracing** – OpenTelemetry instrumentation; send spans to Jaeger or Zipkin.
+- **Health checks** – Liveness (`/health/live`) and readiness (`/health/ready`) endpoints.
+- **Alerting** – Define SLOs; trigger alerts on latency > 95th percentile or error rate > 1%.
+- **Dashboards** – Grafana panels for request latency, error rates, queue depth.
+
+---
+
+## Data Access & Caching
+1. **Repository pattern** – Abstract data access behind interfaces; inject into services.
+2. **ORMs** – Prisma (Node), SQLAlchemy (Python), Hibernate (Java). Use only for simple CRUD; write raw queries for performance‑critical paths.
+3. **Database per service** – Own schema to avoid cross‑service coupling.
+4. **Caching layers** –
+   - **Application cache** – In‑process LRU for cheap lookups.
+   - **Distributed cache** – Redis or Memcached; use cache‑aside or read‑through patterns.
+   - **HTTP caching** – ETag and `Cache‑Control` headers for GET endpoints.
+5. **Cache invalidation** – TTL, event‑driven purge, or versioned keys.
+
+**Cache‑aside snippet (Node.js with ioredis)**
+```ts
+async function getUser(id: string) {
+  const key = `user:${id}`;
+  const cached = await redis.get(key);
+  if (cached) return JSON.parse(cached);
+  const user = await prisma.user.findUnique({ where: { id } });
+  if (user) await redis.setex(key, 300, JSON.stringify(user));
+  return user;
+}
+``` 
+---
+
+## Asynchronous Processing & Background Jobs
+- **Job queues** – Bull (Node), Celery (Python), Sidekiq (Ruby). Persist jobs in Redis or RabbitMQ.
+- **Scheduled tasks** – Cron expressions via `node-cron` or Kubernetes `CronJob`.
+- **Long‑running operations** – Return a job ID; provide status endpoint; optionally use webhooks for completion.
+- **Batch processing** – Use streaming frameworks (Kafka Streams, Flink) for ETL pipelines.
+
+---
+
+## Testing Strategy
+| Level | Goal |
+|-------|------|
+| **Unit** | Validate pure functions, business logic. Use Jest, pytest, JUnit. |
+| **Integration** | Verify API endpoints, DB interactions, external services (use test containers). |
+| **Contract** | Ensure provider matches consumer expectations (Pact). |
+| **End‑to‑end** | Simulate real user flows; use Playwright or Cypress for API‑driven tests. |
+| **Load** | Measure performance under realistic traffic; use k6 or Gatling. |
+| **Chaos** | Inject failures to test resilience; use `chaos-mesh` or `Gremlin`. |
+
+- Keep test code alongside source (`src/__tests__`).
+- Aim for >80% coverage on critical paths.
+- Automate tests in CI pipelines.
+
+---
+
+## Deployment & Operations
+1. **Containerization** – Write a multi‑stage Dockerfile; keep image size < 150 MB.
+2. **Kubernetes** – Deploy via Helm chart or Kustomize; configure liveness/readiness probes.
+3. **CI/CD** – GitHub Actions / GitLab CI to build, test, scan (Snyk), and deploy.
+4. **Feature flags** – Use LaunchDarkly or open‑source `unleash` for gradual rollouts.
+5. **Blue‑green / Canary** – Deploy new version alongside old; shift traffic with service mesh or ingress controller.
+6. **Database migrations** – Use Flyway, Liquibase, or Prisma Migrate; run migrations before new pods start.
+7. **Configuration** – Store non‑secret config in ConfigMaps; secrets in sealed secrets or external vault.
+
+**Sample Dockerfile (Node.js)**
+```dockerfile
+# Build stage
+FROM node:20-alpine AS builder
+WORKDIR /app
+COPY package*.json .
+RUN npm ci
+COPY . .
+RUN npm run build
+
+# Runtime stage
+FROM node:20-alpine
+WORKDIR /app
+COPY --from=builder /app/dist ./dist
+COPY package*.json .
+RUN npm ci --production
+CMD ["node", "dist/main.js"]
+```
+---
+
+## Checklist for a New Backend Feature
+- [ ] Capture functional and non‑functional requirements.
+- [ ] Define service boundary and data ownership.
+- [ ] Design API contract (OpenAPI or GraphQL SDL).
+- [ ] Choose sync vs async communication.
+- [ ] Implement input validation (Zod, Joi, JSON Schema).
+- [ ] Add authentication/authorization checks.
+- [ ] Write service layer; keep controllers thin.
+- [ ] Use repository pattern for data access.
+- [ ] Add structured logging and correlation IDs.
+- [ ] Export Prometheus metrics and OpenTelemetry traces.
+- [ ] Write unit, integration, and contract tests.
+- [ ] Run static analysis and security scan.
+- [ ] Containerize and push image to registry.
+- [ ] Deploy to staging; run health checks.
+- [ ] Perform load test; verify SLOs.
+- [ ] Promote to production with canary or blue‑green.
+- [ ] Document API, architecture diagram, and ADR.
+
+---
+
+**End of skill**
+
+## Sub-skills
+
+Read a sub-skill file only when the task needs it.
+
+| File | Use when |
+|------|----------|
+| [references/api-design.md](references/api-design.md) | Provides a complete workflow, decision guide, and best‑practice checklist for designing REST, GraphQL, or tRPC APIs. Use it when you need to define contracts, choose an API style, plan versioning, pagination, auth, rate limiting, and documentation before implementation. |
+| [references/nodejs-patterns.md](references/nodejs-patterns.md) | Guidance for designing, building, and maintaining Node.js backend applications. Covers framework choice, layered architecture, async patterns, validation, security, testing, runtime options, and common pitfalls. Use when creating REST/GraphQL APIs, micro‑services, or real‑time servers. |
+| [references/saas-multi-tenant.md](references/saas-multi-tenant.md) | Guides the design and implementation of a multi‑tenant SaaS using a shared‑schema PostgreSQL database, row‑level security, tenant‑aware middleware, ORM integration, safe migrations, cross‑tenant admin routes, provisioning, and related best‑practice patterns. |
+| [references/serverless.md](references/serverless.md) | Provides concise patterns, anti‑patterns and operational tips for building production‑ready serverless applications on AWS (Lambda, API Gateway, DynamoDB, SQS) and Azure Functions (isolated worker, Durable Functions, Node/Python). Use when you need event‑driven APIs, async processing, or low‑maintenance compute. |
+
+## Related skills
+
+Load these when the task spans more than this skill.
+
+- [`api-integration`](../api-integration/SKILL.md) — Guides developers to integrate third‑party REST or GraphQL APIs securely and reliably. Includes authentication…
+- [`database-design`](../database-design/SKILL.md) — Expert database architect for data layer design, technology selection, and schema modeling. Use for selecting…
+- [`database-migration`](../database-migration/SKILL.md) — Provides step‑by‑step guidance for database schema and data migrations using Sequelize, TypeORM, and Prisma, c…
+- [`devops-iac`](../devops-iac/SKILL.md) — DevOps IaC skill provides a step-by-step workflow for designing, implementing, and operating cloud infrastruct…
+- [`observability`](../observability/SKILL.md) — Observability skill provides practical guidance for building, querying, and visualizing production‑grade monit…
+- [`java`](../java/SKILL.md) — Guidance, best practices, and checklists for modern Java 21+ development, covering language features, virtual…
+- [`stripe`](../stripe/SKILL.md) — Implements Stripe payments, subscriptions, billing portal, checkout sessions, and webhooks with idempotency, s…

@@ -17,6 +17,8 @@ COPILOT_INSTRUCTIONS_FILE="$COPILOT_DIR/instructions/copilot.instructions.md"
 COPILOT_SKILLS_DIR="$COPILOT_DIR/skills"
 CLAUDE_INSTRUCTIONS_FILE="$CLAUDE_DIR/CLAUDE.md"
 CLAUDE_SKILLS_DIR="$CLAUDE_DIR/skills"
+COPILOT_AGENTS_DIR="$COPILOT_DIR/agents"
+CLAUDE_AGENTS_DIR="$CLAUDE_DIR/agents"
 
 ACTION="${1:-install}"
 
@@ -98,7 +100,21 @@ do_install() {
     link "$COPILOT_SKILLS_DIR" "$CLAUDE_SKILLS_DIR"
   fi
 
-  ok "Done. Skills & instructions are now shared across Copilot and Claude."
+  # --- Agents (repo agents/ → ~/.copilot/agents, then Claude links to Copilot) ---
+  if [[ -d "$REPO_DIR/agents" ]]; then
+    if [[ -L "$COPILOT_AGENTS_DIR" && "$(readlink "$COPILOT_AGENTS_DIR")" == "$REPO_DIR/agents" ]]; then
+      ok "Copilot agents already linked → $REPO_DIR/agents"
+    else
+      link "$REPO_DIR/agents" "$COPILOT_AGENTS_DIR"
+    fi
+    if [[ -L "$CLAUDE_AGENTS_DIR" && "$(readlink "$CLAUDE_AGENTS_DIR")" == "$COPILOT_AGENTS_DIR" ]]; then
+      ok "Claude agents already linked → $COPILOT_AGENTS_DIR"
+    else
+      link "$COPILOT_AGENTS_DIR" "$CLAUDE_AGENTS_DIR"
+    fi
+  fi
+
+  ok "Done. Skills, agents & instructions are now shared across Copilot and Claude."
 }
 
 do_unlink() {
@@ -112,6 +128,8 @@ do_unlink() {
     unlink_path "$COPILOT_SKILLS_DIR/$name"
   done
   unlink_path "$CLAUDE_SKILLS_DIR"
+  unlink_path "$CLAUDE_AGENTS_DIR"
+  unlink_path "$COPILOT_AGENTS_DIR"
   ok "Unlinked."
 }
 
@@ -126,6 +144,8 @@ do_status() {
     status_path "$COPILOT_SKILLS_DIR/$name"
   done
   status_path "$CLAUDE_SKILLS_DIR"
+  status_path "$COPILOT_AGENTS_DIR"
+  status_path "$CLAUDE_AGENTS_DIR"
 }
 
 case "$ACTION" in

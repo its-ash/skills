@@ -1,6 +1,6 @@
 ---
 name: design
-description: Unified frontend design skill covering the full lifecycle from brief inference to production. Combines anti-slop content discipline, accessibility, motion mechanics, typography, performance, layout composition (hero discipline, section rhythm, grid mechanics, responsive collapse), animation decision frameworks, spring physics, gesture interactions, component craftsmanship, Apple-inspired fluid interface principles, progressive enhancement, design-system selection, and a modern CSS implementation reference (layout, Grid/subgrid, container queries, cascade layers, :has(), custom properties, oklch color, visual effects, font loading, scroll-driven and view transitions, native dialog/popover/anchor positioning, SVG, architecture and tooling, browser support with fallbacks). Auto-invoke for any website design, redesign, landing page, dashboard, product UI, app shell, component build, animation, or frontend UI work (new project or existing), and when writing, reviewing, or debugging CSS or styling-related HTML/JS.
+description: "Unified frontend design skill covering the full lifecycle from brief inference to production, combining content discipline, accessibility, motion mechanics, typography, performance, layout composition, animation frameworks, spring physics, gesture interactions, component craftsmanship, fluid interface principles, progressive enhancement, design-system selection, and modern CSS implementation with Grid, subgrid, container queries, cascade layers, :has(), custom properties, oklch, scroll-driven animations, view transitions, native dialog and anchor positioning. Use when designing websites, landing pages, dashboards, product UIs, app shells, component libraries, animations, or any frontend UI work; writing, reviewing, or debugging CSS, styling HTML or JS; implementing responsive collapse, hero sections, grid mechanics, gesture handling, spring animations, or progressive enhancement."
 ---
 
 # Design
@@ -1428,3 +1428,23 @@ Practical rules for writing modern, accessible, fast CSS. This section has the c
 - [ ] Layout holds at 320px width and at 200% zoom.
 - [ ] No CLS from images, fonts, or late content. The LCP image is not lazy-loaded.
 - [ ] No hard-coded colors or spacing where tokens exist. Selectors stay flat.
+
+## Sub-skills
+
+Read a sub-skill file only when the task needs it.
+
+| File | Use when |
+|------|----------|
+| [references/visual-design-direction.md](references/visual-design-direction.md) | Provides a structured, opinionated visual design direction for web UI projects, guiding designers to create distinctive, premium, and non‑templated experiences through purposeful choices in typography, color, layout, motion, and 3D, with a clear workflow and checklist. |
+
+## Related skills
+
+Load these when the task spans more than this skill.
+
+- [`design-systems`](../design-systems/SKILL.md) — Creates a complete design system with design tokens, atomic component architecture, theming (including dark mo…
+- [`frontend-development`](../frontend-development/SKILL.md) — Frontend Development skill for building modern React/Next.js applications with TypeScript, MUI, TanStack Query…
+- [`web-accessibility`](../web-accessibility/SKILL.md) — Provides concise guidance for auditing and fixing web accessibility to meet WCAG 2.1 (POUR) and ARIA standards…
+- [`web-performance`](../web-performance/SKILL.md) — Provides step‑by‑step guidance to measure, diagnose, and improve web performance, focusing on Core Web Vitals…
+- [`motion-canvas`](../motion-canvas/SKILL.md) — Set up and troubleshoot Motion Canvas projects, write TypeScript animation scenes with generator functions, si…
+- [`image-enhancer`](../image-enhancer/SKILL.md) — Enhances image resolution, sharpness, and reduces compression artifacts for screenshots, photos, and graphics.…
+- [`image-generation`](../image-generation/SKILL.md) — Generate or edit images using OpenAI (gpt-image-1.5) or OpenRouter (FLUX.2 Pro, Gemini 3 Pro) APIs. Use for ph…

@@ -1,6 +1,6 @@
 ---
 name: performance
-description: Analyzes web performance using Chrome DevTools MCP. Measures Core Web Vitals (LCP, INP, CLS) and supplementary metrics (FCP, TBT, Speed Index), identifies render-blocking resources, network dependency chains, layout shifts, caching issues, and accessibility gaps. Use when asked to audit, profile, debug, or optimize page load performance, Lighthouse scores, or site speed. Biases towards retrieval from current documentation over pre-trained knowledge.
+description: "Analyzes web page performance with Chrome DevTools MCP, measuring Core Web Vitals (LCP, INP, CLS), FCP, TBT, Speed Index, render-blocking resources, network chains, layout shifts, caching, and accessibility gaps, preferring current documentation over pre-trained knowledge. Use when asked to audit, profile, debug, or optimize page load performance, Lighthouse scores, site speed, bundle size, slow rendering, network waterfall, or Core Web Vitals regressions."
 ---
 
 # Web Performance Audit
@@ -199,3 +199,15 @@ Present findings as:
 2. **Top Issues** - Prioritized list of problems with estimated impact (high/medium/low)
 3. **Recommendations** - Specific, actionable fixes with code snippets or config changes
 4. **Codebase Findings** - Framework/bundler detected, optimization opportunities (omit if no codebase access)
+
+## Related skills
+
+Load these when the task spans more than this skill.
+
+- [`web-performance`](../web-performance/SKILL.md) — Provides step‑by‑step guidance to measure, diagnose, and improve web performance, focusing on Core Web Vitals…
+- [`web-quality-audit`](../web-quality-audit/SKILL.md) — Runs a full web quality audit that checks performance (Core Web Vitals, resource loading), accessibility, SEO,…
+- [`playwright`](../playwright/SKILL.md) — Playwright skill for building reliable end‑to‑end test suites and browser automation. Use it to set up Playwri…
+- [`frontend-development`](../frontend-development/SKILL.md) — Frontend Development skill for building modern React/Next.js applications with TypeScript, MUI, TanStack Query…
+- [`nextjs`](../nextjs/SKILL.md) — Guidelines for building Next.js 14+ applications with the App Router. Includes component type decisions, data…
+- [`java`](../java/SKILL.md) — Guidance, best practices, and checklists for modern Java 21+ development, covering language features, virtual…
+- [`research-engineer`](../research-engineer/SKILL.md) — Research Engineer skill for rigorous, correctness-first engineering. Use when implementing algorithms, optimiz…

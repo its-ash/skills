@@ -1,6 +1,6 @@
 ---
 name: node
-description: Node.js project conventions and setup rules. Load when creating, configuring, or working on any Node.js project — Nuxt, Next.js, Express, Vite, CLI tools, etc. Covers .nvmrc, package.json scripts, Makefile targets, build/deploy, and project scaffolding.
+description: "Defines Node.js project conventions covering version pinning with .nvmrc, package.json scripts, Makefile targets, dependency management, TypeScript configuration, error handling patterns, and environment file structure. Use when initializing a Node.js project, configuring npm pnpm yarn workspaces, writing package.json scripts for build test lint dev start, setting .nvmrc for version consistency, creating Makefile targets for common tasks, adding TypeScript with tsconfig.json, structuring .env .env.local .env.production files, or scaffolding Express Fastify NestJS CLI applications."
 ---
 
 # Node.js Skill
@@ -83,3 +83,15 @@ build:
 - `.env` in `.gitignore`.
 - `.env.example` committed with all required keys documented (no real values).
 - Load via `process.env` directly (Node 20+ loads `.env` natively with `--env-file`).
+
+## Related skills
+
+Load these when the task spans more than this skill.
+
+- [`typescript`](../typescript/SKILL.md) — Provides expert guidance for TypeScript projects, covering setup analysis, migration, monorepo configuration,…
+- [`nextjs`](../nextjs/SKILL.md) — Guidelines for building Next.js 14+ applications with the App Router. Includes component type decisions, data…
+- [`nestjs`](../nestjs/SKILL.md) — Expert guidance for NestJS applications covering module architecture, dependency injection, middleware, guards…
+- [`prisma`](../prisma/SKILL.md) — Provides expert guidance for Prisma ORM tasks such as schema design, migrations, query optimization, relation…
+- [`docker`](../docker/SKILL.md) — Provides expert guidance for Dockerfile optimization, multi‑stage builds, image size reduction, container secu…
+- [`stripe`](../stripe/SKILL.md) — Implements Stripe payments, subscriptions, billing portal, checkout sessions, and webhooks with idempotency, s…
+- [`vercel`](../vercel/SKILL.md) — Deploy and optimize applications on Vercel. Use for tasks involving 'vercel', 'deploy', 'hosting', or 'product…
