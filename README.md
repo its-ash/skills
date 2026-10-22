@@ -1,6 +1,6 @@
 # skills
 
-Single source of truth for GitHub Copilot & Claude Code **skills** and **instructions**.
+Single source of truth for GitHub Copilot, Claude Code & Zed **skills** and **instructions**.
 
 A live index of all skills is served via GitHub Pages: **[its-ash.github.io/skills](https://its-ash.github.io/skills)**
 
@@ -159,6 +159,8 @@ Subagents in `agents/`. Each file has `name`, `description`, and optional `tools
 
 `setup.sh` symlinks everything into the right global directories:
 
+Edit a skill here → it's live in Copilot, Claude and Zed instantly.
+
 | Repo file / dir                | Symlinked to                          |
 |--------------------------------|---------------------------------------|
 | `copilot.instructions.md`      | `~/.copilot/instructions/copilot.instructions.md` |
@@ -167,8 +169,10 @@ Subagents in `agents/`. Each file has `name`, `description`, and optional `tools
 | `~/.copilot/skills/` (whole dir)| `~/.claude/skills`                   |
 | `agents/`                      | `~/.copilot/agents`                   |
 | `~/.copilot/agents` (whole dir)| `~/.claude/agents`                    |
+| ↑ (same file)                  | `~/.config/zed/AGENTS.md` (Zed)       |
+| `<skill>/`                     | `~/.agents/skills/<skill>/` (Zed)     |
 
-Edit a skill here → it's live in both Copilot and Claude instantly.
+Edit a skill here → it's live in Copilot, Claude and Zed instantly.
 
 ## Setup
 
