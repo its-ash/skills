@@ -3,6 +3,8 @@ name: immersive-web
 description: "The immersive-web skill guides creation of scroll-driven, parallax, and 3D web experiences for storytelling sites, product showcases, and interactive portfolios, covering library selection, animation patterns, performance, and accessibility. Use when building GSAP ScrollTrigger animations, Framer Motion reveals, CSS parallax, sticky sections, horizontal scroll panels, React Three Fiber scenes, Three.js camera moves, or optimizing 3D models for WebGL."
 ---
 
+> **Parent skill:** [`design`](../design/SKILL.md). This is a sub-skill; follow `design` for the shared workflow and load this only when the task needs it.
+
 # Immersive Web
 
 Create web experiences that feel like a narrative journey. Combine scroll‑driven animations, parallax depth, sticky sections, and WebGL 3D to turn a page into an interactive story.

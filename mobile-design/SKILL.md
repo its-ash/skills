@@ -3,6 +3,8 @@ name: mobile-design
 description: "Mobile-first design guidelines for iOS, Android, and cross-platform apps covering touch targets, performance budgets, platform conventions, and anti-patterns across React Native, Flutter, and native development. Use when designing mobile interfaces, planning iOS or Android apps, building React Native Expo or Flutter projects, sizing touch targets, optimizing mobile performance, following Human Interface Guidelines or Material Design specs, avoiding mobile anti-patterns, choosing native versus cross-platform frameworks, or implementing responsive layouts for phones and tablets."
 ---
 
+> **Parent skill:** [`design`](../design/SKILL.md). This is a sub-skill; follow `design` for the shared workflow and load this only when the task needs it.
+
 # Mobile Design
 
 Design mobile apps as touch‑first, battery‑conscious experiences that respect each platform’s conventions. Mobile is **not** a small desktop; treat screen size, input method, and connectivity as core constraints.
@@ -226,8 +228,8 @@ Follow this guide to create fast, reliable, and platform‑consistent mobile exp
 
 Load these when the task spans more than this skill.
 
+- [`design`](../design/SKILL.md) — Unified parent design skill covering the full lifecycle from brief inference to production. Load first for the shared workflow, then return here for mobile-specific rules.
 - [`react-native-expo`](../react-native-expo/SKILL.md) — Provides production‑ready patterns for building React Native apps with Expo (architecture, navigation, state,…
 - [`flutter`](../flutter/SKILL.md) — Provides expert guidance for building high‑performance, multi‑platform Flutter apps with Dart 3. Use it for ar…
-- [`design-systems`](../design-systems/SKILL.md) — Creates a complete design system with design tokens, atomic component architecture, theming (including dark mo…
 - [`ux-research`](../ux-research/SKILL.md) — Provides a step‑by‑step workflow for senior UX researchers and designers to generate data‑driven personas, map…
 - [`app-store-optimization`](../app-store-optimization/SKILL.md) — Provides end‑to‑end guidance for researching keywords, optimizing metadata, managing reviews, planning launche…
