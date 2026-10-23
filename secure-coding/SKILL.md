@@ -1,6 +1,6 @@
 ---
 name: secure-coding
-description: "Secure coding guidance and review checklists for secrets, authentication, authorization, input validation, SQL injection, XSS, CSRF, API security, rate limiting, and deployment hardening. Use when writing or reviewing security-sensitive code, APIs, auth, payments, or producing a security report in Python (.py), JavaScript/TypeScript (.js, .ts), or Go (.go), or when handling JWT, OAuth, SQL queries, env vars, API keys, npm, pip, or go modules."
+description: "Secure coding guidance and review checklists for secrets, authentication, authorization, input validation, SQL injection, XSS, CSRF, API security, rate limiting, and deployment hardening. Use when writing or reviewing security-sensitive code, APIs, auth, payments, or producing a security report in Python (.py), JavaScript/TypeScript (.js, .ts), or Go (.go), or when handling JWT, OAuth, SQL queries, env vars, API keys, npm, pip, or go modules. Sub-skills: web-vulnerability-testing, data-privacy-compliance."
 ---
 
 # Secure Coding
@@ -393,14 +393,19 @@ catch (error) {
 - OWASP Top 10: https://owasp.org/www-project-top-ten/
 - JWT best practices: https://tools.ietf.org/html/rfc8725
 
+## Sub-skills
+
+Read a sub-skill file only when the task needs it.
+
+| File | Use when |
+|------|----------|
+| [references/web-vulnerability-testing.md](references/web-vulnerability-testing.md) | Test web applications and APIs for OWASP vulnerabilities including SQL injection, XSS, CSRF, SSRF, IDOR, authentication bypass, path traversal, insecure headers, and misconfiguration. Use when running authorized penetration tests, security audits, bug bounty triage, vulnerability scanning, Burp Suite, OWASP ZAP, Nikto, nuclei, ffuf, curl, HTTP requests, JWT tokens, session cookies, REST endpoints, GraphQL, or remediation planning. |
+| [references/data-privacy-compliance.md](references/data-privacy-compliance.md) | Implement and audit privacy compliance for GDPR, DSGVO, CCPA, CPRA, and HIPAA covering lawful basis, consent, data subject rights, DPIA, privacy by design, minimization, breach response, international transfers, and audits. Use when implementing GDPR DSGVO CCPA CPRA HIPAA requirements, documenting lawful basis, handling access deletion portability objection requests, managing consent, running DPIAs, enforcing minimization, responding to breaches, configuring SCC BCR transfers, reviewing DPAs, or preparing compliance audits. |
+
 ## Related skills
 
 Load these when the task spans more than this skill.
 
-- [`application-security`](../application-security/SKILL.md) — Application security guidance for threat modeling, secure design, code review, dependency and supply-chain ris…
 - [`code-review`](../code-review/SKILL.md) — Review code changes for correctness, security, performance, maintainability, tests, and production readiness.…
-- [`secrets-management`](../secrets-management/SKILL.md) — Manage secrets for CI/CD and runtime systems with Vault, AWS Secrets Manager, GitHub/GitLab variables, Kuberne…
-- [`web-vulnerability-testing`](../web-vulnerability-testing/SKILL.md) — Test web applications for OWASP-aligned vulnerabilities across injection, authentication, access control, API,…
-- [`dependency-updates`](../dependency-updates/SKILL.md) — Automates detection, safe updating, and security auditing of project dependencies across major languages. Use…
-- [`api-integration`](../api-integration/SKILL.md) — Guides developers to integrate third‑party REST or GraphQL APIs securely and reliably. Includes authentication…
+- [`web-vulnerability-testing`](references/web-vulnerability-testing.md) — Test web applications for OWASP-aligned vulnerabilities across injection, authentication, access control, API,…
 - [`golang`](../golang/SKILL.md) — Provides expert guidance for Go 1.21+ development, covering concurrency patterns, performance tuning, microser…

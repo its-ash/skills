@@ -1,6 +1,6 @@
 ---
 name: typescript
-description: "Guides TypeScript compiler options, advanced type patterns, migration, monorepo setup, linting, testing, and debugging. Use when writing .ts, .tsx, or .d.ts; fixing TS errors; configuring tsc, tsconfig.json, strict mode, project references, path aliases; using generics, utility types, type guards, discriminated unions, branded types, conditional types, satisfies, or const assertions; migrating JavaScript to TypeScript; optimizing type-check or build speed; or setting up workspaces with eslint, jest, or vitest."
+description: "Guides TypeScript compiler options, advanced type patterns, migration, monorepo setup, linting, testing, and debugging. Use when writing .ts, .tsx, or .d.ts; fixing TS errors; configuring tsc, tsconfig.json, strict mode, project references, path aliases; using generics, utility types, type guards, discriminated unions, branded types, conditional types, satisfies, or const assertions; migrating JavaScript to TypeScript; optimizing type-check or build speed; or setting up workspaces with eslint, jest, or vitest. Sub-skills: zod, javascript."
 ---
 
 # TypeScript Expert
@@ -224,14 +224,22 @@ Adjust flags per project needs.
 - [ ] Runtime path mapping handled (e.g., `ts-node -r tsconfig-paths/register`).
 - [ ] Custom error classes extend `Error` and capture stack trace.
 
+## Sub-skills
+
+Read a sub-skill file only when the task needs it.
+
+| File | Use when |
+|------|----------|
+| [references/zod.md](references/zod.md) | Defines, parses, and validates TypeScript schemas with Zod, including primitives, objects, coercion, refinements, transforms, custom errors, and integrations for forms, Next.js actions, and environment variables. Use when working with zod, z.object, z.string, safeParse, parse, zodResolver, z.infer, schema validation, input validation, form validation, env vars, TypeScript types, Next.js server actions, React Hook Form, or tRPC. |
+| [references/javascript.md](references/javascript.md) | Reference for JavaScript primitives, type coercion, equality, scope types, var let const hoisting, closures, call stack, this binding, event loop phases, promise async await, prototype inheritance, and ES6+ features like arrow functions destructuring modules. Use when debugging typeof NaN null undefined coercion, fixing closure loop capture, resolving this loss in callbacks, tracing microtask macrotask order, converting callbacks to promises, refactoring prototypes to classes, writing arrow destructuring syntax, setting babel targets, or explaining scope chain shadowing. |
+
 ## Related skills
 
 Load these when the task spans more than this skill.
 
-- [`javascript`](../javascript/SKILL.md) — A concise reference of core JavaScript concepts—primitives, type coercion, scope, closures, this, event loop,…
+- [`javascript`](references/javascript.md) — A concise reference of core JavaScript concepts—primitives, type coercion, scope, closures, this, event loop,…
 - [`node`](../node/SKILL.md) — Node.js project conventions and setup rules. Load when creating, configuring, or working on any Node.js projec…
 - [`frontend-development`](../frontend-development/SKILL.md) — Frontend Development skill for building modern React/Next.js applications with TypeScript, MUI, TanStack Query…
 - [`fullstack-development`](../fullstack-development/SKILL.md) — Fullstack Development skill guides you through planning, scaffolding, coding, testing, and deploying modern we…
 - [`clean-code`](../clean-code/SKILL.md) — Pragmatic clean code standards for AI-assisted development. Covers naming, function design, code structure, an…
-- [`astro`](../astro/SKILL.md) — Astro is a web framework for content‑heavy sites that ships zero JavaScript by default and hydrates interactiv…
-- [`react-native-expo`](../react-native-expo/SKILL.md) — Provides production‑ready patterns for building React Native apps with Expo (architecture, navigation, state,…
+- [`astro`](../frontend-development/references/astro.md) — Astro is a web framework for content‑heavy sites that ships zero JavaScript by default and hydrates interactiv…

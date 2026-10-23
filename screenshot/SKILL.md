@@ -1,6 +1,6 @@
 ---
 name: screenshot
-description: "Capture desktop screenshots on macOS, Linux, and Windows via native utilities — screencapture, gnome-screenshot, scrot, maim, spectacle, and PowerShell — supporting full-screen, window, region, and app modes with configurable output paths and formats. Use when user says screenshot, screen capture, snap, grab, print screen, screen grab, or capture display; needs image for bug report, documentation, UI audit, design handoff, visual regression, accessibility review, or sharing screen content; hits missing tool fallback, macOS TCC permission prompt, Wayland vs X11 tool selection, or headless CI capture requirements."
+description: "Capture desktop screenshots on macOS, Linux, and Windows via native utilities — screencapture, gnome-screenshot, scrot, maim, spectacle, and PowerShell — supporting full-screen, window, region, and app modes with configurable output paths and formats. Use when user says screenshot, screen capture, snap, grab, print screen, screen grab, or capture display; needs image for bug report, documentation, UI audit, design handoff, visual regression, accessibility review, or sharing screen content; hits missing tool fallback, macOS TCC permission prompt, Wayland vs X11 tool selection, or headless CI capture requirements. Sub-skills: screenshot-feature-extractor."
 ---
 
 # Screenshot Capture
@@ -185,14 +185,19 @@ The script outputs the full file path.
 - [ ] Capture the printed file path(s) and include them in the reply.
 - [ ] Verify the file exists; if not, report the error and suggest a retry.
 
+## Sub-skills
+
+Read a sub-skill file only when the task needs it.
+
+| File | Use when |
+|------|----------|
+| [references/screenshot-feature-extractor.md](references/screenshot-feature-extractor.md) | Extract product features, user interactions, and business functions from UI screenshots, design mockups, competitor app screens, or wireframes and convert them into a structured development task checklist with acceptance criteria. Use when analyzing competitor screenshots, reviewing Figma or Sketch mockups, auditing existing app interfaces, reverse-engineering UI patterns, planning sprint backlogs from visual specs, or converting design handoffs into actionable tickets for frontend, mobile, or fullstack development. |
+
 ## Related skills
 
 Load these when the task spans more than this skill.
 
-- [`image-enhancer`](../image-enhancer/SKILL.md) — Enhances image resolution, sharpness, and reduces compression artifacts for screenshots, photos, and graphics.…
-- [`playwright`](../playwright/SKILL.md) — Playwright skill for building reliable end‑to‑end test suites and browser automation. Use it to set up Playwri…
-- [`documentation-writing`](../documentation-writing/SKILL.md) — documentation-writing: Provides ready-to-use documentation templates and a step-by-step co-authoring workflow…
+- [`playwright`](../unit-testing-patterns/references/playwright.md) — Playwright skill for building reliable end‑to‑end test suites and browser automation. Use it to set up Playwri…
 - [`web-quality-audit`](../web-quality-audit/SKILL.md) — Runs a full web quality audit that checks performance (Core Web Vitals, resource loading), accessibility, SEO,…
 - [`ux-research`](../ux-research/SKILL.md) — Provides a step‑by‑step workflow for senior UX researchers and designers to generate data‑driven personas, map…
 - [`web-scraping-apis`](../web-scraping-apis/SKILL.md) — Unified guide for using web‑scraping APIs (Firecrawl, Tavily, Cloudflare Browser Rendering, and Xquik) to extr…
-- [`computer-use-agents`](../computer-use-agents/SKILL.md) — Build and operate vision-based computer-use agents that observe screens and perform mouse/keyboard actions. Us…

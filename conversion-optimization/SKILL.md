@@ -1,6 +1,6 @@
 ---
 name: conversion-optimization
-description: "Conversion optimization skill audits and improves conversion rates for marketing pages, landing pages, pricing pages, forms, popups, signup flows, onboarding experiences, and in-app paywalls with CRO recommendations, A/B test ideas, and step-by-step audits. Use when you need CRO audit, conversion rate optimization, landing page optimization, form optimization, popup optimization, signup flow optimization, onboarding optimization, paywall optimization, funnel optimization, checkout optimization, or A/B test ideas."
+description: "Conversion optimization skill audits and improves conversion rates for marketing pages, landing pages, pricing pages, forms, popups, signup flows, onboarding experiences, and in-app paywalls with CRO recommendations, A/B test ideas, and step-by-step audits. Use when you need CRO audit, conversion rate optimization, landing page optimization, form optimization, popup optimization, signup flow optimization, onboarding optimization, paywall optimization, funnel optimization, checkout optimization, or A/B test ideas. Sub-skills: ab-testing."
 ---
 
 # Conversion Optimization
@@ -155,14 +155,18 @@ Provide the audit in four sections:
 
 *Use this skill to systematically uncover conversion friction, prioritize fixes, and launch data‑driven experiments that move the needle across any part of the user journey.*
 
+## Sub-skills
+
+Read a sub-skill file only when the task needs it.
+
+| File | Use when |
+|------|----------|
+| [references/ab-testing.md](references/ab-testing.md) | Plans, designs, runs, and analyzes A/B split tests and multivariate experiments, including hypothesis framing, sample-size calculation, variant design, traffic allocation, and result interpretation. Use when you need split testing, experiment design, hypothesis testing, sample size, power analysis, variant allocation, conversion rate optimization, multivariate test, or statistical significance for product or marketing changes. |
+
 ## Related skills
 
 Load these when the task spans more than this skill.
 
-- [`ab-testing`](../ab-testing/SKILL.md) — A step‑by‑step guide for planning, designing, running, and analyzing A/B (split) tests or multivariate experim…
-- [`analytics-tracking`](../analytics-tracking/SKILL.md) — Provides a complete workflow for planning, implementing, auditing, and analyzing analytics tracking (GA4, GTM,…
-- [`copywriting`](../copywriting/SKILL.md) — Creates clear, compelling marketing copy for webpages (home, landing, pricing, feature, about, product) and pr…
+- [`ab-testing`](references/ab-testing.md) — A step‑by‑step guide for planning, designing, running, and analyzing A/B (split) tests or multivariate experim…
+- [`copywriting`](../content-writing/references/copywriting.md) — Creates clear, compelling marketing copy for webpages (home, landing, pricing, feature, about, product) and pr…
 - [`ux-research`](../ux-research/SKILL.md) — Provides a step‑by‑step workflow for senior UX researchers and designers to generate data‑driven personas, map…
-- [`pricing-strategy`](../pricing-strategy/SKILL.md) — A step‑by‑step framework for SaaS pricing and monetization, covering research methods, value‑metric selection,…
-- [`free-tool-marketing`](../free-tool-marketing/SKILL.md) — Provides a step‑by‑step framework for planning, building, and promoting a free marketing tool (calculator, gen…
-- [`paid-ads`](../paid-ads/SKILL.md) — Provides a step‑by‑step workflow for planning, creating, testing, optimizing, and scaling paid advertising cam…

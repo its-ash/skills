@@ -1,6 +1,6 @@
 ---
 name: web-scraping-apis
-description: "Unified guide for using Firecrawl, Tavily, Cloudflare Browser Rendering, and Xquik to scrape pages, search the web, crawl sites into markdown, render JavaScript, and fetch X/Twitter posts. Use when scraping with Firecrawl, Tavily, Cloudflare Browser Rendering, or Xquik; crawling sites; extracting HTML/JSON; converting to .md; searching SERPs; rendering JavaScript; fetching tweets; using curl; handling 403, 429, or CAPTCHA."
+description: "Unified guide for using Firecrawl, Tavily, Cloudflare Browser Rendering, and Xquik to scrape pages, search the web, crawl sites into markdown, render JavaScript, and fetch X/Twitter posts. Use when scraping with Firecrawl, Tavily, Cloudflare Browser Rendering, or Xquik; crawling sites; extracting HTML/JSON; converting to .md; searching SERPs; rendering JavaScript; fetching tweets; using curl; handling 403, 429, or CAPTCHA. Sub-skills: bright-data."
 ---
 
 # Web Scraping APIs
@@ -307,14 +307,19 @@ The response lists winners with usernames and tweet IDs.
 - [ ] Clean up temporary files and revoke API keys when no longer needed.
 - [ ] Document any custom headers, cookies, or authentication details used.
 
+## Sub-skills
+
+Read a sub-skill file only when the task needs it.
+
+| File | Use when |
+|------|----------|
+| [references/bright-data.md](references/bright-data.md) | Bright Data skill guides using Bright Data services including local unfancy-search server, SERP API, Web Unlocker, Web Scraper API, Browser API, and Bright Data MCP to perform web searches, fetch pages as markdown, extract structured data, and run browser automation. Use when working with Bright Data, SERP API, Web Unlocker, Web Scraper API, Browser API, MCP, scraping, crawling, search results, markdown extraction, proxies, curl, API key, query expansion, RRF reranking, async bulk SERP, or browser automation. |
+
 ## Related skills
 
 Load these when the task spans more than this skill.
 
-- [`bright-data`](../bright-data/SKILL.md) — Provides step‑by‑step guidance for using Bright Data services – local unfancy‑search server, SERP API, Web Unl…
-- [`playwright`](../playwright/SKILL.md) — Playwright skill for building reliable end‑to‑end test suites and browser automation. Use it to set up Playwri…
-- [`markitdown`](../markitdown/SKILL.md) — MarkItDown converts PDF, DOCX, PPTX, XLSX, images, audio, HTML, CSV, JSON, XML, ZIP, EPUB, YouTube URLs and ot…
-- [`api-integration`](../api-integration/SKILL.md) — Guides developers to integrate third‑party REST or GraphQL APIs securely and reliably. Includes authentication…
+- [`bright-data`](references/bright-data.md) — Provides step‑by‑step guidance for using Bright Data services – local unfancy‑search server, SERP API, Web Unl…
+- [`playwright`](../unit-testing-patterns/references/playwright.md) — Playwright skill for building reliable end‑to‑end test suites and browser automation. Use it to set up Playwri…
 - [`screenshot`](../screenshot/SKILL.md) — Capture a desktop screenshot (full screen, window, region, or app) on macOS, Linux, or Windows. Use when the u…
-- [`perplexity-research`](../perplexity-research/SKILL.md) — Perplexity‑Research runs real‑time web searches with Perplexity models via OpenRouter. Use for generic look‑up…
-- [`programmatic-seo`](../programmatic-seo/SKILL.md) — Programmatic SEO skill guides you to design, build, and launch large numbers of SEO-optimized pages using temp…
+- [`programmatic-seo`](../seo/references/programmatic-seo.md) — Programmatic SEO skill guides you to design, build, and launch large numbers of SEO-optimized pages using temp…

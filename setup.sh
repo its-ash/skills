@@ -49,6 +49,17 @@ link() {
   ok "linked $name → $target"
 }
 
+prune_dangling() {
+  local dir="$1" l
+  [[ -d "$dir" ]] || return 0
+  for l in "$dir"/*; do
+    if [[ -L "$l" && ! -e "$l" && "$(readlink "$l")" == "$REPO_DIR"/* ]]; then
+      rm "$l"
+      ok "pruned stale $l"
+    fi
+  done
+}
+
 unlink_path() {
   local name="$1"
   if [[ -L "$name" ]]; then
@@ -91,6 +102,7 @@ do_install() {
   link "$REPO_DIR/SKILLS.md" "$COPILOT_SKILLS_DIR/SKILLS.md"
 
   # --- Skills (repo skill dirs → ~/.copilot/skills, then Claude links to Copilot) ---
+  prune_dangling "$COPILOT_SKILLS_DIR"
   for skill_dir in "$REPO_DIR"/*/; do
     local name
     name="$(basename "$skill_dir")"
@@ -126,6 +138,8 @@ do_install() {
   else
     link "$COPILOT_INSTRUCTIONS_FILE" "$ZED_AGENTS_FILE"
   fi
+  mkdir -p "$ZED_SKILLS_DIR"
+  prune_dangling "$ZED_SKILLS_DIR"
   for skill_dir in "$REPO_DIR"/*/; do
     local name
     name="$(basename "$skill_dir")"
