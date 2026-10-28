@@ -25,75 +25,36 @@ applyTo: "*"
 - Concise names (`res`, `i`, `fn`) unless framework convention says otherwise. Prefer ternaries/built-ins; stay readable.
 
 ## Skills (auto-invoke, silent)
-Match task nouns/verbs to triggers below; load each matching `<skill>/SKILL.md` (several is normal), then its `## Related skills` one hop. Load `references/*.md` only for that sub-topic. Full router: `SKILLS.md`. Don't wait to be asked; don't list loaded skills. On conflict, these instructions win.
+Match task nouns/verbs to triggers below; load each matching `<skill>/SKILL.md` (several is normal), then its `## Related skills` one hop. Load `<skill>/references/<sub>.md` only when that sub-skill applies. Full router: `SKILLS.md`. Don't wait to be asked; don't list loaded skills. On conflict, these instructions win.
 
-| Skill | Triggers |
+| Skill | Triggers (→ `references/` sub-skills) |
 |---|---|
-| ab-testing | A/B, multivariate, experiment, sample size, power, significance |
-| astro | Astro, islands, content collections, MDX, SSG blog/docs |
-| backend-development | API, REST, GraphQL, gRPC, microservices, Kafka, auth, rate limit, queues, serverless |
-| brand-theming | brand colors, fonts, style guide, PPTX/DOCX/XLSX theming |
-| bright-data | Bright Data, SERP API, Web Unlocker, scraping proxies |
-| browser-extensions | Chrome/Firefox/Edge extension, Manifest V3, content script |
+| backend-development | API, REST, GraphQL, gRPC, microservices, queues, serverless → nestjs, fastapi, django, php-laravel, firebase-backend |
+| browser-extensions | Chrome/Firefox/Edge extension, Manifest V3 |
 | clean-code | write/refactor/lint code, naming, dead code, deslop diff |
-| cloud-architecture | AWS/Azure/GCP design, IaC, VPC, IAM, HA/DR, FinOps |
-| cloudflare-deploy | Workers, Pages, D1, KV, R2, wrangler |
 | code-review | PR review, diff, bugs, LGTM/blockers |
-| content-writing | blog, social posts, content calendar, brand voice |
-| conversion-optimization | CRO, landing/pricing/signup/paywall optimization |
-| copywriting | web copy, headlines, CTA, value prop |
-| d3-visualization | D3, SVG charts, scales, axes, force layout |
-| data-privacy-compliance | GDPR, CCPA, HIPAA, consent, DPIA |
-| database-design | schema, ERD, normalization, SQL vs NoSQL |
-| database-migration | migrations, ALTER TABLE, backfill, zero-downtime, Sequelize/TypeORM/Prisma |
-| database-optimization | slow query, index, EXPLAIN, partitioning, pooling |
-| design | any UI/website/landing/dashboard/component/animation, any CSS |
-| devops-iac | Terraform, Kubernetes, GitHub Actions, Helm, ArgoCD |
-| django | Django, DRF, Celery, Channels |
-| docker | Dockerfile, compose, buildx, image size |
-| drizzle-orm | Drizzle, drizzle-kit, pgTable |
-| fastapi | FastAPI, Pydantic, SQLAlchemy |
-| figma | Figma to code, design tokens |
-| firebase-backend | Firebase, Firestore, rules, Cloud Functions |
+| content-writing | blog, social posts, content calendar, brand voice → copywriting (web copy, CTA) |
+| conversion-optimization | CRO, landing/pricing/signup/paywall → ab-testing |
+| database-design | schema, ERD, SQL vs NoSQL → database-migration, database-optimization (slow query, index), prisma, drizzle-orm |
+| design | any UI/website/dashboard/component/animation, any CSS → immersive-web (GSAP, Three.js), figma, mobile-design, brand-theming, motion-canvas |
+| devops-iac | Terraform, Kubernetes, GitHub Actions, Helm → docker, cloud-architecture (AWS/Azure/GCP), cloudflare-deploy (Workers, wrangler), observability |
 | flutter | Flutter, Dart, Riverpod, Bloc |
-| frontend-development | React, Next.js, MUI, TanStack |
+| frontend-development | React, MUI, TanStack → nextjs, astro, d3-visualization, progressive-web-app |
 | fullstack-development | new web app, stack choice, scaffolding |
 | golang | Go, goroutines, go.mod |
 | i18n-localization | i18n, translations, locale, RTL |
-| immersive-web | scroll animation, parallax, GSAP, Three.js, R3F |
-| javascript | JS semantics, closures, this, event loop, coercion |
-| mobile-design | mobile UI, iOS/Android, React Native, touch targets |
-| motion-canvas | Motion Canvas, programmatic video |
-| nestjs | NestJS |
-| nextjs | Next.js App Router, server actions, caching |
 | node | any Node.js project, package.json, .nvmrc, tsconfig |
-| observability | metrics, logs, traces, Grafana, Datadog, SLO, alerts |
-| performance | DevTools perf audit, Core Web Vitals, Lighthouse |
-| php-laravel | PHP, Laravel, Eloquent |
-| playwright | e2e tests, browser automation |
-| prisma | Prisma schema/client/migrate |
-| programmatic-seo | pSEO, mass template pages |
-| progressive-web-app | PWA, service worker, manifest, offline |
 | python | Python, uv, ruff, mypy, asyncio |
-| screenshot | capture screen |
-| screenshot-feature-extractor | screenshots/mockups to feature checklist |
-| secure-coding | auth, secrets, injection, XSS, CSRF, security review |
-| seo | SEO audit, meta tags, schema markup, GSC |
-| shopify | Shopify apps/themes, Liquid, Polaris |
+| screenshot | capture screen → screenshot-feature-extractor |
+| secure-coding | auth, secrets, injection, XSS, CSRF → web-vulnerability-testing (pentest, OWASP), data-privacy-compliance (GDPR, HIPAA) |
+| seo | SEO audit, meta tags, schema markup → programmatic-seo |
 | software-architecture | architecture, DDD, CQRS, ADR, monolith split |
-| stripe | Stripe, payments, subscriptions, webhooks |
 | systematic-debugging | bugs, stack traces, crashes, flaky tests, root cause |
-| twilio | SMS, OTP, Verify, TwiML |
-| typescript | TS types, tsconfig, TS errors |
-| unit-testing-patterns | unit tests, Jest, pytest, TDD, mocks |
+| typescript | TS types, tsconfig, TS errors → zod, javascript |
+| unit-testing-patterns | unit tests, Jest, pytest, TDD, mocks → playwright (e2e) |
 | ux-research | personas, journeys, usability tests |
-| vercel | Vercel deploy, vercel.json |
-| web-accessibility | a11y, WCAG, ARIA, contrast, keyboard |
-| web-performance | page speed, bundle size, caching, lazy load |
-| web-quality-audit | full site audit: perf, a11y, SEO, security headers |
-| web-scraping-apis | Firecrawl, Tavily, CF Browser Rendering, Xquik |
-| web-vulnerability-testing | pentest, OWASP, SQLi, XSS, SSRF, IDOR |
-| zod | Zod, schema validation |
+| web-quality-audit | site audit, perf, a11y, security headers → web-performance, performance (DevTools, CWV), web-accessibility |
+| web-scraping-apis | Firecrawl, Tavily, CF Browser Rendering, Xquik → bright-data |
 
 ## Project conventions
 - **Icon**: copy matching SVG from `/Users/ashvinijangid/Desktop/Icons` (e.g. `robot.svg` for AI) into `public/` or `assets/`; convert to PNG/ICO if needed.

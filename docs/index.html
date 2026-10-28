@@ -152,10 +152,7 @@ main{padding-block:1.4rem 4rem}
   text-decoration:none; overflow:hidden;
   transition:border-color 180ms var(--ease),transform 180ms var(--ease),box-shadow 180ms var(--ease);
 }
-.card::before{
-  content:"";position:absolute;inset-inline:0;top:0;height:2.5px;background:var(--ck);
-  opacity:.85;
-}
+.ck-dot{flex:0 0 auto;width:8px;height:8px;border-radius:50%;background:var(--ck)}
 @media (hover:hover) and (pointer:fine){
   .card:hover{
     border-color:color-mix(in oklab,var(--ck) 45%,var(--line));
@@ -165,9 +162,9 @@ main{padding-block:1.4rem 4rem}
   .card:hover .go{opacity:1;transform:translateX(0)}
 }
 .card:active{transform:translateY(0) scale(.995)}
-.card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:.6rem}
+.card-top{display:flex;align-items:center;justify-content:space-between;gap:.6rem}
 .card h3{
-  margin:0;font-family:"Geist Mono",ui-monospace,monospace;font-size:.9rem;font-weight:600;
+  flex:1;min-width:0;margin:0;font-family:"Geist Mono",ui-monospace,monospace;font-size:.9rem;font-weight:600;
   letter-spacing:-.01em;color:var(--ink);word-break:break-word;
 }
 .go{
@@ -275,7 +272,7 @@ git clone https://github.com/its-ash/skills.git &amp;&amp; cd skills &amp;&amp; 
 <script>
 (function(){
   var CAT = {"frontend":"Frontend","backend":"Backend","data-ai":"Data & AI","devops":"DevOps","security":"Security","mobile":"Mobile","design":"Design","writing":"Writing","research":"Research","productivity":"Productivity","marketing":"Marketing","science":"Science"};
-  var items = JSON.parse(document.getElementById('skills-data').textContent);
+  var items = JSON.parse(document.getElementById('skills-data').textContent).map(function(i){ i.auto = true; return i; });
   var grid = document.getElementById('grid'),
       chips = document.getElementById('chips'),
       q = document.getElementById('q'),
@@ -356,7 +353,7 @@ git clone https://github.com/its-ash/skills.git &amp;&amp; cd skills &amp;&amp; 
       a.rel = 'noopener';
       a.style.setProperty('--ck', 'var(--c-' + i.cat + ')');
       a.innerHTML =
-        '<div class="card-top"><h3>' + esc(i.name) + '</h3>' +
+        '<div class="card-top"><span class="ck-dot"></span><h3>' + esc(i.name) + '</h3>' +
         '<svg class="go" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M9 7h8v8"/></svg></div>' +
         '<p>' + esc(i.desc) + '</p>' +
         '<div class="tags"><span class="tag">' + esc(CAT[i.cat] || i.cat) + '</span>' +

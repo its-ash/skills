@@ -2,7 +2,9 @@
 #
 # setup.sh — sync skills & instructions from this repo into the global system.
 #
-#   ./setup.sh           install (symlink repo → ~/.copilot & ~/.claude)
+#   ./setup.sh             install, ask: delete all other skills or overwrite
+#   ./setup.sh --clean     install, delete all other skills first
+#   ./setup.sh --overwrite install, keep other skills
 #   ./setup.sh --unlink  remove symlinks, restore nothing
 #   ./setup.sh --status  show current link state
 #
@@ -24,6 +26,7 @@ ZED_AGENTS_FILE="$ZED_DIR/AGENTS.md"
 ZED_SKILLS_DIR="$HOME/.agents/skills"
 
 ACTION="${1:-install}"
+MODE=""
 
 color() { printf '\033[%sm%s\033[0m\n' "$1" "$2"; }
 info()  { color "0;36" "› $*"; }
@@ -83,8 +86,41 @@ status_path() {
   fi
 }
 
+choose_mode() {
+  [[ -n "$MODE" ]] && return 0
+  if [[ ! -t 0 ]]; then
+    MODE="overwrite"
+    return 0
+  fi
+  local ans
+  printf '\n  1) Delete all other skills\n  2) Overwrite (keep other skills)\n'
+  read -rp "Select [1/2] (default 2): " ans
+  case "$ans" in
+    1) MODE="clean" ;;
+    ""|2) MODE="overwrite" ;;
+    *) err "Invalid choice: $ans"; exit 1 ;;
+  esac
+}
+
+purge_skills() {
+  local d b
+  for d in "$COPILOT_SKILLS_DIR" "$CLAUDE_SKILLS_DIR" "$ZED_SKILLS_DIR"; do
+    if [[ -L "$d" ]]; then
+      rm "${d:?}"
+    elif [[ -d "$d" ]]; then
+      find "${d:?}" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+    fi
+    for b in "$d".backup.*; do
+      [[ -e "$b" || -L "$b" ]] && rm -rf "${b:?}"
+    done
+  done
+  ok "deleted all existing skills"
+}
+
 do_install() {
-  info "Installing from $REPO_DIR"
+  choose_mode
+  info "Installing from $REPO_DIR ($MODE)"
+  [[ "$MODE" == "clean" ]] && purge_skills
 
   mkdir -p "$COPILOT_INSTRUCTIONS_DIR" "$COPILOT_SKILLS_DIR" "$CLAUDE_DIR" "$ZED_DIR"
 
@@ -199,11 +235,13 @@ do_status() {
 }
 
 case "$ACTION" in
-  install)  do_install  ;;
+  install)     do_install ;;
+  --clean)     MODE="clean"; do_install ;;
+  --overwrite) MODE="overwrite"; do_install ;;
   --unlink) do_unlink   ;;
   --status) do_status   ;;
   *)
-    err "Usage: $0 [install|--unlink|--status]"
+    err "Usage: $0 [install|--clean|--overwrite|--unlink|--status]"
     exit 1
     ;;
 esac
