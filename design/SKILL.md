@@ -86,7 +86,7 @@ Anti-center: no centered hero when `VARIANCE > 4` (split, asymmetric, scroll-pin
 
 ### 4.4 Cards & Shape
 
-Cards only for real hierarchy (else `divide-y` / space); banned at `DENSITY > 7`. Shadows tinted to background. **Shape lock (mandatory):** one radius scale (0, 12-16px, or pill).
+Cards only for real hierarchy (else `divide-y` / space); banned at `DENSITY > 7`. Shadows tinted to background. **Shape lock (mandatory):** one radius scale (0, 12-16px, or pill). **Card padding (mandatory):** every card has internal padding on all sides (min `p-4`; `p-6` at `DENSITY` 1-4).
 
 ### 4.5 Interactive States
 
@@ -186,7 +186,7 @@ Translucent chrome (`backdrop-filter`) with content scrolling under; never light
 ### Component Selection & Tabs
 
 * **Tabs filled + rounded (mandatory):** active tab = filled background on the page radius scale. No underline-only or bare-text tabs.
-* **Selection never border-only (mandatory):** selected dropdown items, cards, options get a distinct background, filled style, or differentiated border (accent + weight + tint).
+* **Selection never border-only (mandatory):** selected dropdown items, cards, options get a distinct background, a filled style, or an all-around border (accent color + 2px weight + tint). Never use a one-side border (`border-l`, `border-t`, etc.) to mark selection or highlight a card.
 * **Checkbox & radio filled (mandatory):** checked = accent fill (`accent-color` or custom) + contrasting mark.
 
 ## 8. Performance
