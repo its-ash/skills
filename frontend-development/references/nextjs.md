@@ -262,6 +262,7 @@ export async function middleware(request) {
 }
 ```
 - Add `export const config = { matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'] }` if you need custom matching.
+- Next.js 16+ renames this file to `proxy.ts` (see section 10).
 
 ### Auth Callback Route (OAuth)
 ```tsx
@@ -308,7 +309,27 @@ export default function LogoutButton() {
 ```
 ---
 
-## 10. Anti‑Patterns to Avoid
+## 10. Next.js 16+ and Turbopack
+- From Next.js 16, `next dev` uses Turbopack by default. Turbopack is an incremental bundler in Rust. It gives faster cold start and HMR, mostly in large apps.
+- Turbopack keeps a file-system cache (usually under `.next`). Restarts reuse earlier work (for example 5–14x faster on large projects). Basic use needs no configuration. Do not clear the cache without a reason.
+- Use webpack in dev only when you find a Turbopack bug or need a webpack-only plugin. Disable Turbopack with `--webpack` (or `--no-turbopack` in some versions). Check the docs for your release.
+- `next build` can use Turbopack or webpack, as a function of the Next.js version. Check the docs for your version.
+- Next.js 16.1+ has an experimental Bundle Analyzer to find heavy dependencies. Enable it in config or with the experimental flag.
+- Use a recent Next.js 16.x release for stable Turbopack and cache behavior.
+
+### Middleware file name: `proxy.ts`
+| Next.js version | File at project root |
+|---|---|
+| 16+ | `proxy.ts` |
+| Before 16 | `middleware.ts` |
+
+- The file name depends on the Next.js version, not on the bundler.
+- In Next.js 16 projects, `proxy.ts` is correct. Do not report it as a misnamed or missing middleware file. A rename to `middleware.ts` stops the middleware.
+- Reference: [Next.js proxy docs](https://nextjs.org/docs/app/getting-started/proxy)
+
+---
+
+## 11. Anti‑Patterns to Avoid
 | Bad practice | Correct approach |
 |--------------|-----------------|
 | Adding `'use client'` to every file | Keep components Server by default; add `'use client'` only when interactivity is required |
@@ -334,6 +355,7 @@ export default function LogoutButton() {
 - [ ] Implement OAuth callback route that exchanges the code for a session.
 - [ ] Test loading and error states (`loading.tsx`, `error.tsx`).
 - [ ] Run `next build && next analyze` to verify bundle size.
+- [ ] On Next.js 16+, use `proxy.ts` (not `middleware.ts`) and keep Turbopack as the dev bundler.
 
 ## Related skills
 

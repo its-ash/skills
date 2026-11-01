@@ -178,5 +178,61 @@ Replace the placeholders with values derived from your research and brief.
 
 ---
 
+## Product UI Direction (apps, tools, dashboards)
+
+Use this section when the surface is a product UI that people use repeatedly, not a marketing site. The parent `design` rules (§0-§10) stay in force.
+
+### Set the direction before you code
+1. **Purpose:** the job that the interface does.
+2. **Audience:** who repeats this workflow, and what they must scan first.
+3. **Tone:** one explicit word (utilitarian, editorial, industrial, technical, calm, dense, playful).
+4. **Memorable detail:** one design idea that makes the result feel intentional.
+5. **Constraints:** framework, accessibility, performance, responsiveness, existing design system.
+
+Match the direction to the domain. An operations tool is usually dense, quiet, and scannable. Do not put a landing-page composition on a tool for daily use.
+
+### Evidence contract
+Before you build, record the product surface, the user job, the primary action, the hierarchy, the target viewports, and the reference observation behind each important choice. Make each constraint checkable. A palette alone is not evidence.
+
+For each relevant content state, record the trigger, the visible feedback, and the safe next action:
+
+| State | Check |
+| --- | --- |
+| Loading | Stable structure and progress; cancel where supported |
+| Empty | Explain the missing data and give a useful next action |
+| Error | Specific failure and a recovery path |
+| Partial | Show the available data and mark the unavailable parts |
+| Success | Confirm completion and show the next action or undo |
+| Permission | Explain the access boundary and a safe request or return path |
+
+If a state does not apply, record the reason. If you cannot test a state, report it as untested, not as "not applicable".
+
+### Build from the contract
+- Make the first screen the usable experience, unless the user asks for marketing copy.
+- Use the project components, tokens, icon library, and routing patterns before you add a new visual system.
+- Use real or generated assets when the interface depends on images, products, places, people, charts, or media.
+- Use contextual type and spacing, not generic oversized hero text.
+- Keep tokens in CSS variables so the direction stays the same across all states.
+- Give grids, toolbars, tiles, counters, and fixed-format controls stable dimensions. They must not move when labels change or hover states show.
+- Make sure long labels wrap or resize on mobile and desktop. They must not overflow.
+
+### Product UI anti-patterns
+- Cards inside cards.
+- The primary product, tool, or workflow hidden behind generic marketing sections.
+- A new dependency only for a visual flourish.
+- Text inside the UI that describes features when the controls can show them.
+- Motion that hides slow responses.
+
+### Rendered finish gate
+Examine the rendered interface at each target viewport from the contract. Source inspection alone cannot pass this gate.
+- Check keyboard navigation, visible focus, labels, contrast, reduced motion, and touch targets.
+- Check narrow and wide layouts with long content.
+- Exercise each applicable content state, including partial data.
+- Keep screenshots or browser-test artifacts in the workspace and record what each one shows.
+- Fix failures, then do the affected checks again after structural changes.
+- Report untested work and known limits. Do not make up evidence.
+
+---
+
 ## Final Note
 Treat every visual decision as a response to the brief, not as a default template. When in doubt, ask the client: *“Does this choice feel specific to your brand, or could it belong to any site?”* Only proceed when the answer is **specific**.

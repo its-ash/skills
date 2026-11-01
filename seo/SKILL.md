@@ -1,6 +1,6 @@
 ---
 name: seo
-description: "SEO audits and optimizes websites for search visibility across technical SEO, on-page elements, content quality, keyword strategy, schema markup, Core Web Vitals, mobile SEO, and local SEO, with checklists and tool guidance. Use when a site needs a health check, ranking improvement, crawlability fixes, indexation issues, title tags, meta descriptions, headings, structured data, rich snippets, GEO, AI search citations, keyword research, Google Search Console, Lighthouse, Screaming Frog, Ahrefs, or Semrush. Sub-skills: programmatic-seo."
+description: "SEO audits and optimizes websites for search visibility across technical SEO, on-page elements, content quality, keyword strategy, schema markup, Core Web Vitals, mobile SEO, and local SEO, with checklists and tool guidance. Use when a site needs a health check, ranking improvement, crawlability fixes, indexation issues, title tags, meta descriptions, headings, structured data, rich snippets, GEO, AI search citations, keyword research, Google Search Console, Lighthouse, Screaming Frog, Ahrefs, or Semrush. Sub-skills: generative-engine-optimization, schema-markup, programmatic-seo."
 ---
 
 # SEO Audit & Optimization Guide
@@ -26,6 +26,13 @@ Prioritize the following areas in order:
 4. **Content Quality** – Depth, freshness, E‑E‑A‑T.
 5. **Authority & Links** – Backlinks, internal linking, schema.
 
+### Principles
+- Fix technical blockers before you optimize content.
+- Give each page one clear primary search intent.
+- Prefer long-term quality signals to manipulative patterns.
+- Assume mobile-first, because indexing is mobile-first.
+- Make each recommendation page-specific and implementable. Read the real page before you give content advice.
+
 ---
 
 ## 2. Technical SEO
@@ -46,7 +53,9 @@ Sitemap: https://example.com/sitemap.xml
 - Run `site:example.com` in Google and compare with the Search Console Coverage report.
 - Fix **noindex** tags on pages that should rank.
 - Ensure every page has a self‑referencing **canonical** tag.
-- Resolve redirect chains, loops, and soft 404s.
+- Resolve redirect chains, loops, and soft 404s. Keep each redirect chain to two hops or fewer.
+- Make canonicals self-consistent and free of loops. Do not let duplicate URLs compete without canonical control.
+- Make the sitemap match the intended public surface, not every URL the app can produce.
 
 ### 2.3 Core Web Vitals & Speed
 | Metric | Target | Typical Fixes |
@@ -119,11 +128,14 @@ Sitemap: https://example.com/sitemap.xml
 - Use descriptive anchor text (avoid "click here").
 - Aim for 3‑5 internal links per 1 000 words.
 - Regularly audit for broken links.
+- Link from strong pages to the pages you want to rank.
+- When you publish a new page, backfill links from relevant existing pages to it.
 
 ### 3.7 Keyword Targeting & Cannibalization
 - Assign a single primary keyword to each page.
 - Map keywords to pages in a spreadsheet.
 - Ensure no two pages compete for the same keyword unless intentional.
+- Mapping steps: define the search intent, collect realistic variants, rank by intent match, value, and competition, map one primary theme to one URL, then check for cannibalization.
 
 ---
 
@@ -164,7 +176,16 @@ Common types:
 - **LocalBusiness** – address, phone, opening hours.
 - **BreadcrumbList** – navigation hierarchy.
 
-Validate with Google Rich Results Test or Schema.org Validator.
+Page-type mapping:
+| Page | Schema |
+|------|--------|
+| Homepage | `Organization` or business type |
+| Editorial | `Article` / `BlogPosting` |
+| Product | `Product` + `Offer` |
+| Interior pages | `BreadcrumbList` |
+| Q&A section | `FAQPage`, only when the visible content really is Q&A |
+
+Add schema only for content that is on the page. Validate with Google Rich Results Test or Schema.org Validator.
 
 ---
 
@@ -283,6 +304,30 @@ Validate with Google Rich Results Test or Schema.org Validator.
 <meta name="twitter:description" content="Page description">
 <meta name="twitter:image" content="https://example.com/image.jpg">
 ```
+### Formulas
+```text
+Title:            Primary Topic - Specific Modifier | Brand
+Meta description: Action + topic + value proposition + one supporting detail
+```
+
+### Audit Finding Format
+Tie each finding to a page, file, or asset:
+```text
+[HIGH] Duplicate title tags on product pages
+Location: src/routes/products/[slug].tsx
+Issue: Dynamic titles collapse to the same default string, which weakens relevance and creates duplicate signals.
+Fix: Generate a unique title per product using the product name and primary category.
+```
+
+### Anti-Patterns
+| Anti-pattern | Fix |
+|---|---|
+| Keyword stuffing | Write for users first |
+| Thin near-duplicate pages | Consolidate or differentiate them |
+| Schema for content that is not on the page | Match schema to reality |
+| Content advice without reading the page | Read the real page first |
+| Generic "improve SEO" output | Tie each recommendation to a page or asset |
+
 ---
 
 ## 11. Frequently Asked Questions
@@ -314,6 +359,7 @@ Read a sub-skill file only when the task needs it.
 |------|----------|
 | [references/generative-engine-optimization.md](references/generative-engine-optimization.md) | Generative Engine Optimization (GEO) guides the creation of web content that AI‑powered search engines (ChatGPT, Claude, Perplexity, Gemini) are likely to cite. Use it when you want your pages to appear as sources in AI responses. |
 | [references/schema-markup.md](references/schema-markup.md) | Provides a step‑by‑step workflow for adding, fixing, or optimizing JSON‑LD schema markup (structured data) on web pages. Use when the user mentions schema markup, structured data, JSON‑LD, rich snippets, or specific schema types such as FAQ, Product, Breadcrumb, etc. |
+| [references/programmatic-seo.md](references/programmatic-seo.md) | Creates thousands of SEO-optimized landing pages from structured data and reusable templates to capture long-tail keyword patterns at scale. Use when building location-specific service pages, comparison grids, pricing calculators, template libraries, or any repeatable search intent; triggers include programmatic SEO, pSEO, mass page generation, template-driven content, data-driven pages, competitor comparison pages, alternative pages, versus pages, location pages, city pages, keyword clustering, content automation, internal linking architecture, schema markup, canonical tags, crawl budget optimization, indexation strategy, and ranking for competitor brand terms. |
 
 ## Related skills
 
@@ -324,4 +370,3 @@ Load these when the task spans more than this skill.
 - [`content-writing`](../content-writing/SKILL.md) — The content-writing skill guides brand-voice creation, SEO blog drafting, social-media post production, conten…
 - [`programmatic-seo`](references/programmatic-seo.md) — Programmatic SEO skill guides you to design, build, and launch large numbers of SEO-optimized pages using temp…
 - [`nextjs`](../frontend-development/references/nextjs.md) — Guidelines for building Next.js 14+ applications with the App Router. Includes component type decisions, data…
-| [references/programmatic-seo.md](references/programmatic-seo.md) | Creates thousands of SEO-optimized landing pages from structured data and reusable templates to capture long-tail keyword patterns at scale. Use when building location-specific service pages, comparison grids, pricing calculators, template libraries, or any repeatable search intent; triggers include programmatic SEO, pSEO, mass page generation, template-driven content, data-driven pages, competitor comparison pages, alternative pages, versus pages, location pages, city pages, keyword clustering, content automation, internal linking architecture, schema markup, canonical tags, crawl budget optimization, indexation strategy, and ranking for competitor brand terms. |

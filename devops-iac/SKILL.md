@@ -1,6 +1,6 @@
 ---
 name: devops-iac
-description: "This skill guides infrastructure as code workflows covering Terraform provisioning, Kubernetes cluster operations, GitHub Actions CI/CD pipelines, GitOps with ArgoCD and Flux, service mesh configuration, observability stacks, security hardening, cost optimization, and disaster recovery planning. Use when writing terraform hcl, managing kubernetes k8s clusters, building github actions workflows yaml, configuring argocd flux gitops, deploying helm charts, setting up istio linkerd service mesh, implementing prometheus grafana observability, hardening security compliance, optimizing cloud costs aws gcp azure, or planning disaster recovery backup restore. Sub-skills: docker, cloud-architecture, cloudflare-deploy, observability."
+description: "This skill guides infrastructure as code workflows covering Terraform provisioning, Kubernetes cluster operations, GitHub Actions CI/CD pipelines, GitOps with ArgoCD and Flux, service mesh configuration, observability stacks, security hardening, cost optimization, and disaster recovery planning. Use when writing terraform hcl, managing kubernetes k8s clusters, building github actions workflows yaml, configuring argocd flux gitops, deploying helm charts, setting up istio linkerd service mesh, implementing prometheus grafana observability, hardening security compliance, optimizing cloud costs aws gcp azure, or planning disaster recovery backup restore. Sub-skills: github-actions, kubernetes, docker, cloud-architecture, cloudflare-deploy, observability, deployment-patterns, flox-environments, uncloud."
 ---
 
 # DevOps IaC
@@ -222,7 +222,14 @@ Read a sub-skill file only when the task needs it.
 | File | Use when |
 |------|----------|
 | [references/github-actions.md](references/github-actions.md) | Creates and optimizes GitHub Actions workflows for CI/CD, testing, linting, deployment, security scanning, scheduled tasks, and other automation needs. |
-| [references/kubernetes.md](references/kubernetes.md) | Expert Kubernetes architect for cloud-native infrastructure, GitOps workflows (ArgoCD, Flux), and enterprise orchestration. Use for cluster design, multi-cluster strategy, service mesh, and platform engineering. |
+| [references/kubernetes.md](references/kubernetes.md) | Expert Kubernetes architect for cloud-native infrastructure, GitOps workflows (ArgoCD, Flux), and enterprise orchestration. Use for cluster design, multi-cluster strategy, service mesh, and platform engineering. Also has production Deployment, probe, RBAC, HPA, PDB, and Job YAML, and a kubectl debugging cheatsheet. |
+| [references/docker.md](references/docker.md) | Write and optimize Dockerfiles and Compose: multi-stage builds, image size, hardening, BuildKit cache and secrets, networks, volumes, and container debugging. |
+| [references/cloud-architecture.md](references/cloud-architecture.md) | Design and optimize systems on AWS, Azure, or GCP: architecture choices, reliability, security, and cost. |
+| [references/cloudflare-deploy.md](references/cloudflare-deploy.md) | Deploy apps and infrastructure to Cloudflare Workers, Pages, and related services with wrangler. |
+| [references/observability.md](references/observability.md) | Build monitoring, logs, traces, alerts, and Grafana dashboards that answer operator questions; triage incidents with the Datadog CLI. |
+| [references/deployment-patterns.md](references/deployment-patterns.md) | Select rolling, blue-green, or canary deploys; set CI/CD stages, health checks, env validation, rollback, and a production readiness checklist. |
+| [references/flox-environments.md](references/flox-environments.md) | Make reproducible macOS/Linux dev environments with Flox (`.flox/`, `manifest.toml`): pinned packages, services, hooks, and project-scoped agent tools. |
+| [references/uncloud.md](references/uncloud.md) | Manage an Uncloud cluster with the `uc` CLI: machines, Compose deploys, Caddy ingress, port publishing, scaling, DNS, and logs. |
 
 ## Related skills
 

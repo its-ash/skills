@@ -207,6 +207,37 @@ resource "grafana_folder" "monitoring" {
 
 ---
 
+### Build Dashboards From Operator Questions
+Use this method for Grafana, SigNoz, or a similar platform. A dashboard must answer four questions: Is it healthy? Where is the bottleneck? What changed? What must the operator do?
+
+**Guardrails**
+- Start from operator questions, not from the visual layout.
+- Do not add a metric only because it exists.
+- Do not mix health, throughput, and resource panels with no structure.
+- Each panel has a title, a unit, and correct thresholds.
+
+**Steps**
+1. Define the questions: health/availability, latency, throughput, saturation, and service-specific risk.
+2. Study the platform schema in the existing dashboards: JSON structure, query language, variables, threshold styles, and section layout.
+3. Build the minimum useful board in this order: overview, performance, resources, service-specific section.
+4. Remove vanity panels. If a panel does not answer a real question, delete it.
+
+**Example panel sets**
+| Service | Panels |
+|---------|--------|
+| Elasticsearch | Cluster health, shard allocation, search latency, indexing rate, JVM heap / GC |
+| Kafka | Broker count, under-replicated partitions, messages in/out, consumer lag, disk and network pressure |
+| API gateway / ingress | Request rate, p50/p95/p99 latency, error rate, upstream health, active connections |
+
+**Quality checklist**
+- [ ] Dashboard JSON is valid.
+- [ ] Sections are grouped clearly.
+- [ ] Titles and units are present.
+- [ ] Threshold and status colors have meaning.
+- [ ] Variables exist for common filters.
+- [ ] Default time range and refresh are correct for the use.
+- [ ] No vanity panels.
+
 ## 4. End‑to‑End Observability Workflow
 1. **Identify Critical Paths** – list user journeys, services, and reliability targets (e.g., 99.9 % API availability).
 2. **Define Signals** – decide which metrics, logs, and traces are needed for each path.

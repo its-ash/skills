@@ -138,6 +138,69 @@ CREATE INDEX ON tbl (price);
 - PG18+ adds `VIRTUAL` columns that compute on read (no storage).
 - Use generated columns for indexing derived values, e.g., JSONB fields.
 
+## Query Patterns
+| Query pattern | Index | Example |
+|---|---|---|
+| `WHERE col = v` or `col > v` | B-tree | `CREATE INDEX ON t (col)` |
+| `WHERE a = x AND b > y` | Composite (equality first, then range) | `CREATE INDEX ON orders (status, created_at)` |
+| `SELECT email, name ... WHERE email = ?` | Covering | `CREATE INDEX ON users (email) INCLUDE (name, created_at)` |
+| Only active rows | Partial | `CREATE INDEX ON users (email) WHERE deleted_at IS NULL` |
+| `jsonb @> '{}'`, `tsv @@ query` | GIN | `CREATE INDEX ON t USING gin (col)` |
+| Time-series ranges | BRIN | `CREATE INDEX ON t USING brin (created_at)` |
+
+```sql
+-- Keyset pagination: constant cost; OFFSET reads and discards all earlier rows
+SELECT * FROM products WHERE id > $1 ORDER BY id LIMIT 20;
+
+-- Queue claim: workers do not block each other
+UPDATE jobs SET status = 'processing'
+WHERE id = (
+  SELECT id FROM jobs WHERE status = 'pending'
+  ORDER BY created_at LIMIT 1
+  FOR UPDATE SKIP LOCKED
+) RETURNING *;
+
+-- RLS: wrap the function in SELECT so it runs once for each query, not once for each row
+CREATE POLICY orders_owner ON orders USING ((SELECT auth.uid()) = user_id);
+```
+
+## Diagnostics
+```sql
+-- Foreign keys without an index
+SELECT c.conrelid::regclass AS table_name, a.attname AS column_name
+FROM pg_constraint c
+JOIN pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = ANY(c.conkey)
+WHERE c.contype = 'f'
+  AND NOT EXISTS (
+    SELECT 1 FROM pg_index i
+    WHERE i.indrelid = c.conrelid AND a.attnum = ANY(i.indkey)
+  );
+
+-- Slow queries (needs the pg_stat_statements extension)
+SELECT query, mean_exec_time, calls
+FROM pg_stat_statements
+WHERE mean_exec_time > 100
+ORDER BY mean_exec_time DESC;
+
+-- Tables with many dead rows (bloat)
+SELECT relname, n_dead_tup, last_autovacuum
+FROM pg_stat_user_tables
+WHERE n_dead_tup > 1000
+ORDER BY n_dead_tup DESC;
+```
+
+## Server Settings
+```sql
+ALTER SYSTEM SET idle_in_transaction_session_timeout = '30s';
+ALTER SYSTEM SET statement_timeout = '30s';        -- Or set it for each app role
+ALTER SYSTEM SET work_mem = '8MB';                 -- Applies to each sort or hash operation
+CREATE EXTENSION IF NOT EXISTS pg_stat_statements; -- Also add it to shared_preload_libraries
+REVOKE ALL ON SCHEMA public FROM public;
+SELECT pg_reload_conf();
+```
+- Keep `max_connections` low (about 100) and put a pooler (PgBouncer, or the platform pooler) in front of the app.
+- Size these values from the RAM and the workload. They are a start point, not fixed rules.
+
 ## Checklist
 - [ ] Capture entities, access patterns, and scale targets (row count, QPS, retention).
 - [ ] Choose appropriate data types and add `NOT NULL`/`DEFAULT` where needed.

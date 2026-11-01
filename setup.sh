@@ -21,6 +21,7 @@ CLAUDE_INSTRUCTIONS_FILE="$CLAUDE_DIR/CLAUDE.md"
 CLAUDE_SKILLS_DIR="$CLAUDE_DIR/skills"
 COPILOT_AGENTS_DIR="$COPILOT_DIR/agents"
 CLAUDE_AGENTS_DIR="$CLAUDE_DIR/agents"
+CLAUDE_COMMANDS_DIR="$CLAUDE_DIR/commands"
 ZED_DIR="$HOME/.config/zed"
 ZED_AGENTS_FILE="$ZED_DIR/AGENTS.md"
 ZED_SKILLS_DIR="$HOME/.agents/skills"
@@ -168,6 +169,15 @@ do_install() {
     fi
   fi
 
+  # --- Commands (repo commands/ → ~/.claude/commands) ---
+  if [[ -d "$REPO_DIR/commands" ]]; then
+    if [[ -L "$CLAUDE_COMMANDS_DIR" && "$(readlink "$CLAUDE_COMMANDS_DIR")" == "$REPO_DIR/commands" ]]; then
+      ok "Claude commands already linked → $REPO_DIR/commands"
+    else
+      link "$REPO_DIR/commands" "$CLAUDE_COMMANDS_DIR"
+    fi
+  fi
+
   # --- Zed (personal AGENTS.md + per-skill links at ~/.agents/skills) ---
   if [[ -L "$ZED_AGENTS_FILE" && "$(readlink "$ZED_AGENTS_FILE")" == *copilot.instructions.md* ]]; then
     ok "Zed AGENTS.md already linked → $(readlink "$ZED_AGENTS_FILE")"
@@ -184,7 +194,7 @@ do_install() {
     link "$REPO_DIR/$name" "$ZED_SKILLS_DIR/$name"
   done
 
-  ok "Done. Skills, agents & instructions are now shared across Copilot, Claude and Zed."
+  ok "Done. Skills, agents, commands & instructions are now shared across Copilot, Claude and Zed."
 }
 
 do_unlink() {
@@ -201,6 +211,7 @@ do_unlink() {
   unlink_path "$CLAUDE_SKILLS_DIR"
   unlink_path "$CLAUDE_AGENTS_DIR"
   unlink_path "$COPILOT_AGENTS_DIR"
+  unlink_path "$CLAUDE_COMMANDS_DIR"
   unlink_path "$ZED_AGENTS_FILE"
   for skill_dir in "$REPO_DIR"/*/; do
     local name
@@ -225,6 +236,7 @@ do_status() {
   status_path "$CLAUDE_SKILLS_DIR"
   status_path "$COPILOT_AGENTS_DIR"
   status_path "$CLAUDE_AGENTS_DIR"
+  status_path "$CLAUDE_COMMANDS_DIR"
   status_path "$ZED_AGENTS_FILE"
   for skill_dir in "$REPO_DIR"/*/; do
     local name

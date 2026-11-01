@@ -4,29 +4,48 @@ Match task nouns/verbs to **Triggers**, load each matching `<skill>/SKILL.md` (s
 
 | Skill | Triggers (→ sub-skills) |
 |---|---|
-| [`backend-development`](backend-development/SKILL.md) | API, REST, GraphQL, gRPC, OpenAPI, microservices, Kafka/RabbitMQ, JWT/OAuth, rate limit, Redis, queues, serverless, Lambda → nestjs, fastapi, django, php-laravel, firebase-backend |
+| [`ai-agent-engineering`](ai-agent-engineering/SKILL.md) | AI agents, agent harness, tool design, autonomous loops, evals/pass@k, multi-agent, worktrees, MCP server, prompt injection, LLM cost, prompt caching, context window → agent-harness-construction, autonomous-loops, eval-harness, mcp-server-patterns, agent-security-hardening, llm-cost-optimization, team-agent-orchestration, council, santa-method, search-first |
+| [`backend-development`](backend-development/SKILL.md) | API, REST, GraphQL, gRPC, OpenAPI, microservices, Kafka/RabbitMQ, JWT/OAuth, rate limit, queues, serverless, Lambda, error handling, contract-first, Django/Celery, Laravel, Rails → nestjs, fastapi, django, django-celery, django-testing, php-laravel, laravel-security, laravel-testing, rails, contract-first, error-handling, firebase-backend |
 | [`browser-extensions`](browser-extensions/SKILL.md) | Chrome/Firefox/Edge extension, Manifest V3, content script, service worker, popup, web store |
-| [`clean-code`](clean-code/SKILL.md) | write/refactor/lint code, naming, dead code, magic numbers, SOLID, deslop diff |
-| [`code-review`](code-review/SKILL.md) | PR review, diff, bugs, code smells, breaking changes, LGTM/blockers |
-| [`content-writing`](content-writing/SKILL.md) | blog, social posts, LinkedIn/X, content calendar, brand voice → copywriting |
+| [`clean-code`](clean-code/SKILL.md) | write/refactor/lint code, naming, dead code, magic numbers, SOLID, deslop diff, legacy style → coding-standards, inherit-legacy-style, codehealth-mcp |
+| [`code-review`](code-review/SKILL.md) | PR review, diff, bugs, code smells, breaking changes, LGTM/blockers, blast radius, verify before done → change-impact, click-path-audit, verification-loop |
+| [`content-writing`](content-writing/SKILL.md) | blog, article, social posts, LinkedIn/X, crosspost, content calendar, brand voice, leads/outreach, pitch deck, investor email, launch campaign → copywriting, social-content, brand-voice, article-writing, social-publishing, lead-intelligence, investor-materials, marketing-campaign |
 | [`conversion-optimization`](conversion-optimization/SKILL.md) | CRO, landing/pricing/signup/onboarding/paywall, forms, popups, funnel → ab-testing |
-| [`database-design`](database-design/SKILL.md) | schema, ERD, SQL vs NoSQL, normalization, indexes → database-migration, database-optimization, prisma, drizzle-orm |
-| [`design`](design/SKILL.md) | any UI/website/dashboard/component, animation, gestures, design system, theming, any CSS → immersive-web, figma, mobile-design, brand-theming, motion-canvas |
-| [`devops-iac`](devops-iac/SKILL.md) | Terraform, Kubernetes, Helm, GitHub Actions, ArgoCD/Flux, service mesh, DR → docker, cloud-architecture, cloudflare-deploy, observability |
-| [`flutter`](flutter/SKILL.md) | Flutter, Dart, pubspec.yaml, widgets, Riverpod, Bloc, Provider |
-| [`frontend-development`](frontend-development/SKILL.md) | React, MUI, TanStack Query/Router, SSR, bundle size, re-renders → nextjs, astro, d3-visualization, progressive-web-app |
+| [`cpp`](cpp/SKILL.md) | C++, .cpp/.hpp, CMake, RAII, smart pointers, move semantics, GoogleTest → cpp-testing |
+| [`database-design`](database-design/SKILL.md) | schema, ERD, SQL vs NoSQL, normalization, indexes, migrations, PostgreSQL, MySQL, ClickHouse, Redis → postgresql, mysql-patterns, clickhouse, redis, database-migration, database-optimization, prisma, drizzle-orm |
+| [`design`](design/SKILL.md) | any UI/website/dashboard/component, animation, gestures, design system, theming, slides, any CSS → immersive-web, figma, mobile-design, brand-theming, motion-canvas, motion-react, design-system, make-interfaces-feel-better, html-slides, shadcn-ui, tailwind-css, threejs (Three.js, R3F, WebGPU/TSL), gsap (ScrollTrigger, timelines) |
+| [`devops-iac`](devops-iac/SKILL.md) | Terraform, Kubernetes, Helm, Docker, GitHub Actions, ArgoCD/Flux, deploy/rollback, dashboards, DR, Flox, Uncloud → docker, kubernetes, github-actions, deployment-patterns, cloud-architecture, cloudflare-deploy, observability, flox-environments, uncloud |
+| [`document-processing`](document-processing/SKILL.md) | PDF/DOCX/XLSX convert, OCR, extract, redact, PDF forms, e-signature fields, visa document translation → nutrient-document-processing, esign-field-placement, visa-doc-translate |
+| [`documentation`](documentation/SKILL.md) | docs drift, project map/status, onboarding guide, CodeTour, CONTEXT.md glossary, growth log → codebase-onboarding, code-tour, context-and-decisions, growth-log |
+| [`dotnet`](dotnet/SKILL.md) | C#, F#, .NET, ASP.NET Core, EF Core, xUnit, WPF/WinForms → csharp-testing, fsharp-testing, windows-desktop-e2e |
+| [`flutter`](flutter/SKILL.md) | Flutter, Dart, pubspec.yaml, widgets, Riverpod, Bloc, Provider, Flutter review → dart-flutter-patterns, flutter-code-review |
+| [`frontend-development`](frontend-development/SKILL.md) | React, MUI, TanStack Query/Router, SSR, bundle size, re-renders, React Native/Expo, Vue, Nuxt, Angular, Vite, Turbopack → nextjs, react-patterns, react-performance, react-native, vue, nuxt, angular, vite, astro, d3-visualization, progressive-web-app |
 | [`fullstack-development`](fullstack-development/SKILL.md) | new web app, stack choice, scaffolding, monorepo, deploy (Vercel/Railway) |
-| [`golang`](golang/SKILL.md) | Go, go.mod, goroutines, channels, golangci-lint, race conditions |
-| [`i18n-localization`](i18n-localization/SKILL.md) | i18n, l10n, translations, locale, ICU, Intl, RTL |
-| [`node`](node/SKILL.md) | Node.js project, package.json, .nvmrc, tsconfig, .env, Makefile |
-| [`python`](python/SKILL.md) | Python, pyproject.toml, uv, ruff, mypy, pytest, asyncio |
+| [`git-workflow`](git-workflow/SKILL.md) | git branch, commit message, rebase/merge conflict, release, changelog, gh issue/PR, failed CI run, Jira, open-source a repo → github-ops, conventional-commit-review, issue-review, jira-integration, opensource-pipeline, project-flow-ops |
+| [`golang`](golang/SKILL.md) | Go, go.mod, goroutines, channels, golangci-lint, race conditions, table-driven tests → golang-patterns, golang-testing |
+| [`healthcare`](healthcare/SKILL.md) | HIPAA, PHI, BAA, EMR/EHR, prescriptions, drug interactions, CDSS, HL7/FHIR → phi-compliance, emr, cdss, eval-harness |
+| [`i18n-localization`](i18n-localization/SKILL.md) | i18n, l10n, translations, locale JSON sync, ICU, Intl, RTL, Bengali text → i18n-sync, bengali-nlp |
+| [`java`](java/SKILL.md) | Java, Maven/Gradle, Spring Boot, Spring Security, Quarkus, JPA/Hibernate, MyBatis, JUnit → springboot-patterns, springboot-security, springboot-testing, quarkus-patterns, quarkus-security, quarkus-testing, jpa-patterns, mybatis-patterns, tinystruct-patterns |
+| [`kotlin`](kotlin/SKILL.md) | Kotlin, .kts, coroutines, Flow, Ktor, Exposed, Kotest/MockK, Android, KMP, Compose → kotlin-coroutines-flows, kotlin-testing, kotlin-ktor-patterns, kotlin-exposed-patterns, android-clean-architecture, compose-multiplatform-patterns |
+| [`machine-learning`](machine-learning/SKILL.md) | ML in production, training pipeline, PyTorch, model eval, drift, leakage, recommendations/ranking, slow ETL/backfill → pytorch-patterns, ml-adoption-playbook, recsys-pipeline-architect, data-throughput-accelerator |
+| [`networking`](networking/SKILL.md) | home/homelab network, VLAN, Pi-hole, WireGuard, Cisco IOS, Netmiko, BGP, interface errors, config validation → homelab-*, cisco-ios-patterns, netmiko-ssh-automation, network-bgp-diagnostics, network-config-validation, network-interface-health |
+| [`node`](node/SKILL.md) | Node.js project, package.json, .nvmrc, tsconfig, .env, Makefile, Bun → bun |
+| [`perl`](perl/SKILL.md) | Perl, .pl/.pm, CPAN, Mojolicious, DBI, taint mode, prove → perl-security, perl-testing |
+| [`product-strategy`](product-strategy/SKILL.md) | product brief, go/no-go, feature priority, PRD to capability plan, TAM/SAM/SOM, competitors, benchmark, brand discovery → product-capability, market-research, competitive-platform-analysis, benchmark-methodology, competitive-report-structure, brand-discovery |
+| [`python`](python/SKILL.md) | Python, pyproject.toml, uv, ruff, mypy, pytest, asyncio, Windows installer/Nuitka → python-patterns, python-testing, windows-installer |
+| [`research`](research/SKILL.md) | deep research, cited report, Exa search, OSINT, PubMed, patents/USPTO, genomics, literature review, paper evaluation → exa-search, osint-investigation, pubmed, uspto, gget, literature-review, scholar-evaluation |
+| [`rust`](rust/SKILL.md) | Rust, Cargo.toml, borrow checker, lifetimes, traits, Tokio, cargo test → rust-testing |
 | [`screenshot`](screenshot/SKILL.md) | screenshot, screen capture, screencapture/scrot/maim → screenshot-feature-extractor |
-| [`secure-coding`](secure-coding/SKILL.md) | auth, secrets, injection, XSS, CSRF, JWT, API keys → web-vulnerability-testing, data-privacy-compliance |
-| [`seo`](seo/SKILL.md) | SEO audit, meta tags, schema markup, crawlability, GEO, Search Console → programmatic-seo |
-| [`software-architecture`](software-architecture/SKILL.md) | architecture, Clean/Hexagonal, DDD, CQRS, event sourcing, ADR, monolith split |
+| [`secure-coding`](secure-coding/SKILL.md) | auth, secrets, injection, XSS, CSRF, JWT, API keys, cloud IAM, bug bounty → web-vulnerability-testing, data-privacy-compliance, cloud-infrastructure-security, security-bounty-hunter |
+| [`seo`](seo/SKILL.md) | SEO audit, meta tags, schema markup, crawlability, GEO, Search Console → generative-engine-optimization, schema-markup, programmatic-seo |
+| [`software-architecture`](software-architecture/SKILL.md) | architecture, Clean/Hexagonal, DDD, CQRS, event sourcing, ADR, monolith split, acceptance criteria, module ownership → architecture-decision-records, hexagonal-architecture, intent-driven-development, module-governance, module-regression |
+| [`supply-chain-operations`](supply-chain-operations/SKILL.md) | carriers, freight, customs/HS codes, energy procurement, demand forecast, safety stock, production schedule, NCR/CAPA, returns → carrier-relationship-management, customs-trade-compliance, energy-procurement, inventory-demand-planning, logistics-exception-management, production-scheduling, quality-nonconformance, returns-reverse-logistics |
+| [`swift-ios`](swift-ios/SKILL.md) | Swift, SwiftUI, Xcode, @Observable, Swift concurrency, actors, Swift Testing, FoundationModels, Liquid Glass → swift-concurrency, swift-actor-persistence, swift-protocol-di-testing, foundation-models-on-device, liquid-glass-design |
 | [`systematic-debugging`](systematic-debugging/SKILL.md) | bugs, stack traces, crashes, memory leaks, flaky tests, CI failures, root cause |
-| [`typescript`](typescript/SKILL.md) | TS types, generics, tsconfig, TS errors, JS→TS migration → zod, javascript |
-| [`unit-testing-patterns`](unit-testing-patterns/SKILL.md) | unit tests, Jest, pytest, TDD, mocks, fixtures → playwright |
+| [`typescript`](typescript/SKILL.md) | TS types, generics, tsconfig, TS errors, JS→TS migration → zod, javascript, typescript-patterns |
+| [`unit-testing-patterns`](unit-testing-patterns/SKILL.md) | unit tests, Jest, pytest, TDD, mocks, fixtures, E2E, React Testing Library, post-deploy QA → playwright, test-driven-development, react-testing, ai-regression-testing, test-collaboration, browser-qa |
 | [`ux-research`](ux-research/SKILL.md) | personas, journeys, interviews, usability tests, heuristic evaluation |
-| [`web-quality-audit`](web-quality-audit/SKILL.md) | site audit, Lighthouse, CWV, a11y/WCAG, security headers → web-performance, performance, web-accessibility |
-| [`web-scraping-apis`](web-scraping-apis/SKILL.md) | scrape, crawl, Firecrawl, Tavily, CF Browser Rendering, Xquik, tweets → bright-data |
+| [`video-production`](video-production/SKILL.md) | video edit, cut footage, reel, subtitles, voiceover, FFmpeg, Remotion, Manim, fal.ai, UI demo video → remotion, manim-video, fal-ai-media, ui-demo, videodb, blender-motion-state-inspection, visual-taste |
+| [`web-quality-audit`](web-quality-audit/SKILL.md) | site audit, Lighthouse, CWV, a11y/WCAG, security headers, benchmark, latency, prod readiness, canary → web-performance, performance, web-accessibility, benchmark, latency-critical-systems, production-audit, canary-watch |
+| [`web-scraping-apis`](web-scraping-apis/SKILL.md) | scrape, crawl, Firecrawl, Tavily, CF Browser Rendering, Xquik, tweets, scheduled scraper agent → bright-data, data-scraper-agent |
+| [`web3-security`](web3-security/SKILL.md) | Solidity, DeFi/AMM audit, ERC-20 decimals, Keccak-256, agent wallet, x402 payments, prediction markets → defi-amm-security, evm-token-decimals, nodejs-keccak256, llm-trading-agent-security, agent-payment-x402, prediction-market-oracle-research, prediction-market-risk-review |

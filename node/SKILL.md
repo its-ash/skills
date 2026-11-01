@@ -1,6 +1,6 @@
 ---
 name: node
-description: "Defines Node.js project conventions covering version pinning with .nvmrc, package.json scripts, Makefile targets, dependency management, TypeScript configuration, error handling patterns, and environment file structure. Use when initializing a Node.js project, configuring npm pnpm yarn workspaces, writing package.json scripts for build test lint dev start, setting .nvmrc for version consistency, creating Makefile targets for common tasks, adding TypeScript with tsconfig.json, structuring .env .env.local .env.production files, or scaffolding Express Fastify NestJS CLI applications."
+description: "Defines Node.js project conventions covering version pinning with .nvmrc, package.json scripts, Makefile targets, dependency management, TypeScript configuration, error handling patterns, and environment file structure. Use when initializing a Node.js project, configuring npm pnpm yarn workspaces, writing package.json scripts for build test lint dev start, setting .nvmrc for version consistency, creating Makefile targets for common tasks, adding TypeScript with tsconfig.json, structuring .env .env.local .env.production files, or scaffolding Express Fastify NestJS CLI applications, or using Bun (bun install, bun test, bun.lock, Bun.serve). Sub-skills: bun."
 ---
 
 # Node.js Skill
@@ -83,6 +83,14 @@ build:
 - `.env` in `.gitignore`.
 - `.env.example` committed with all required keys documented (no real values).
 - Load via `process.env` directly (Node 20+ loads `.env` natively with `--env-file`).
+
+## Sub-skills
+
+Read a sub-skill file only when the task needs it.
+
+| File | Use when |
+|------|----------|
+| [references/bun.md](references/bun.md) | The project uses Bun or the user asks for it: Bun vs Node, migration, `bun install`/`bun test` commands, `bun audit`, workspaces, built-in APIs (`Bun.serve`, `bun:sqlite`, `Bun.sql`), Bun Makefile, Vercel `bunVersion`. |
 
 ## Related skills
 

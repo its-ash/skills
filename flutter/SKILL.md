@@ -1,6 +1,6 @@
 ---
 name: flutter
-description: "Provides expert guidance for building multi-platform Flutter apps with Dart 3, covering architecture, state management, UI, platform integration, performance, testing, security, and deployment. Use when developing Flutter apps, writing Dart code, configuring pubspec.yaml, using widgets, Riverpod, Bloc, Provider, GetX, platform channels, Firebase, testing with flutter_test, or deploying to iOS, Android, web, and desktop."
+description: "Provides expert guidance for building multi-platform Flutter apps with Dart 3, covering architecture, state management, UI, platform integration, performance, testing, security, and deployment. Use when developing Flutter apps, writing Dart code, configuring pubspec.yaml, using widgets, Riverpod, Bloc, Provider, GetX, platform channels, Firebase, testing with flutter_test, or deploying to iOS, Android, web, and desktop, or reviewing Flutter/Dart code. Sub-skills: dart-flutter-patterns, flutter-code-review."
 ---
 
 # Flutter Development Expert
@@ -100,10 +100,20 @@ description: "Provides expert guidance for building multi-platform Flutter apps 
 ---
 **Note** – Always keep Dart null safety enabled. Use the latest stable Flutter SDK (3.x) and Dart 3 features such as records, patterns, and sealed classes to write concise, type‑safe code.
 
+## Sub-skills
+
+Read a sub-skill file only when the task needs it.
+
+| File | Use when |
+|------|----------|
+| [references/dart-flutter-patterns.md](references/dart-flutter-patterns.md) | Dart 3 null safety, sealed/Freezed state, async with `mounted` checks, widget extraction and scoped rebuilds, BLoC/Cubit, Riverpod notifiers, GoRouter auth redirect, Dio interceptors, global error capture, tests. |
+| [references/flutter-code-review.md](references/flutter-code-review.md) | Review checklist: project health, Dart pitfalls, widgets, state management (any library), performance, testing, accessibility, security, packages, routing, l10n, DI, static analysis. |
+
 ## Related skills
 
 Load these when the task spans more than this skill.
 
 - [`mobile-design`](../design/references/mobile-design.md) — Guidelines for mobile‑first design of iOS, Android, and cross‑platform apps. Covers touch targets, performance…
 - [`firebase-backend`](../backend-development/references/firebase-backend.md) — Expert guidance for building scalable, secure backends using Firebase. Use this skill for tasks involving Fire…
+- [`swift-ios`](../swift-ios/SKILL.md) — native iOS with SwiftUI, Swift concurrency, and platform channel targets.
 - [`unit-testing-patterns`](../unit-testing-patterns/SKILL.md) — A concise guide to unit‑testing patterns for JavaScript/TypeScript (Jest) and Python (pytest). Use when writin…

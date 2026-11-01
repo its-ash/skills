@@ -29,32 +29,51 @@ Match task nouns/verbs to triggers below; load each matching `<skill>/SKILL.md` 
 
 | Skill | Triggers (→ `references/` sub-skills) |
 |---|---|
-| backend-development | API, REST, GraphQL, gRPC, microservices, queues, serverless → nestjs, fastapi, django, php-laravel, firebase-backend |
+| ai-agent-engineering | AI agents, harness, autonomous loops, evals, multi-agent, MCP server, LLM cost → eval-harness, autonomous-loops, mcp-server-patterns, agent-security-hardening |
+| backend-development | API, REST, GraphQL, gRPC, microservices, queues, serverless, Django, Laravel, Rails → nestjs, fastapi, django, php-laravel, rails, error-handling, firebase-backend |
 | browser-extensions | Chrome/Firefox/Edge extension, Manifest V3 |
 | clean-code | write/refactor/lint code, naming, dead code, deslop diff |
 | code-review | PR review, diff, bugs, LGTM/blockers |
 | content-writing | blog, social posts, content calendar, brand voice → copywriting (web copy, CTA) |
 | conversion-optimization | CRO, landing/pricing/signup/paywall → ab-testing |
+| cpp | C++, CMake, RAII, GoogleTest → cpp-testing |
 | database-design | schema, ERD, SQL vs NoSQL → database-migration, database-optimization (slow query, index), prisma, drizzle-orm |
-| design | any UI/website/dashboard/component/animation, any CSS → immersive-web (GSAP, Three.js), figma, mobile-design, brand-theming, motion-canvas |
-| devops-iac | Terraform, Kubernetes, GitHub Actions, Helm → docker, cloud-architecture (AWS/Azure/GCP), cloudflare-deploy (Workers, wrangler), observability |
+| design | any UI/website/dashboard/component/animation, any CSS → immersive-web, threejs (Three.js, R3F, shaders), gsap (ScrollTrigger, timelines), figma, mobile-design, brand-theming, motion-canvas |
+| devops-iac | Terraform, Kubernetes, GitHub Actions, Helm, deploy/rollback → docker, kubernetes, deployment-patterns, cloud-architecture (AWS/Azure/GCP), cloudflare-deploy (Workers, wrangler), observability |
+| document-processing | PDF/DOCX convert, OCR, redact, e-signature → nutrient-document-processing, esign-field-placement |
+| documentation | docs drift, onboarding guide, CodeTour, glossary → codebase-onboarding, code-tour |
+| dotnet | C#, F#, .NET, ASP.NET Core, EF Core → csharp-testing, fsharp-testing |
 | flutter | Flutter, Dart, Riverpod, Bloc |
 | frontend-development | React, MUI, TanStack → nextjs, astro, d3-visualization, progressive-web-app |
 | fullstack-development | new web app, stack choice, scaffolding |
-| golang | Go, goroutines, go.mod |
-| i18n-localization | i18n, translations, locale, RTL |
+| git-workflow | branch, commit message, rebase, release, gh issue/PR, Jira → github-ops, conventional-commit-review, jira-integration |
+| golang | Go, goroutines, go.mod → golang-patterns, golang-testing |
+| healthcare | HIPAA, PHI, EMR/EHR, CDSS → phi-compliance, emr, cdss |
+| i18n-localization | i18n, translations, locale, RTL → i18n-sync, bengali-nlp |
+| java | Java, Spring Boot, Quarkus, JPA, MyBatis → springboot-patterns, quarkus-patterns, jpa-patterns |
+| kotlin | Kotlin, coroutines, Ktor, Android, Compose → kotlin-coroutines-flows, kotlin-testing, android-clean-architecture |
+| machine-learning | ML pipeline, PyTorch, model eval, recsys → pytorch-patterns, recsys-pipeline-architect |
+| networking | homelab, VLAN, Pi-hole, WireGuard, Cisco, BGP → homelab-*, cisco-ios-patterns, network-bgp-diagnostics |
 | node | any Node.js project, package.json, .nvmrc, tsconfig |
-| python | Python, uv, ruff, mypy, asyncio |
+| perl | Perl, CPAN, DBI → perl-security, perl-testing |
+| product-strategy | product brief, prioritization, market research, competitors → product-capability, market-research |
+| python | Python, uv, ruff, mypy, asyncio → python-patterns, python-testing |
+| research | deep research, citations, OSINT, PubMed, patents → exa-search, osint-investigation, literature-review |
+| rust | Rust, Cargo, borrow checker, Tokio → rust-testing |
 | screenshot | capture screen → screenshot-feature-extractor |
 | secure-coding | auth, secrets, injection, XSS, CSRF → web-vulnerability-testing (pentest, OWASP), data-privacy-compliance (GDPR, HIPAA) |
 | seo | SEO audit, meta tags, schema markup → programmatic-seo |
 | software-architecture | architecture, DDD, CQRS, ADR, monolith split |
+| supply-chain-operations | freight, customs, demand planning, production scheduling, returns → carrier-relationship-management, customs-trade-compliance |
+| swift-ios | Swift, SwiftUI, Xcode, Swift concurrency → swift-concurrency, swift-protocol-di-testing |
 | systematic-debugging | bugs, stack traces, crashes, flaky tests, root cause |
 | typescript | TS types, tsconfig, TS errors → zod, javascript |
 | unit-testing-patterns | unit tests, Jest, pytest, TDD, mocks → playwright (e2e) |
 | ux-research | personas, journeys, usability tests |
+| video-production | video edit, FFmpeg, Remotion, Manim, demo video → remotion, manim-video, ui-demo |
 | web-quality-audit | site audit, perf, a11y, security headers → web-performance, performance (DevTools, CWV), web-accessibility |
-| web-scraping-apis | Firecrawl, Tavily, CF Browser Rendering, Xquik → bright-data |
+| web-scraping-apis | Firecrawl, Tavily, CF Browser Rendering, Xquik → bright-data, data-scraper-agent |
+| web3-security | Solidity, DeFi audit, token decimals, agent wallet, x402 → defi-amm-security, evm-token-decimals |
 
 ## Project conventions
 - **Icon**: copy matching SVG from `/Users/ashvinijangid/Desktop/Icons` (e.g. `robot.svg` for AI) into `public/` or `assets/`; convert to PNG/ICO if needed.

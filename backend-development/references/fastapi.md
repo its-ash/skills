@@ -296,6 +296,238 @@ async def test_delete_resource(client: AsyncClient, auth_headers: dict):
     assert get_resp.status_code == 404
 ```
 
+## Application Patterns
+
+Use these patterns when you set up a new FastAPI app, or when you clean up the base of an existing one.
+
+### Project layout
+
+```text
+my_app/
+|-- app/
+|   |-- main.py           # App factory, lifespan, middleware
+|   |-- config.py         # Settings with pydantic-settings
+|   |-- dependencies.py   # Shared dependencies (DB session, current user)
+|   |-- database.py       # Async engine and session factory
+|   |-- routers/
+|   |-- models/           # SQLAlchemy ORM models
+|   |-- schemas/          # Pydantic request and response models
+|   `-- services/         # Business logic and transactions
+|-- tests/
+|   `-- conftest.py
+`-- pyproject.toml
+```
+
+### App factory and lifespan
+
+```python
+# app/main.py
+from contextlib import asynccontextmanager
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from app.config import settings
+from app.database import engine
+from app.routers import users
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    yield                      # Startup work goes before yield
+    await engine.dispose()     # Close pooled connections on shutdown
+
+def create_app() -> FastAPI:
+    app = FastAPI(title=settings.app_name, version=settings.app_version, lifespan=lifespan)
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.allowed_origins,
+        allow_credentials=True,
+        allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+        allow_headers=["Authorization", "Content-Type"],
+    )
+    app.include_router(users.router, prefix="/users", tags=["users"])
+    return app
+
+app = create_app()
+```
+
+Manage the schema with Alembic migrations. Use `Base.metadata.create_all` only in demos and tests.
+
+### Settings
+
+```python
+# app/config.py
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+class Settings(BaseSettings):
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
+
+    app_name: str = "My App"
+    app_version: str = "0.1.0"
+    database_url: str              # Required: startup fails if it is missing
+    secret_key: str
+    algorithm: str = "HS256"
+    access_token_expire_minutes: int = 30
+    allowed_origins: list[str] = ["http://localhost:3000"]
+
+settings = Settings()
+```
+
+### Cross-field validation
+
+```python
+from pydantic import BaseModel, EmailStr, Field, model_validator
+
+class UserCreate(BaseModel):
+    email: EmailStr
+    username: str = Field(min_length=3, max_length=50)
+    password: str = Field(min_length=8)
+    password_confirm: str
+
+    @model_validator(mode="after")
+    def passwords_match(self) -> "UserCreate":
+        if self.password != self.password_confirm:
+            raise ValueError("Passwords do not match")
+        return self
+```
+
+### Annotated dependencies
+
+```python
+# app/dependencies.py
+from typing import Annotated, AsyncGenerator
+import jwt  # PyJWT
+from fastapi import Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer
+from sqlalchemy.ext.asyncio import AsyncSession
+from app.config import settings
+from app.database import AsyncSessionLocal
+from app.models.user import User
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/users/token")
+
+async def get_db() -> AsyncGenerator[AsyncSession, None]:
+    async with AsyncSessionLocal() as session:
+        try:
+            yield session
+        except Exception:
+            await session.rollback()
+            raise
+
+async def get_current_user(
+    token: Annotated[str, Depends(oauth2_scheme)],
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> User:
+    unauthorized = HTTPException(status.HTTP_401_UNAUTHORIZED, "Could not validate credentials",
+                                 headers={"WWW-Authenticate": "Bearer"})
+    try:
+        payload = jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
+        user_id = int(payload["sub"])
+    except (jwt.PyJWTError, KeyError, TypeError, ValueError):
+        raise unauthorized
+    user = await db.get(User, user_id)
+    if user is None:
+        raise unauthorized
+    return user
+
+async def get_active_user(user: Annotated[User, Depends(get_current_user)]) -> User:
+    if not user.is_active:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Inactive user")
+    return user
+
+DbDep = Annotated[AsyncSession, Depends(get_db)]
+ActiveUserDep = Annotated[User, Depends(get_active_user)]
+```
+
+Keep authentication (401) and authorization (403) in different dependencies so that the status code is correct.
+
+### Service with database constraints
+
+```python
+from sqlalchemy.exc import IntegrityError
+
+class DuplicateUserError(Exception):
+    pass
+
+class UserService:
+    def __init__(self, db: AsyncSession) -> None:
+        self.db = db
+
+    async def create(self, payload: UserCreate) -> User:
+        user = User(email=payload.email, username=payload.username,
+                    hashed_password=hash_password(payload.password))
+        self.db.add(user)
+        try:
+            await self.db.commit()       # The unique index stops duplicates, also under concurrency
+        except IntegrityError as exc:
+            await self.db.rollback()
+            raise DuplicateUserError from exc
+        await self.db.refresh(user)
+        return user
+
+    async def list(self, skip: int, limit: int) -> tuple[list[User], int]:
+        total = (await self.db.execute(select(func.count(User.id)))).scalar_one()
+        rows = await self.db.execute(select(User).order_by(User.id).offset(skip).limit(limit))
+        return list(rows.scalars()), total
+```
+
+```python
+@router.post("/", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+async def create_user(payload: UserCreate, db: DbDep):
+    try:
+        return await UserService(db).create(payload)
+    except DuplicateUserError:
+        raise HTTPException(status.HTTP_409_CONFLICT, "Email already registered")
+```
+
+Do not check "email exists" before the insert. Two requests can pass that check at the same time. Use a unique index and catch `IntegrityError`.
+
+### Test fixtures with dependency overrides
+
+```python
+# tests/conftest.py
+import pytest_asyncio
+from httpx import ASGITransport, AsyncClient
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+from app.database import Base
+from app.dependencies import get_db
+from app.main import create_app
+
+engine = create_async_engine("sqlite+aiosqlite:///:memory:")
+TestingSession = async_sessionmaker(engine, expire_on_commit=False)
+
+@pytest_asyncio.fixture(autouse=True)
+async def setup_db():
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    yield
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
+
+@pytest_asyncio.fixture
+async def client():
+    app = create_app()
+    async def override_get_db():
+        async with TestingSession() as session:
+            yield session
+    app.dependency_overrides[get_db] = override_get_db
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        yield ac
+
+@pytest_asyncio.fixture
+async def auth_client(client: AsyncClient) -> AsyncClient:
+    await client.post("/users/", json={"email": "t@example.com", "username": "tester",
+                                       "password": "securepass1", "password_confirm": "securepass1"})
+    token = (await client.post("/users/token", data={"username": "t@example.com", "password": "securepass1"})).json()["access_token"]
+    client.headers["Authorization"] = f"Bearer {token}"
+    return client
+```
+
+### Anti-patterns
+
+- Business logic (hashing, commits) in route handlers. Keep the route thin and put the logic in a service.
+- A sync `Session` in an `async def` route. It blocks the event loop. Use `AsyncSession` and `await db.execute(...)`.
+- No `response_model`. Always declare it so that private fields do not leak and the OpenAPI schema is correct.
+- Offset pagination without `order_by`. Rows can be skipped or repeated between pages.
+
 ## Rules & Patterns
 - **Async‑first**: Declare all route handlers with `async def`. Use `await` for DB calls.
 - **ORM mode**: Set `model_config = ConfigDict(from_attributes=True)` on response schemas so Pydantic can read SQLAlchemy objects.

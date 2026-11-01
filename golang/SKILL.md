@@ -1,6 +1,6 @@
 ---
 name: golang
-description: "Provides expert guidance for Go 1.21+ development, covering concurrency patterns, performance tuning, microservice architecture, testing, DevOps, and security best practices. Use when writing or debugging Go code in .go files, using go.mod, go test, gofmt, go vet, golangci-lint, goroutines, channels, context, HTTP servers, gRPC, SQL, Docker, Kubernetes, or fixing race conditions, deadlocks, nil panics, and build errors."
+description: "Provides expert guidance for Go 1.21+ development, covering concurrency patterns, performance tuning, microservice architecture, testing, DevOps, and security best practices. Use when writing or debugging Go code in .go files, using go.mod, go test, gofmt, go vet, golangci-lint, goroutines, channels, context, HTTP servers, gRPC, SQL, Docker, Kubernetes, or fixing race conditions, deadlocks, nil panics, and build errors. Sub-skills: golang-patterns, golang-testing."
 ---
 
 # golang
@@ -139,6 +139,15 @@ ENTRYPOINT ["/app"]
 - [ ] Scan code for security issues with `gosec` or `trivy`.
 - [ ] Review error handling: wrap errors, use `errors.Is`/`As`.
 - [ ] Document public APIs and architectural decisions.
+
+## Sub-skills
+
+Read a sub-skill file only when the task needs it.
+
+| File | Use when |
+|------|----------|
+| [references/golang-patterns.md](references/golang-patterns.md) | Write or review idiomatic Go: zero values, accept interfaces and return structs, error wrapping with `errors.Is`/`As`, worker pools, errgroup, goroutine leaks, graceful shutdown, functional options, `sync.Pool`, package naming, `.golangci.yml`, and anti-patterns. |
+| [references/golang-testing.md](references/golang-testing.md) | Write Go tests with TDD: table-driven tests, subtests, `t.Helper`/`t.Cleanup`, golden files, interface mocks, benchmarks, fuzzing, `httptest` handlers, coverage targets, and CI. |
 
 ## Related skills
 

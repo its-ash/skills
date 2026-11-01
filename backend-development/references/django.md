@@ -181,6 +181,262 @@ def test_order_list():
 - For SPA frontends, expose APIs via DRF and host the compiled bundle with **django-webpack-loader** or serve from a separate static host.
 - Implement **server‑side rendering** for SEO‑critical pages when using React/Vue with frameworks like **Next.js**.
 
+## Code Patterns
+
+### Project layout and split settings
+
+```
+myproject/
+├── config/
+│   ├── settings/
+│   │   ├── base.py          # Shared settings
+│   │   ├── development.py   # from .base import *; DEBUG = True; debug_toolbar
+│   │   ├── production.py    # from .base import *; HTTPS, HSTS, env.list('ALLOWED_HOSTS')
+│   │   └── test.py
+│   ├── urls.py
+│   ├── wsgi.py
+│   └── asgi.py
+├── manage.py
+└── apps/
+    └── products/
+        ├── models.py
+        ├── views.py
+        ├── serializers.py
+        ├── urls.py
+        ├── permissions.py
+        ├── filters.py
+        ├── services.py
+        └── tests/
+```
+
+In `base.py`, keep `DEBUG = False` and read `SECRET_KEY` and database values from the environment. Each environment file imports `base` and changes only what is different.
+
+### Model with indexes and constraints
+
+```python
+from django.db import models
+from django.core.validators import MinValueValidator
+from django.utils.text import slugify
+
+class Product(models.Model):
+    name = models.CharField(max_length=200)
+    slug = models.SlugField(unique=True, max_length=250)
+    price = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0)])
+    stock = models.PositiveIntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+    category = models.ForeignKey('Category', on_delete=models.PROTECT, related_name='products')
+    tags = models.ManyToManyField('Tag', blank=True, related_name='products')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    objects = ProductQuerySet.as_manager()
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['-created_at']),
+            models.Index(fields=['category', 'is_active']),
+        ]
+        constraints = [
+            models.CheckConstraint(condition=models.Q(price__gte=0), name='price_non_negative'),  # Django < 5.1: check=
+        ]
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.name)
+        super().save(*args, **kwargs)
+```
+
+### Chainable QuerySet
+
+```python
+class ProductQuerySet(models.QuerySet):
+    def active(self):
+        return self.filter(is_active=True)
+
+    def in_stock(self):
+        return self.filter(stock__gt=0)
+
+    def with_relations(self):
+        return self.select_related('category').prefetch_related('tags')
+
+    def search(self, q: str):
+        return self.filter(models.Q(name__icontains=q) | models.Q(description__icontains=q))
+
+# Product.objects.active().in_stock().with_relations()
+```
+
+A custom QuerySet is better than a Manager with one-off methods because each method can chain with the others.
+
+### DRF serializers
+
+```python
+from rest_framework import serializers
+from django.contrib.auth.password_validation import validate_password
+
+class ProductSerializer(serializers.ModelSerializer):
+    category_name = serializers.CharField(source='category.name', read_only=True)
+    discount_price = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Product
+        fields = ['id', 'name', 'slug', 'price', 'discount_price', 'stock', 'category_name', 'created_at']
+        read_only_fields = ['id', 'slug', 'created_at']
+
+    def get_discount_price(self, obj):
+        discount = getattr(obj, 'discount', None)
+        return obj.price * (1 - discount.percent / 100) if discount else obj.price
+
+class UserRegistrationSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(write_only=True, validators=[validate_password])
+    password_confirm = serializers.CharField(write_only=True)
+
+    class Meta:
+        model = User
+        fields = ['email', 'username', 'password', 'password_confirm']
+
+    def validate(self, data):
+        if data['password'] != data['password_confirm']:
+            raise serializers.ValidationError({'password_confirm': 'Passwords do not match.'})
+        return data
+
+    def create(self, validated):
+        validated.pop('password_confirm')
+        return User.objects.create_user(**validated)   # Hashes the password
+```
+
+List the fields explicitly. Do not use `fields = '__all__'` on models that have sensitive columns.
+
+### ViewSet with filters and custom actions
+
+```python
+from rest_framework import viewsets, filters, status
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from django_filters.rest_framework import DjangoFilterBackend
+
+class ProductViewSet(viewsets.ModelViewSet):
+    queryset = Product.objects.with_relations()
+    permission_classes = [IsAuthenticated, IsOwnerOrReadOnly]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_class = ProductFilter
+    search_fields = ['name', 'description']
+    ordering_fields = ['price', 'created_at', 'name']
+
+    def get_serializer_class(self):
+        return ProductCreateSerializer if self.action == 'create' else ProductSerializer
+
+    def perform_create(self, serializer):
+        serializer.save(created_by=self.request.user)
+
+    @action(detail=True, methods=['post'])
+    def purchase(self, request, pk=None):
+        order = OrderService.purchase(self.get_object(), request.user)
+        return Response(OrderSerializer(order).data, status=status.HTTP_201_CREATED)
+
+    @action(detail=False, methods=['get'])
+    def mine(self, request):
+        page = self.paginate_queryset(self.get_queryset().filter(created_by=request.user))
+        return self.get_paginated_response(self.get_serializer(page, many=True).data)
+```
+
+### Service layer with a transaction
+
+```python
+# apps/orders/services.py
+from django.db import transaction
+
+class OrderService:
+    @staticmethod
+    @transaction.atomic
+    def create_order(user, cart) -> Order:
+        order = Order.objects.create(user=user, total_price=cart.total_price)
+        OrderItem.objects.bulk_create([
+            OrderItem(order=order, product=i.product, quantity=i.quantity, price=i.product.price)
+            for i in cart.items.select_related('product')
+        ])
+        cart.items.all().delete()
+        transaction.on_commit(lambda: send_order_confirmation.delay(order.pk))  # Email only after commit
+        return order
+```
+
+Call external payment or email services outside the transaction, or with `transaction.on_commit`.
+
+### Caching
+
+```python
+from django.core.cache import cache
+from django.views.decorators.cache import cache_page
+from django.utils.decorators import method_decorator
+
+@method_decorator(cache_page(60 * 15), name='dispatch')   # Whole view, 15 minutes
+class ProductListView(generic.ListView):
+    model = Product
+
+def featured_products():
+    # get_or_set calls the function only on a cache miss
+    return cache.get_or_set('featured_products', lambda: list(Product.objects.active().filter(is_featured=True)), 60 * 15)
+```
+
+```django
+{% load cache %}
+{% cache 500 sidebar request.user.id %}
+    ... expensive sidebar ...
+{% endcache %}
+```
+
+Remove or change the cache key when the data changes. For Redis patterns, see `database-design/references/redis.md`.
+
+### Signals
+
+```python
+# apps/users/signals.py
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+
+@receiver(post_save, sender=User)
+def create_profile(sender, instance, created, **kwargs):
+    if created:
+        Profile.objects.create(user=instance)
+
+# apps/users/apps.py
+class UsersConfig(AppConfig):
+    name = 'apps.users'
+    def ready(self):
+        from . import signals  # noqa: F401
+```
+
+Use signals only for actions that are not part of the main business flow. Signals hide control flow; put business steps in the service layer.
+
+### Middleware
+
+```python
+import logging, time
+logger = logging.getLogger(__name__)
+
+class RequestTimingMiddleware:
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        start = time.perf_counter()
+        response = self.get_response(request)
+        logger.info('%s %s %s %.3fs', request.method, request.path, response.status_code, time.perf_counter() - start)
+        return response
+```
+
+Do not write to the database on each request in middleware (for example a `last_active` update). Throttle it or use the cache.
+
+### Bulk operations
+
+```python
+Product.objects.bulk_create([Product(name=f'Product {i}', price=10) for i in range(1000)], batch_size=500)
+Product.objects.bulk_update(products, ['is_active'], batch_size=500)
+Product.objects.filter(stock=0).update(is_active=False)   # One UPDATE statement
+```
+
+`bulk_create`, `bulk_update`, and `update()` do not call `save()` or send `post_save` signals.
+
 ## Common Pitfalls
 - Mixing sync and async code without proper adapters leads to thread‑blocking; keep async views isolated.
 - Over‑using third‑party packages; prefer built‑in Django features first.
@@ -207,6 +463,9 @@ def test_order_list():
 
 Load these when the task spans more than this skill.
 
+- [`django-celery`](django-celery.md) — Celery configuration, task design, retries, beat schedules, canvas workflows, and task tests.
+- [`django-security`](django-security.md) — Production settings, authentication, permissions, CSRF, XSS, SQL injection, uploads, and security headers.
+- [`django-testing`](django-testing.md) — pytest-django, factory_boy, DRF API tests, and the verification loop before a PR or deploy.
 - [`python`](../../python/SKILL.md) — Guidance for modern Python 3.12+ development. Includes framework selection, async vs sync decisions, project l…
 - [`backend-development`](../SKILL.md) — Guidance for designing, building, and operating scalable backend services and APIs. Covers REST GraphQL gRPC A…
 - [`database-optimization`](../../database-design/references/database-optimization.md) — Expert database optimization for SQL and NoSQL systems. Use for query tuning, indexing strategies, performance…

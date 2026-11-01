@@ -199,6 +199,134 @@ Respect the user’s system setting.
 - Validate markup with the W3C validator.
 - Prefer native elements over ARIA‑only roles.
 
+## WCAG 2.2 Additions
+| Criterion | Rule |
+|-----------|------|
+| 2.4.11 Focus Not Obscured | A sticky header, banner, or overlay must not hide the focused element. |
+| 2.5.7 Dragging Movements | Give a single-pointer alternative (buttons, click-to-move) for each drag action. |
+| 2.5.8 Target Size (Minimum) | Interactive targets are at least **24x24 CSS px** (native apps: 44x44 pt iOS, 48x48 dp Android). |
+| 3.3.3 Error Suggestion | Error text tells the user how to correct the input. |
+| 3.3.7 Redundant Entry | Do not ask for the same data two times in one process; prefill or let the user select it. |
+| 1.4.10 Reflow | Content reflows at 400% zoom with no loss of function. |
+
+## Cross-Platform Mapping (Web, iOS, Android)
+| Feature | Web (HTML/ARIA) | iOS (SwiftUI) | Android (Compose) |
+|---------|-----------------|---------------|-------------------|
+| Primary label | `aria-label` / `<label>` | `.accessibilityLabel()` | `contentDescription` |
+| Secondary hint | `aria-describedby` | `.accessibilityHint()` | `Modifier.semantics { stateDescription = ... }` |
+| Action role | `role="button"` | `.accessibilityAddTraits(.isButton)` | `Modifier.semantics { role = Role.Button }` |
+| Live updates | `aria-live="polite"` | `.accessibilityLiveRegion(.polite)` | `Modifier.semantics { liveRegion = LiveRegionMode.Polite }` |
+
+```swift
+Button(action: deleteItem) { Image(systemName: "trash") }
+  .accessibilityLabel("Delete item")
+  .accessibilityHint("Permanently removes this item from your list")
+```
+
+## React and Next.js Patterns
+### Forms: required fields and linked errors
+```tsx
+<label htmlFor="email">
+  Email <span aria-hidden="true">*</span>
+</label>
+<input
+  id="email"
+  type="email"
+  required
+  aria-required="true"
+  aria-invalid={!!error}
+  aria-describedby={error ? 'email-error' : undefined}
+  autoComplete="email"
+/>
+{error && <span id="email-error" role="alert">{error}</span>}
+```
+- In JSX, use `htmlFor`, not `for`.
+- A visual asterisk alone gives no data to a screen reader. Add `required` and `aria-required`.
+- Link the error text with `aria-describedby` and set `aria-invalid`.
+
+### aria-label or aria-labelledby
+```tsx
+// No visible text: aria-label
+<button aria-label="Close modal"><XIcon aria-hidden="true" /></button>
+
+// Visible heading exists: aria-labelledby
+<section aria-labelledby="orders-title">
+  <h2 id="orders-title">Recent Orders</h2>
+</section>
+```
+
+### Accordion with useId
+```tsx
+export function Accordion({ title, children }: { title: string; children: React.ReactNode }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const contentId = useId();
+  return (
+    <div>
+      <button aria-expanded={isOpen} aria-controls={contentId} onClick={() => setIsOpen(o => !o)}>
+        {title}
+      </button>
+      <div id={contentId} hidden={!isOpen}>{children}</div>
+    </div>
+  );
+}
+```
+
+### Custom dropdown keyboard support
+```tsx
+const handleKeyDown = (e: React.KeyboardEvent) => {
+  switch (e.key) {
+    case 'ArrowDown': e.preventDefault(); setActive(i => Math.min(i + 1, options.length - 1)); break;
+    case 'ArrowUp': e.preventDefault(); setActive(i => Math.max(i - 1, 0)); break;
+    case 'Enter':
+    case ' ': e.preventDefault(); if (isOpen) onSelect(options[active]); setIsOpen(o => !o); break;
+    case 'Escape': setIsOpen(false); break;
+  }
+};
+// Container: role="combobox" aria-expanded aria-haspopup="listbox" aria-controls={listId} tabIndex={0}
+// Items: role="option" aria-selected={index === active}
+```
+
+### Modal focus restore
+```tsx
+useEffect(() => {
+  if (isOpen) {
+    previousFocusRef.current = document.activeElement as HTMLElement;
+    modalRef.current?.focus();
+  } else {
+    previousFocusRef.current?.focus();
+  }
+}, [isOpen]);
+// <div ref={modalRef} role="dialog" aria-modal="true" aria-labelledby="modal-title" tabIndex={-1}
+//      onKeyDown={e => e.key === 'Escape' && onClose()}>
+```
+For a full Tab/Shift+Tab focus trap, use a library such as `focus-trap-react`. Also restore focus to the trigger when a dropdown or menu closes.
+
+### Reduced-motion hook
+```tsx
+export function useReducedMotion(): boolean {
+  const [reduced, setReduced] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    setReduced(mq.matches);
+    const onChange = (e: MediaQueryListEvent) => setReduced(e.matches);
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
+  return reduced;
+}
+```
+
+### Anti-patterns
+```tsx
+<div aria-label="Navigation">...</div>          // aria-label on a div with no role
+<button tabIndex={3}>Submit</button>            // positive tabIndex breaks tab order
+<button aria-hidden="true">Open</button>        // focusable element hidden from screen readers
+<div role="button" onClick={go}>Submit</div>    // no tabIndex={0}, no Enter/Space handler
+<h1>Dashboard</h1><h4>Recent</h4>               // skipped heading levels
+```
+- Do not show status with color only (for example, a red border with no text).
+- Do not write "Image of..." in alt text. The screen reader already announces "image".
+
 ## Testing Checklist
 ### Automated Tests
 ```bash

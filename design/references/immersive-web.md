@@ -4,6 +4,8 @@
 
 Create web experiences that feel like a narrative journey. Combine scroll‑driven animations, parallax depth, sticky sections, and WebGL 3D to turn a page into an interactive story.
 
+For the full API references, see [`threejs.md`](threejs.md) (Three.js and React Three Fiber) and [`gsap.md`](gsap.md) (GSAP and ScrollTrigger).
+
 ## When to use
 - Long‑form articles or product pages that benefit from visual storytelling.
 - Landing pages that need cinematic impact without sacrificing performance.

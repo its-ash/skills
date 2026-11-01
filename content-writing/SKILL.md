@@ -1,6 +1,6 @@
 ---
 name: content-writing
-description: "Guides brand-voice creation, SEO blog drafting, social-media post production, content-calendar planning, and collaborative research-writing. Use when drafting blog posts, LinkedIn or X/Twitter posts, Instagram captions, TikTok scripts, Facebook updates, content calendars, keyword research, cited long-form articles, repurposing content, content plans, platform strategy, hook ideas, templates, or performance checklists. Sub-skills: copywriting."
+description: "Guides brand-voice creation, SEO blog drafting, social-media post production, content-calendar planning, and collaborative research-writing. Use when drafting blog posts, LinkedIn or X/Twitter posts, Instagram captions, TikTok scripts, Facebook updates, content calendars, keyword research, cited long-form articles, repurposing content, content plans, platform strategy, hook ideas, voice profiles, crossposting, X API or SocialClaw publishing, lead and warm-intro outreach, network cleanup, pitch decks, investor emails, or launch campaigns. Sub-skills: copywriting, social-content, brand-voice, article-writing, social-publishing, lead-intelligence, investor-materials, marketing-campaign."
 ---
 
 # Content Writing
@@ -259,12 +259,20 @@ Read a sub-skill file only when the task needs it.
 
 | File | Use when |
 |------|----------|
-| [references/social-content.md](references/social-content.md) | Creates, schedules, and optimizes social media posts for LinkedIn, X/Twitter, Instagram, TikTok, Facebook and similar platforms. Use it when you need a content plan, platform‑specific strategy, hook ideas, templates, repurposing workflow, or performance checklist. |
+| [references/social-content.md](references/social-content.md) | Creates, schedules, and optimizes social media posts for LinkedIn, X/Twitter, Instagram, TikTok, Facebook, Threads, Bluesky and similar platforms. Use it when you need a content plan, platform‑specific strategy, hook ideas, templates, source-first repurposing, crossposting, or performance checklist. |
+| [references/copywriting.md](references/copywriting.md) | Creates clear, compelling marketing copy for webpages including home, landing, pricing, feature, about, and product pages, with headline formulas, CTA guidance, page structure, and editing checklists. Use when drafting or rewriting website copy, hero sections, value propositions, calls to action, product messaging, landing page headlines, or conversion-focused content. |
+| [references/brand-voice.md](references/brand-voice.md) | Build a reusable `VOICE PROFILE` from real posts, essays, emails, or site copy, plus the shared hard-ban list. Use before any voice-sensitive writing or outreach. |
+| [references/article-writing.md](references/article-writing.md) | Write articles, guides, tutorials, essays, and newsletters in a distinct voice with proof-first structure. |
+| [references/social-publishing.md](references/social-publishing.md) | Post, read, search, and schedule through the X API or SocialClaw (13 platforms), with auth, rate limits, approval, and untrusted-content rules. |
+| [references/lead-intelligence.md](references/lead-intelligence.md) | Find and score leads, rank mutuals by bridge value, find warm intro paths, clean up X or LinkedIn networks, and draft channel-specific outreach. |
+| [references/investor-materials.md](references/investor-materials.md) | Pitch decks, one-pagers, memos, financial models, accelerator applications, investor cold emails, intro blurbs, follow-ups, and updates. |
+| [references/marketing-campaign.md](references/marketing-campaign.md) | Plan a multi-channel launch: research, positioning, landing page, email sequence, social posts, video scripts, ad copy, and calendar. |
 
 ## Related skills
 
 Load these when the task spans more than this skill.
 
-- [`copywriting`](references/copywriting.md) — Creates clear, compelling marketing copy for webpages (home, landing, pricing, feature, about, product) and pr…
 - [`seo`](../seo/SKILL.md) — SEO provides a complete audit and optimization guide covering technical SEO, on-page elements, content quality…
-| [references/copywriting.md](references/copywriting.md) | Creates clear, compelling marketing copy for webpages including home, landing, pricing, feature, about, and product pages, with headline formulas, CTA guidance, page structure, and editing checklists. Use when drafting or rewriting website copy, hero sections, value propositions, calls to action, product messaging, landing page headlines, or conversion-focused content. |
+- [`product-strategy`](../product-strategy/SKILL.md) — Market research, competitive analysis, positioning, and brand discovery before campaigns.
+- [`research`](../research/SKILL.md) — Cited multi-source research and Exa search for lead enrichment and article sources.
+- [`video-production`](../video-production/SKILL.md) — Edit and produce short-form and launch videos from scripts.

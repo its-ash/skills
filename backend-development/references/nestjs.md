@@ -250,6 +250,133 @@ grep -q "@nestjs/jwt" package.json && echo "JWT present"
   }
   ```
 
+## Production Structure & Defaults
+
+### Project layout
+
+```text
+src/
+├── app.module.ts
+├── main.ts
+├── common/            # Shared filters, guards, interceptors, pipes, decorators
+├── config/
+│   ├── configuration.ts
+│   └── validation.ts
+├── modules/
+│   ├── auth/          # controller, module, service, dto/, guards/, strategies/
+│   └── users/         # controller, module, service, dto/, entities/
+└── prisma/ or database/
+```
+
+- Keep domain code in feature modules. Keep DTOs near the module that owns them.
+- Put only cross-cutting code in `common/`.
+
+### Bootstrap
+
+```ts
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule, { bufferLogs: true });
+  app.useGlobalPipes(new ValidationPipe({
+    whitelist: true,
+    forbidNonWhitelisted: true,
+    transform: true,
+    transformOptions: { enableImplicitConversion: true },
+  }));
+  app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
+  app.useGlobalFilters(new AllExceptionsFilter());
+  app.enableShutdownHooks();
+  await app.listen(process.env.PORT ?? 3000);
+}
+bootstrap();
+```
+
+Use one global validation pipe. Do not repeat the validation options on each route.
+
+### Thin controllers and response DTOs
+
+```ts
+@Controller('users')
+export class UsersController {
+  constructor(private readonly users: UsersService) {}
+
+  @Get(':id')
+  getById(@Param('id', ParseUUIDPipe) id: string): Promise<UserResponseDto> {
+    return this.users.getById(id);
+  }
+
+  @Post()
+  create(@Body() dto: CreateUserDto): Promise<UserResponseDto> {
+    return this.users.create(dto);
+  }
+}
+
+export class CreateUserDto {
+  @IsEmail() email!: string;
+  @IsString() @Length(2, 80) name!: string;
+  @IsOptional() @IsEnum(UserRole) role?: UserRole;
+}
+```
+
+- A controller parses HTTP input, calls a provider, and returns a response DTO.
+- Do not return ORM entities directly. Password hashes, tokens, and audit columns can leak.
+- Export only the providers that other modules need.
+
+### Guards and resource checks
+
+```ts
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('admin')
+@Get('admin/report')
+getAdminReport(@Req() req: AuthenticatedRequest) {
+  return this.reports.getForUser(req.user.id);
+}
+```
+
+Put coarse access rules (role, authenticated) in guards. Put checks for one resource (for example "is this the owner?") in the service.
+
+### One error envelope for all errors
+
+```ts
+@Catch()
+export class AllExceptionsFilter implements ExceptionFilter {
+  private readonly logger = new Logger(AllExceptionsFilter.name);
+
+  catch(exception: unknown, host: ArgumentsHost) {
+    const ctx = host.switchToHttp();
+    const res = ctx.getResponse<Response>();
+    const req = ctx.getRequest<Request>();
+    if (exception instanceof HttpException) {
+      return res.status(exception.getStatus()).json({ path: req.url, error: exception.getResponse() });
+    }
+    this.logger.error(exception);
+    return res.status(500).json({ path: req.url, error: 'Internal server error' });
+  }
+}
+```
+
+`@Catch(HttpException)` catches only HTTP errors. `@Catch()` also catches unexpected errors, so no stack trace goes to the client.
+
+### Config validated at boot
+
+```ts
+ConfigModule.forRoot({ isGlobal: true, load: [configuration], validate: validateEnv });
+```
+
+- Validate the environment at startup, not at the first request. Stop the app if the config is not valid.
+- Read config through typed helpers or a config service.
+
+### Persistence and tests
+
+- Put ORM code behind providers that use domain terms. The service that owns the unit of work also owns the transaction (Prisma `$transaction`, TypeORM `DataSource.transaction`). Controllers must not coordinate many writes.
+- In e2e tests, use the same global pipes, interceptors, and filters as in `main.ts`. Put them in a shared `configureApp(app)` function and call it in both places.
+
+### Production defaults
+
+- Structured logs with a request correlation ID.
+- Async provider setup for database and cache clients, with health checks (`@nestjs/terminus`).
+- Background jobs and event consumers in their own modules, not in HTTP controllers.
+- Explicit rate limiting (`@nestjs/throttler`), auth, and audit logs on public endpoints.
+
 ## Checklist for Review
 - **Modules**
   - [ ] All services have `@Injectable()`.

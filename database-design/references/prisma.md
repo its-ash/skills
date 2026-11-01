@@ -249,6 +249,99 @@ await prisma.post.update({
 });
 ```
 
+## Production patterns and traps
+Check the version first (`npx prisma --version`). The API changed across major releases:
+- `relationJoins` can load relations with one JOIN. On large 1:N relations or deep `include`, the result can get very large. Measure both methods.
+- `omit` and Client Extensions (`prisma.$extends`) are in newer releases.
+- Newer installs can need a driver adapter (for example `@prisma/adapter-pg`) in the `PrismaClient` constructor, and the datasource URL can be in `prisma.config.ts`.
+
+### ID strategy
+| Strategy | Use when | Avoid when |
+|---|---|---|
+| `@default(cuid())` | Default choice: URL-safe, no collisions | External systems need sequential IDs |
+| `@default(uuid())` | Other systems must read the IDs | High-write tables (random UUIDs fragment B-tree indexes) |
+| `@default(autoincrement())` | Join tables, audit logs | Public IDs (they show the record count) |
+
+`@unique` already creates an index; do not add `@@index` for the same field. If soft delete is likely, add `deletedAt DateTime?` and `@@index([deletedAt, createdAt])` at the start.
+
+### `include` or `select`, and response DTOs
+- `include` returns all scalar fields and the named relations. `select` returns only the named fields. Use `select` on hot paths and wide tables.
+- Do not return Prisma entities from an API. Map them to a DTO so that fields such as `passwordHash` do not leak.
+
+### Transaction form
+| Situation | Use |
+|---|---|
+| Independent operations | Array form `$transaction([...])` |
+| A step needs the result of an earlier step | Interactive form `$transaction(async (tx) => ...)`, and use only `tx` inside it |
+| External calls (email, HTTP) | Outside the transaction |
+
+### Singleton with a driver adapter
+```ts
+// lib/prisma.ts
+import { PrismaClient } from '@prisma/client';   // Or the generated client path
+import { PrismaPg } from '@prisma/adapter-pg';
+
+const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
+
+export const prisma =
+  globalForPrisma.prisma ??
+  new PrismaClient({
+    adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL! }),   // Remove on installs that do not need an adapter
+    log: process.env.NODE_ENV === 'development' ? ['query', 'error'] : ['error'],
+  });
+
+if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
+```
+Each `PrismaClient` opens its own pool. The `globalThis` cache stops new instances on hot reload.
+
+In serverless, put the pool settings in the URL: `?connection_limit=1&pool_timeout=20`, or `?pgbouncer=true&connection_limit=1` with an external pooler. Do not add parameters with string concatenation, because the URL can already have parameters such as `?schema=public`.
+
+### Stable cursor pagination
+```ts
+async function getPosts(cursor?: string, limit = 20) {
+  const items = await prisma.post.findMany({
+    where: { published: true },
+    orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],   // The unique second key keeps pages stable
+    take: limit + 1,
+    ...(cursor && { cursor: { id: cursor }, skip: 1 }),
+  });
+  const hasNextPage = items.length > limit;
+  if (hasNextPage) items.pop();
+  return { items, nextCursor: hasNextPage ? items[items.length - 1].id : null };
+}
+```
+
+### Error codes at the service boundary
+```ts
+import { Prisma } from '@prisma/client';
+
+try {
+  await prisma.user.create({ data: { email } });
+} catch (e) {
+  if (e instanceof Prisma.PrismaClientKnownRequestError) {
+    if (e.code === 'P2002') throw new ConflictError('Email already exists');    // Unique violation
+    if (e.code === 'P2025') throw new NotFoundError('Record not found');        // Not found
+    if (e.code === 'P2003') throw new BadRequestError('Referenced record does not exist');   // Foreign key
+  }
+  throw e;
+}
+```
+Do not show raw Prisma messages to API clients.
+
+### Traps
+- **`updateMany` and `deleteMany` return `{ count }`, not rows.** To get the rows, select the IDs first, update `where: { id: { in: ids } }`, then fetch those IDs.
+- **`deleteMany()` with no `where` deletes all rows.** Always give a `where`.
+- **`@updatedAt` does not change on `updateMany`.** Set `updatedAt: new Date()` in `data`.
+- **The interactive transaction times out after 5 seconds by default** ("Transaction already closed"). Move external calls out. Increase `timeout` only for real bulk work.
+- **`migrate dev` can reset the database** when it finds drift. Use it only on a local solo database. Use `migrate deploy` everywhere else. To check drift without changes:
+  ```bash
+  npx prisma migrate diff --from-migrations ./prisma/migrations \
+    --to-schema-datamodel ./prisma/schema.prisma --shadow-database-url "$SHADOW_DATABASE_URL"
+  ```
+- **Do not edit an applied migration file.** Prisma stores a checksum, and each environment that ran it fails with `P3006`. Write a new migration.
+- **Soft delete and `findUniqueOrThrow`:** it returns soft-deleted rows, and `{ id, deletedAt: null }` is not a unique input. Use `findFirstOrThrow({ where: { id, deletedAt: null } })`. Filter `deletedAt: null` explicitly; do not hide it in middleware.
+- **A breaking change (new `NOT NULL`, rename) needs more than one migration:** add the column, backfill it in a script or job, then add the constraint in a new migration. See `database-migration.md`.
+
 ## Checklist
 ### Schema quality
 - Every model has an `@id` field.

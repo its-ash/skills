@@ -149,6 +149,164 @@ export const user = createRouter()
 
 ---
 
+## REST Reference
+
+### URL and naming
+
+```
+# Plural, lowercase, kebab-case nouns
+GET    /api/v1/team-members
+GET    /api/v1/users/:id/orders        # Sub-resource for ownership
+POST   /api/v1/orders/:id/cancel       # Action that is not CRUD: use a verb only here
+POST   /api/v1/auth/refresh
+
+# BAD
+/api/v1/getUsers         # verb in URL
+/api/v1/user             # singular
+/api/v1/team_members     # snake_case in URL
+```
+
+### Method semantics
+
+| Method | Idempotent | Safe | Use for |
+|--------|-----------|------|---------|
+| GET | Yes | Yes | Read resources |
+| POST | No | No | Create resources, start actions |
+| PUT | Yes | No | Full replacement |
+| PATCH | No (can be made idempotent) | No | Partial update |
+| DELETE | Yes | No | Remove a resource |
+
+### Status codes
+
+```
+200 OK                    GET, PUT, PATCH with a body
+201 Created               POST (add a Location header)
+204 No Content            DELETE, or PUT without a body
+400 Bad Request           Malformed JSON or bad syntax
+401 Unauthorized          Missing or invalid authentication
+403 Forbidden             Authenticated, but not permitted
+404 Not Found             Resource does not exist
+409 Conflict              Duplicate entry or state conflict
+422 Unprocessable Entity  Valid JSON, but the data fails validation
+429 Too Many Requests     Rate limit exceeded (add Retry-After)
+500 Internal Server Error Unexpected failure (never show details)
+502 Bad Gateway           An upstream service failed
+503 Service Unavailable   Temporary overload (add Retry-After)
+```
+
+Do not return `200` with `"success": false`. Do not return `500` for validation errors. Return `201` with a `Location` header for a new resource.
+
+### Error with field details
+
+```json
+{
+  "error": {
+    "code": "validation_error",
+    "message": "Request validation failed",
+    "details": [
+      { "field": "email", "message": "Must be a valid email address", "code": "invalid_format" }
+    ]
+  }
+}
+```
+
+Use the envelope `{ data, meta, links }` for public APIs. Internal APIs can return the resource directly and use the HTTP status to show errors.
+
+### Pagination choice
+
+| Use case | Type |
+|----------|------|
+| Admin dashboards, small datasets (< 10K rows) | Offset |
+| Infinite scroll, feeds, large datasets | Cursor |
+| Public APIs | Cursor as default, offset as an option |
+| Search results | Offset (users expect page numbers) |
+
+```sql
+-- Cursor: fetch one extra row to calculate has_next
+SELECT * FROM users WHERE id > :cursor_id ORDER BY id ASC LIMIT 21;
+```
+
+Large `OFFSET` values are slow and give unstable pages when rows are inserted at the same time.
+
+### Filtering, sorting, sparse fields
+
+```
+GET /api/v1/orders?status=active&customer_id=abc-123
+GET /api/v1/products?price[gte]=10&price[lte]=100
+GET /api/v1/products?category=electronics,clothing
+GET /api/v1/products?sort=-featured,price,-created_at     # "-" means descending
+GET /api/v1/products?q=wireless+headphones
+GET /api/v1/users?fields=id,name,email
+```
+
+### Rate-limit headers and tiers
+
+```
+HTTP/1.1 200 OK
+X-RateLimit-Limit: 100
+X-RateLimit-Remaining: 95
+X-RateLimit-Reset: 1640000000
+
+HTTP/1.1 429 Too Many Requests
+Retry-After: 60
+```
+
+| Tier | Limit | Key |
+|------|-------|-----|
+| Anonymous | 30/min | IP |
+| Authenticated | 100/min | User |
+| Premium | 1000/min | API key |
+| Internal | 10000/min | Service |
+
+### Version lifecycle
+
+1. Start with `/api/v1/`. Keep a maximum of 2 active versions (current and previous).
+2. To deprecate, announce it (6 months for public APIs), send a `Sunset` header, and return `410 Gone` after the sunset date.
+3. Changes that do not break clients need no new version: new response fields, new optional query parameters, new endpoints.
+4. Changes that break clients need a new version: removed or renamed fields, changed field types, changed URL structure, changed authentication.
+
+### Example: validated create endpoint (TypeScript)
+
+```typescript
+import { z } from "zod";
+import { NextRequest, NextResponse } from "next/server";
+
+const createUserSchema = z.object({ email: z.string().email(), name: z.string().min(1).max(100) });
+
+export async function POST(req: NextRequest) {
+  const parsed = createUserSchema.safeParse(await req.json().catch(() => null));
+  if (!parsed.success) {
+    return NextResponse.json({
+      error: {
+        code: "validation_error",
+        message: "Request validation failed",
+        details: parsed.error.issues.map(i => ({ field: i.path.join("."), message: i.message, code: i.code })),
+      },
+    }, { status: 422 });
+  }
+  const user = await createUser(parsed.data);
+  return NextResponse.json({ data: user }, { status: 201, headers: { Location: `/api/v1/users/${user.id}` } });
+}
+```
+
+### Endpoint checklist
+
+- [ ] URL is plural, kebab-case, and has no verbs (except action endpoints)
+- [ ] Correct method and status codes
+- [ ] Input validated with a schema (Zod, Pydantic, Bean Validation)
+- [ ] Errors use the standard format with codes
+- [ ] List endpoints are paginated
+- [ ] Authentication required, or the endpoint is marked as public
+- [ ] Ownership checked (a user gets only their own resources)
+- [ ] Rate limit configured
+- [ ] No internal details (stack traces, SQL errors) in responses
+- [ ] Field case (camelCase or snake_case) is the same as other endpoints
+- [ ] OpenAPI spec updated
+
+For contract changes between teams, see `backend-development/references/contract-first.md`.
+
+---
+
 ## Common Pitfalls & Anti‑Patterns
 - Defaulting to REST for every use case.
 - Using verbs in endpoint paths (`/createUser`).

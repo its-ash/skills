@@ -1,6 +1,6 @@
 ---
 name: code-review
-description: "Reviews code changes for correctness, security, performance, maintainability, test coverage, and production readiness across pull requests, branch audits, and codebase inspections. Use when opening a pull request, PR, or merge request; running git diff, lint, or static analysis; hunting bugs, vulnerabilities, or code smells; assessing refactors, dependency updates, or breaking changes; checking test coverage gaps, documentation updates, or CI failures; resolving review comments, nits, or change requests; verifying deployment readiness after an incident or postmortem; conducting onboarding reviews or pair programming; and deciding LGTM, approval, or blocker status before merge."
+description: "Reviews code changes for correctness, security, performance, maintainability, test coverage, and production readiness across pull requests, branch audits, and codebase inspections. Use when opening a pull request, PR, or merge request; running git diff, lint, or static analysis; hunting bugs, vulnerabilities, or code smells; assessing refactors, dependency updates, or breaking changes; checking test coverage gaps, documentation updates, or CI failures; resolving review comments, nits, or change requests; verifying deployment readiness after an incident or postmortem; conducting onboarding reviews or pair programming; and deciding LGTM, approval, or blocker status before merge. Sub-skills: code-review-feedback, click-path-audit, change-impact, verification-loop."
 ---
 
 # Code Review
@@ -357,6 +357,9 @@ Read a sub-skill file only when the task needs it.
 | File | Use when |
 |------|----------|
 | [references/code-review-feedback.md](references/code-review-feedback.md) | Provides a concise workflow for requesting a code review and handling review feedback. Use when you finish a task, feature, or bug fix and need review, and when you receive review comments that must be verified, clarified, or acted upon. |
+| [references/click-path-audit.md](references/click-path-audit.md) | A button "does nothing" or UI state is wrong after a shared-store refactor: trace each handler call to find sequential undo, async races, stale closures, and dead paths. |
+| [references/change-impact.md](references/change-impact.md) | Before a cross-module, migration, auth, or public-interface change: map the blast radius from real evidence, then compare the plan with the actual diff. |
+| [references/verification-loop.md](references/verification-loop.md) | After a feature or refactor and before a PR: run build, types, lint, tests, security grep, and diff review, and write a PASS/FAIL report. |
 
 ## Related skills
 

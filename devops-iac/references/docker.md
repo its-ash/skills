@@ -206,6 +206,64 @@ docker buildx build --platform linux/amd64,linux/arm64 \
   -t myorg/app:latest --push .
 ```
 
+### Networking and Service Discovery
+Services in the same Compose network resolve by service name (`postgres://db:5432/app`, `redis://redis:6379/0`). Put the database on a back-end network only:
+```yaml
+services:
+  frontend:
+    networks: [frontend-net]
+  api:
+    networks: [frontend-net, backend-net]
+  db:
+    networks: [backend-net]        # api can reach it, frontend cannot
+    ports:
+      - "127.0.0.1:5432:5432"      # dev only: host access, not network access; omit in production
+networks:
+  frontend-net:
+  backend-net:
+```
+
+### Volume Strategies
+| Type | Use | Example |
+|------|-----|---------|
+| Named volume | Persistent data | `pgdata:/var/lib/postgresql/data` |
+| Bind mount | Source code for hot reload (dev) | `.:/app` |
+| Anonymous volume | Keep container content under a bind mount | `/app/node_modules`, `/app/.next` |
+| Init script mount | Seed the database at first start | `./scripts/init.sql:/docker-entrypoint-initdb.d/init.sql` |
+
+### Example `.dockerignore`
+```
+node_modules
+.git
+.env
+.env.*
+dist
+coverage
+*.log
+.next
+.cache
+docker-compose*.yml
+Dockerfile*
+tests/
+```
+
+### Debugging Commands
+```bash
+docker compose logs -f app              # follow logs
+docker compose logs --tail=50 db        # last 50 lines
+docker compose exec app sh              # shell in the container
+docker compose exec db psql -U postgres # database client
+docker compose ps && docker compose top # services and processes
+docker stats                            # resource use
+docker compose build --no-cache app     # full rebuild
+docker compose down -v                  # stop and remove volumes (DESTRUCTIVE)
+
+# Network problems
+docker compose exec app nslookup db
+docker compose exec app wget -qO- http://api:3000/health
+docker network inspect <project>_default
+```
+
 ## Pitfalls to Avoid
 - Copying source code before installing dependencies – breaks layer caching.
 - Missing or incomplete `.dockerignore` – inflates build context.
@@ -217,6 +275,10 @@ docker buildx build --platform linux/amd64,linux/arm64 \
 - Exposing unnecessary ports or using default bridge network for production.
 - Not defining resource limits – containers can consume all host resources.
 - Ignoring multi‑arch requirements when the target environment includes ARM devices.
+- Using `:latest` tags – pin versions for reproducible builds.
+- One large container for all services – use one process per container.
+- Data in a container with no volume – the data is lost on restart.
+- Plain `docker compose` as production orchestration for multi-container workloads – use Kubernetes, ECS, or Swarm.
 
 ## Checklist
 - **Dockerfile**

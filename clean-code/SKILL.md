@@ -1,6 +1,6 @@
 ---
 name: clean-code
-description: "Enforces pragmatic clean code standards for AI-assisted development covering naming, function design, structure, and anti-patterns via a mandatory deslop workflow that audits git diffs against main to strip AI-generated slop: excessive comments, defensive checks, type casts, inline imports, style inconsistencies. Use when writing, reviewing, refactoring, or linting code in any language, running git diff, git commit, or pull request reviews, fixing naming violations, simplifying functions, removing dead code, eliminating magic numbers, reducing cyclomatic complexity, or applying SOLID principles during code review, pre-commit hooks, CI pipelines, or pair programming."
+description: "Enforces pragmatic clean code standards for AI-assisted development covering naming, function design, structure, and anti-patterns via a mandatory deslop workflow that audits git diffs against main to strip AI-generated slop: excessive comments, defensive checks, type casts, inline imports, style inconsistencies. Use when writing, reviewing, refactoring, or linting code in any language, running git diff, git commit, or pull request reviews, fixing naming violations, simplifying functions, removing dead code, eliminating magic numbers, reducing cyclomatic complexity, or applying SOLID principles during code review, pre-commit hooks, CI pipelines, or pair programming. Sub-skills: coding-standards, inherit-legacy-style, codehealth-mcp."
 ---
 
 # Clean Code - Pragmatic Standards & Deslop Workflow
@@ -161,6 +161,16 @@ Use the project's configured tooling. Do not invent new scripts.
 | Run deslop on every change | Leave AI slop in the codebase |
 
 **Remember: The user wants working, clean code — not a programming lesson.**
+
+## Sub-skills
+
+Read a sub-skill file only when the task needs it.
+
+| File | Use when |
+|------|----------|
+| [references/coding-standards.md](references/coding-standards.md) | Need concrete TypeScript/JavaScript examples for naming, immutability, error handling, async, types, file layout, comments, and code smells. |
+| [references/inherit-legacy-style.md](references/inherit-legacy-style.md) | Onboard an AI agent onto a legacy codebase: extract the unwritten conventions into `.ai-style-rules.md` and stop style drift. |
+| [references/codehealth-mcp.md](references/codehealth-mcp.md) | Use the CodeScene Code Health MCP server to score a file before and after edits and to gate commits and PRs on maintainability. |
 
 ## Related skills
 

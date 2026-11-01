@@ -1,6 +1,6 @@
 ---
 name: python
-description: "Guidance for modern Python 3.12+ development covering project layout, async versus sync decisions, framework selection, uv/ruff/mypy tooling, testing, profiling, and deployment. Use when writing .py code, scaffolding pyproject.toml, choosing FastAPI/Django/Flask, debugging asyncio or asyncio.gather, configuring uv/ruff/mypy/pytest, optimizing performance, or deploying Python services."
+description: "Guidance for modern Python 3.12+ development covering project layout, async versus sync decisions, framework selection, uv/ruff/mypy tooling, testing, profiling, and deployment. Use when writing .py code, scaffolding pyproject.toml, choosing FastAPI/Django/Flask, debugging asyncio or asyncio.gather, configuring uv/ruff/mypy/pytest, optimizing performance, or deploying Python services. Sub-skills: python-patterns, python-testing, windows-installer."
 ---
 
 # Python Development (Modern 3.12+)
@@ -276,6 +276,16 @@ async def test_create_user():
 - `FastAPI` – modern async web framework.
 - `pytest`, `pytest‑asyncio`, `hypothesis` – testing ecosystem.
 - `cProfile`, `py‑spy`, `memory_profiler` – profiling tools.
+
+## Sub-skills
+
+Read a sub-skill file only when the task needs it.
+
+| File | Use when |
+|------|----------|
+| [references/python-patterns.md](references/python-patterns.md) | Write or review idiomatic Python: PEP 8, type hints and Protocols, EAFP, exception chaining, context managers, generators, data classes, decorators, threads vs processes vs asyncio, package layout, `__slots__`, and anti-patterns. |
+| [references/python-testing.md](references/python-testing.md) | Write pytest tests with TDD: fixtures and scopes, `conftest.py`, parametrization, markers, `unittest.mock` and autospec, async tests with httpx and lifespan, `tmp_path`, and coverage config. |
+| [references/windows-installer.md](references/windows-installer.md) | Ship a Python app as a minimal, fast-starting Windows installer: Nuitka standalone compile, 32-bit vs 64-bit, `dist` slimming, DLL analysis, VC++ runtime, and Inno Setup script. |
 
 ## Related skills
 

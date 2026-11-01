@@ -397,7 +397,169 @@ Need to respond to something?
 
 ---
 
-## 15. References (official docs & community)
+## 15. More Patterns
+
+### Render is a pure function
+Calculate derived values during render. Do not copy them into state with an effect. That adds a render, can go out of sync, and hides the data flow.
+```tsx
+// Good
+function Cart({ items }: { items: CartItem[] }) {
+  const total = items.reduce((sum, i) => sum + i.price * i.qty, 0);
+  return <span>{formatMoney(total)}</span>;
+}
+```
+- Put effects, mutations, network calls, and subscriptions in event handlers or `useEffect`. Never put them in the render body.
+- Use the functional updater (`setX(prev => prev + 1)`) when new state depends on old state.
+- Default: do not memoize. Add `useMemo`/`useCallback` only when the profiler or a dependency chain shows a need.
+- Extract a custom hook only when the same hook sequence is in 2 or more components.
+
+### State location decision tree
+```
+Used by one component?                          -> useState inside it
+Used by parent + a few descendants?             -> lift to nearest common ancestor
+Used across distant branches, low-frequency     -> React Context (theme, auth, locale)
+High-frequency updates shared across the tree?  -> external store (Zustand, Jotai, Redux Toolkit)
+Derived from a server?                          -> server-state library (TanStack Query, SWR, RSC fetch)
+```
+Most pages do not need context or a global store.
+
+### Server / client boundaries
+```tsx
+// Server Component: default, async, ships no JS for itself
+export default async function ProductPage({ params }: { params: { id: string } }) {
+  const product = await db.product.findUnique({ where: { id: params.id } });
+  if (!product) notFound();
+  return <ProductView product={product} />;
+}
+
+// Client Component
+"use client";
+export function AddToCartButton({ productId }: { productId: string }) {
+  const [pending, startTransition] = useTransition();
+  return (
+    <button disabled={pending} onClick={() => startTransition(() => addToCart(productId))}>
+      {pending ? "Adding..." : "Add to cart"}
+    </button>
+  );
+}
+```
+- Server to client: pass serializable props or `children`.
+- Client to server: call Server Actions with `<form action={...}>` or from event handlers.
+- Do not `import` a Server Component into a Client Component file. Compose them with `children`.
+
+### Suspense + error boundaries
+```tsx
+<ErrorBoundary fallback={<ErrorView />}>
+  <Suspense fallback={<UserSkeleton />}>
+    <UserDetail id={id} />
+  </Suspense>
+</ErrorBoundary>
+```
+- Put Suspense boundaries near the data, not at the route root. This shows content progressively.
+- Error boundaries are a class API. Use `react-error-boundary` for a hook-friendly wrapper.
+- A boundary catches errors in render, lifecycle methods, and constructors. It does not catch errors in event handlers or async code.
+
+### Forms
+React 19 form action with validation:
+```tsx
+"use client";
+import { useActionState } from "react";
+
+const initial = { error: null as string | null };
+
+async function updateUserAction(_prev: typeof initial, formData: FormData) {
+  "use server";
+  const parsed = UserSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return { error: "Invalid input" };
+  await db.user.update({ where: { id: parsed.data.id }, data: parsed.data });
+  return { error: null };
+}
+
+export function UserForm() {
+  const [state, formAction, pending] = useActionState(updateUserAction, initial);
+  return (
+    <form action={formAction}>
+      <input name="name" required />
+      <button type="submit" disabled={pending}>Save</button>
+      {state.error && <p role="alert">{state.error}</p>}
+    </form>
+  );
+}
+```
+- Use controlled inputs when the value drives other UI, formats on each keystroke, or has live validation.
+- For multi-step forms, dynamic field arrays, or cross-field validation, use a library (React Hook Form, TanStack Form).
+
+### Data fetching decision matrix
+| Need | Tool |
+|---|---|
+| Per-request data in Next.js App Router | RSC `await fetch()` |
+| Client cache + mutations + invalidation | TanStack Query |
+| Lightweight client cache + revalidation | SWR |
+| Real-time subscriptions | SSE, WebSockets, or the library subscription API |
+| One-off fire-and-forget | `fetch()` in an event handler |
+
+Do not use `useEffect` + `fetch` for application data. It has race conditions, no cache, no retry, and no Suspense support.
+
+### When `React.memo` helps
+Use `React.memo` only when all three are true:
+1. The component re-renders frequently.
+2. Its props are usually the same between renders.
+3. Its render is measurably expensive.
+
+If props change on most renders, the equality check is only overhead.
+
+### Avoid render cascades
+- Move state down where possible.
+- Split context: one context per concern. A theme change must not re-render auth consumers.
+- Use `useSyncExternalStore` for external stores. Concurrent rendering needs it.
+- Virtualize lists with `@tanstack/react-virtual` or `react-window` when more than about 50 non-trivial rows are visible.
+
+```tsx
+// ThemeContext changes rarely, NotificationsContext changes often.
+// A ThemeContext-only consumer does not re-render on new notifications.
+const ThemeContext = createContext<Theme>("light");
+const NotificationsContext = createContext<Notification[]>([]);
+```
+
+### Optimistic UI with `useOptimistic`
+```tsx
+"use client";
+import { useOptimistic } from "react";
+
+export function MessageList({ messages }: { messages: Message[] }) {
+  const [optimistic, addOptimistic] = useOptimistic(
+    messages,
+    (state, newMessage: Message) => [...state, newMessage],
+  );
+
+  async function send(formData: FormData) {
+    const text = String(formData.get("text"));
+    addOptimistic({ id: "pending", text, sender: "me" });
+    await saveMessage(text);
+  }
+
+  return (
+    <>
+      <ul>{optimistic.map((m) => <li key={m.id}>{m.text}</li>)}</ul>
+      <form action={send}>
+        <input name="text" />
+        <button type="submit">Send</button>
+      </form>
+    </>
+  );
+}
+```
+
+### Accessibility-first composition
+- Use semantic HTML (`<button>`, `<a>`, `<nav>`, `<main>`) before `role` attributes.
+- Make every interactive element reachable by keyboard.
+- Give each form input a label: `<label htmlFor>`, or `aria-label` when an icon is the only visible label.
+- Manage focus on route changes and on modal open/close.
+- Run `axe` in component tests.
+
+---
+
+## 16. References (official docs & community)
 - React Docs – Hooks, Server Components, `use()`.
 - React Query / SWR – Server state handling.
 - TanStack Router – Type‑safe route definitions.

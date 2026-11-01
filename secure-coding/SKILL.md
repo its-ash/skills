@@ -1,6 +1,6 @@
 ---
 name: secure-coding
-description: "Secure coding guidance and review checklists for secrets, authentication, authorization, input validation, SQL injection, XSS, CSRF, API security, rate limiting, and deployment hardening. Use when writing or reviewing security-sensitive code, APIs, auth, payments, or producing a security report in Python (.py), JavaScript/TypeScript (.js, .ts), or Go (.go), or when handling JWT, OAuth, SQL queries, env vars, API keys, npm, pip, or go modules. Sub-skills: web-vulnerability-testing, data-privacy-compliance."
+description: "Secure coding guidance and review checklists for secrets, authentication, authorization, input validation, SQL injection, XSS, CSRF, API security, rate limiting, and deployment hardening. Use when writing or reviewing security-sensitive code, APIs, auth, payments, or producing a security report in Python (.py), JavaScript/TypeScript (.js, .ts), or Go (.go), or when handling JWT, OAuth, SQL queries, env vars, API keys, npm, pip, or go modules. Sub-skills: web-vulnerability-testing, data-privacy-compliance, security-bounty-hunter, cloud-infrastructure-security."
 ---
 
 # Secure Coding
@@ -115,6 +115,9 @@ ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users view own data"
   ON users FOR SELECT
   USING (auth.uid() = id);
+CREATE POLICY "Users update own data"
+  ON users FOR UPDATE
+  USING (auth.uid() = id);
 ```
 
 ## Authentication and authorization
@@ -207,8 +210,27 @@ app.use(helmet({
 - Sanitize user HTML before rendering.
 - Use framework escaping and avoid unsafe HTML injection.
 - Set a Content Security Policy.
-- Use CSRF tokens for state-changing requests.
+- Start with a strict CSP. Do not use `'unsafe-inline'` or `'unsafe-eval'` by default. If you must use them, record them as temporary debt with a removal plan.
+- Use CSRF tokens for state-changing requests. Use the double-submit cookie pattern when the server keeps no session state.
 - Set cookies with `SameSite=Strict`.
+
+```ts
+// next.config.js
+const securityHeaders = [{
+  key: 'Content-Security-Policy',
+  value: `
+    default-src 'self';
+    base-uri 'self';
+    object-src 'none';
+    frame-ancestors 'none';
+    script-src 'self';
+    style-src 'self';
+    img-src 'self' data: https:;
+    font-src 'self';
+    connect-src 'self' https://api.example.com;
+  `.replace(/\s{2,}/g, ' ').trim(),
+}];
+```
 
 ```ts
 if (!csrf.verify(request.headers.get('X-CSRF-Token'))) {
@@ -392,6 +414,9 @@ catch (error) {
 - OWASP API Security Top 10: https://owasp.org/www-project-api-security/
 - OWASP Top 10: https://owasp.org/www-project-top-ten/
 - JWT best practices: https://tools.ietf.org/html/rfc8725
+- Next.js security: https://nextjs.org/docs/security
+- Supabase auth security: https://supabase.com/docs/guides/auth
+- PortSwigger Web Security Academy: https://portswigger.net/web-security
 
 ## Sub-skills
 
@@ -401,6 +426,8 @@ Read a sub-skill file only when the task needs it.
 |------|----------|
 | [references/web-vulnerability-testing.md](references/web-vulnerability-testing.md) | Test web applications and APIs for OWASP vulnerabilities including SQL injection, XSS, CSRF, SSRF, IDOR, authentication bypass, path traversal, insecure headers, and misconfiguration. Use when running authorized penetration tests, security audits, bug bounty triage, vulnerability scanning, Burp Suite, OWASP ZAP, Nikto, nuclei, ffuf, curl, HTTP requests, JWT tokens, session cookies, REST endpoints, GraphQL, or remediation planning. |
 | [references/data-privacy-compliance.md](references/data-privacy-compliance.md) | Implement and audit privacy compliance for GDPR, DSGVO, CCPA, CPRA, and HIPAA covering lawful basis, consent, data subject rights, DPIA, privacy by design, minimization, breach response, international transfers, and audits. Use when implementing GDPR DSGVO CCPA CPRA HIPAA requirements, documenting lawful basis, handling access deletion portability objection requests, managing consent, running DPIAs, enforcing minimization, responding to breaches, configuring SCC BCR transfers, reviewing DPAs, or preparing compliance audits. |
+| [references/security-bounty-hunter.md](references/security-bounty-hunter.md) | Hunt for remotely reachable, exploitable vulnerabilities for responsible disclosure or bug bounty reports (Huntr, HackerOne). Use for scope checks, SSRF, auth bypass, RCE, SQLi, path traversal triage, PoC proof, and report writing. |
+| [references/cloud-infrastructure-security.md](references/cloud-infrastructure-security.md) | Secure cloud deployments, IAM least privilege, MFA, secrets managers, network isolation, logging and monitoring, CI/CD pipeline security, CDN and WAF, backup and disaster recovery on AWS, Vercel, Railway, or Cloudflare. |
 
 ## Related skills
 

@@ -69,7 +69,7 @@ Write clean, secure, and performant code using modern PHP 8+ features and Larave
 ---
 
 ## Eloquent & Database
-- Define `$fillable` or `$guarded` on models; prefer `$guarded = []` only when you have explicit validation.
+- Define `$fillable` on models. Do not use `$guarded = []`; it permits mass assignment of every column (see `laravel-security.md`).
 - **Eager load relationships** to prevent N+1 queries: `Post::with('author', 'comments')->find($id);`
 - **Create query scopes** for reusable filters:
   ```php
@@ -148,6 +148,186 @@ Write clean, secure, and performant code using modern PHP 8+ features and Larave
 
 ---
 
+## Code Patterns
+
+### Layout
+
+```
+app/
+├── Actions/            # Single-purpose use cases
+├── Events/
+├── Http/
+│   ├── Controllers/
+│   ├── Middleware/
+│   ├── Requests/       # Form request validation
+│   └── Resources/      # API resources
+├── Jobs/
+├── Models/
+├── Policies/
+├── Providers/
+├── Services/           # Services that coordinate more than one action
+└── Support/
+```
+
+### Controller -> action, with a DTO from the form request
+
+```php
+final class StoreOrderRequest extends FormRequest
+{
+    public function authorize(): bool
+    {
+        return $this->user()?->can('create', Order::class) ?? false;
+    }
+
+    public function rules(): array
+    {
+        return [
+            'customer_id' => ['required', 'integer', 'exists:customers,id'],
+            'items' => ['required', 'array', 'min:1'],
+            'items.*.sku' => ['required', 'string'],
+            'items.*.quantity' => ['required', 'integer', 'min:1'],
+        ];
+    }
+
+    public function toDto(): CreateOrderData
+    {
+        return new CreateOrderData(
+            customerId: (int) $this->validated('customer_id'),
+            items: $this->validated('items'),
+        );
+    }
+}
+
+final class CreateOrderAction
+{
+    public function __construct(private OrderRepository $orders) {}
+
+    public function handle(CreateOrderData $data): Order
+    {
+        return DB::transaction(fn () => $this->orders->create($data));
+    }
+}
+
+final class OrdersController extends Controller
+{
+    public function store(StoreOrderRequest $request, CreateOrderAction $createOrder): JsonResponse
+    {
+        return OrderResource::make($createOrder->handle($request->toDto()))
+            ->response()
+            ->setStatusCode(201);
+    }
+}
+```
+
+Bind interfaces to implementations in a service provider:
+
+```php
+public function register(): void
+{
+    $this->app->bind(OrderRepository::class, EloquentOrderRepository::class);
+}
+```
+
+### Routes and scoped bindings
+
+```php
+Route::middleware('auth:sanctum')->group(function () {
+    Route::apiResource('projects', ProjectController::class);
+});
+
+// Scoped bindings: {project} must belong to {account}. This helps stop access across tenants.
+Route::scopeBindings()->group(function () {
+    Route::get('/accounts/{account}/projects/{project}', [ProjectController::class, 'show']);
+});
+```
+
+- Use one parameter name that matches the bound model (`{conversation}` for `Conversation`). Keep prefixes the same (do not mix `conversation` and `conversations`).
+- To bind a parameter to a different class, use `Route::model('conversation', AiConversation::class)`. For custom logic, use `Route::bind()` or `resolveRouteBinding()`.
+- Scoped bindings do not replace authorization. Still call the policy.
+
+### Model with casts, relations, and scopes
+
+```php
+final class Project extends Model
+{
+    use HasFactory, SoftDeletes;
+
+    protected $fillable = ['name', 'owner_id', 'status'];
+
+    protected function casts(): array
+    {
+        return ['status' => ProjectStatus::class, 'archived_at' => 'datetime'];
+    }
+
+    public function owner(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'owner_id');
+    }
+
+    public function scopeActive(Builder $query): Builder
+    {
+        return $query->whereNull('archived_at');
+    }
+
+    public function scopeOwnedBy(Builder $query, int $userId): Builder
+    {
+        return $query->where('owner_id', $userId);
+    }
+
+    protected function budget(): Attribute   // Value object over an integer column
+    {
+        return Attribute::make(
+            get: fn (int $value) => Money::fromCents($value),
+            set: fn (Money $money) => $money->toCents(),
+        );
+    }
+}
+
+$orders = Order::query()->with(['customer', 'items.product'])->latest()->paginate(25);
+```
+
+- Use a global scope (`static::addGlobalScope(...)` in `booted()`) or a named scope for one filter, not both.
+- For complex filters, use a query object that clones the builder for each step, so each call returns a new query.
+
+### Migration
+
+```php
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::create('orders', function (Blueprint $table): void {
+            $table->id();
+            $table->foreignId('customer_id')->constrained()->cascadeOnDelete();
+            $table->string('status', 32)->index();
+            $table->unsignedInteger('total_cents');
+            $table->timestamps();
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('orders');
+    }
+};
+```
+
+File names use `YYYY_MM_DD_HHMMSS_create_orders_table.php`. Migrations are anonymous classes. Table names are plural `snake_case`.
+
+### Paginated resource response
+
+```php
+$projects = Project::query()->active()->paginate(25);
+
+return ProjectResource::collection($projects);   // Adds data, links, and meta (current_page, per_page, total)
+```
+
+### Side effects, cache, and config
+
+- Send domain events for side effects (email, analytics). Put slow work (reports, exports, webhooks) in queued jobs with retries and backoff. Make each handler idempotent.
+- Remove cache entries on model events (`created`, `updated`, `deleted`), or use cache tags for related data.
+- Keep secrets in `.env` and read them only in `config/*.php`. Call `env()` only in config files, because `config:cache` stops `env()` from working at runtime.
+
 ## Common Pitfalls & Anti‑Patterns
 - **Fat controllers** – move logic to Services.
 - **Business logic in routes** – keep routes declarative.
@@ -178,5 +358,8 @@ Write clean, secure, and performant code using modern PHP 8+ features and Larave
 
 Load these when the task spans more than this skill.
 
+- [`laravel-security`](laravel-security.md) — Production config, Sanctum and Passport, policies, mass assignment, CSRF, XSS, uploads, and security headers.
+- [`laravel-testing`](laravel-testing.md) — PHPUnit and Pest tests, factories, fakes, and the verification loop before a PR or deploy.
+- [`laravel-plugin-discovery`](laravel-plugin-discovery.md) — Find and evaluate Laravel packages by health score and version support (needs the LaraPlugins MCP server).
 - [`database-design`](../../database-design/SKILL.md) — Expert database architect for data layer design, technology selection, and schema modeling. Use for selecting…
 - [`unit-testing-patterns`](../../unit-testing-patterns/SKILL.md) — A concise guide to unit‑testing patterns for JavaScript/TypeScript (Jest) and Python (pytest). Use when writin…

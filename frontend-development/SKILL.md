@@ -1,6 +1,6 @@
 ---
 name: frontend-development
-description: "Build modern React and Next.js applications with TypeScript, MUI v7 components, TanStack Query and Router, and performance-focused patterns for components, routing, styling, data fetching, and bundle optimization. Use when creating React components, Next.js pages, TypeScript interfaces, MUI theming, sx prop styling, TanStack useSuspenseQuery, useQuery, useMutation, TanStack Router routes, server components, SSR hydration, responsive layouts, bundle analysis, re-render reduction, async waterfalls, or optimizing Core Web Vitals. Sub-skills: nextjs, astro, d3-visualization, progressive-web-app."
+description: "Build modern React and Next.js applications with TypeScript, MUI v7 components, TanStack Query and Router, and performance-focused patterns for components, routing, styling, data fetching, and bundle optimization. Use when creating React components, Next.js pages, TypeScript interfaces, MUI theming, sx prop styling, TanStack useSuspenseQuery, useQuery, useMutation, TanStack Router routes, server components, SSR hydration, responsive layouts, bundle analysis, re-render reduction, async waterfalls, optimizing Core Web Vitals, or working with React Native/Expo, Vue 3, Pinia, Nuxt 4, Angular signals, Vite config, or Turbopack. Sub-skills: mui, react-patterns, react-performance, nextjs, astro, d3-visualization, progressive-web-app, react-native, vue, nuxt, ui-to-vue, angular, vite."
 ---
 
 # Frontend Development
@@ -172,30 +172,39 @@ export function useQuery<T>(key: string, fetcher: () => Promise<T>, opts?: { onS
   const [data, setData] = useState<T | null>(null);
   const [error, setError] = useState<Error | null>(null);
   const [loading, setLoading] = useState(false);
+  const fetcherRef = useRef(fetcher);
+  const optsRef = useRef(opts);
+  useEffect(() => {
+    fetcherRef.current = fetcher;
+    optsRef.current = opts;
+  });
 
   const refetch = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const result = await fetcher();
+      const result = await fetcherRef.current();
       setData(result);
-      opts?.onSuccess?.(result);
+      optsRef.current?.onSuccess?.(result);
     } catch (e) {
       const err = e as Error;
       setError(err);
-      opts?.onError?.(err);
+      optsRef.current?.onError?.(err);
     } finally {
       setLoading(false);
     }
-  }, [fetcher, opts]);
+  }, []);
 
+  const enabled = opts?.enabled !== false;
   useEffect(() => {
-    if (opts?.enabled !== false) refetch();
-  }, [key, refetch, opts?.enabled]);
+    if (enabled) refetch();
+  }, [key, enabled, refetch]);
 
   return { data, error, loading, refetch };
 }
 ```
+- Keep `fetcher` and `opts` in refs. Then `refetch` stays stable when callers pass inline functions or object literals. Without the refs, each render makes a new `refetch` and the effect runs again after each state update: an infinite fetch loop.
+- Prefer TanStack Query in production. Use this hook only where you cannot add a library.
 
 ---
 
@@ -222,6 +231,7 @@ export function useDebounce<T>(value: T, delay: number): T {
 - **Memoization**: `useMemo` for expensive calculations, `useCallback` for handlers, `React.memo` for pure components.
 - **Code Splitting**: Lazy‑load heavy components with `React.lazy` and `<Suspense>`.
 - **Virtualization**: Use `@tanstack/react-virtual` for long lists.
+- **Sort a copy**: `useMemo(() => [...items].sort(fn), [items])`. `Array.prototype.sort` changes the array in place.
 - **Bundle Analysis**: Run `npm run build && npx next-bundle-analyzer` (or any configured analyzer) to view size and apply recommendations.
 - **Avoid Early Returns** for loading states; keep layout stable to prevent CLS.
 
@@ -236,7 +246,11 @@ export class ErrorBoundary extends React.Component<{children: React.ReactNode}, 
   componentDidCatch(error: Error, info: React.ErrorInfo) { console.error(error, info); }
   render() {
     return this.state.hasError ? (
-      <div className="error-fallback"><h2>Something went wrong</h2><p>{this.state.error?.message}</p></div>
+      <div className="error-fallback">
+        <h2>Something went wrong</h2>
+        <p>{this.state.error?.message}</p>
+        <button onClick={() => this.setState({ hasError: false, error: null })}>Try again</button>
+      </div>
     ) : this.props.children;
   }
 }
@@ -261,7 +275,15 @@ export function AnimatedList({items}: {items: string[]}) {
   );
 }
 ```
-- Use similar patterns for modal transitions.
+- For modals, animate the overlay with `opacity` and the panel with `opacity`, `scale: 0.9 → 1`, and `y: 20 → 0`, both inside one `<AnimatePresence>`.
+
+---
+
+## Forms
+- Validate on submit; store errors in a `Record<field, string>` and show each error next to its field.
+- Trim strings before you check for empty values, and enforce maximum lengths.
+- Wrap the submit call in `try/catch` and show the failure to the user.
+- For complex forms, use React Hook Form or TanStack Form with a Zod schema (see [`zod`](../typescript/references/zod.md)).
 
 ---
 
@@ -323,6 +345,16 @@ Read a sub-skill file only when the task needs it.
 | [references/mui.md](references/mui.md) | Provides concise patterns for using Material‑UI v7 components, sx prop styling, theme integration, responsive design, and MUI‑specific hooks in React projects. |
 | [references/react-patterns.md](references/react-patterns.md) | Provides production‑ready React patterns for component design, hooks, state selection, TypeScript typing, React 19 updates, composition, performance, error handling, UI states, routing, server components, and useEffect best practices. |
 | [references/react-performance.md](references/react-performance.md) | Guidelines and workflow for optimizing React and Next.js performance. Use when writing, reviewing, or refactoring components, pages, or data‑fetching code to eliminate async waterfalls, shrink bundles, improve server‑side rendering, and reduce unnecessary re‑renders. |
+| [references/nextjs.md](references/nextjs.md) | Next.js 14+ App Router: component types, data fetching and caching, routing, route handlers, server actions, metadata, Supabase auth, Next.js 16 Turbopack and `proxy.ts`. |
+| [references/astro.md](references/astro.md) | Astro content sites: zero JS by default, islands, content collections, SSG/SSR. |
+| [references/d3-visualization.md](references/d3-visualization.md) | D3.js charts with SVG/Canvas, scales, axes, transitions, zoom, force layouts, and maps. |
+| [references/progressive-web-app.md](references/progressive-web-app.md) | PWA manifest, service worker caching, install prompt, offline fallback, push. |
+| [references/react-native.md](references/react-native.md) | React Native / Expo screens: Expo Router, state separation, TanStack Query + Zod, FlatList/FlashList, NativeWind, native APIs, secure storage. |
+| [references/vue.md](references/vue.md) | Vue 3 Composition API, SFC structure, composables, Pinia, Vue Router, testing, Vue 3.5+ APIs. |
+| [references/nuxt.md](references/nuxt.md) | Nuxt 4 hydration safety, `useFetch`/`useAsyncData`, route rules, lazy loading and lazy hydration. |
+| [references/ui-to-vue.md](references/ui-to-vue.md) | Batch-convert design screenshots into Vue 3 components (Vant, Element Plus, Ant Design Vue). |
+| [references/angular.md](references/angular.md) | Angular projects: signals, `linkedSignal`, `resource`, signal/reactive forms, DI, routing, SSR, Angular Aria, testing, CLI. Detail files in `references/angular/`. |
+| [references/vite.md](references/vite.md) | `vite.config.ts`, plugins, HMR, env variables, proxy, library mode, pre-bundling, build optimization. |
 
 ## Related skills
 
@@ -333,7 +365,5 @@ Load these when the task spans more than this skill.
 - [`web-performance`](../web-quality-audit/references/web-performance.md) — Provides step‑by‑step guidance to measure, diagnose, and improve web performance, focusing on Core Web Vitals…
 - [`astro`](references/astro.md) — Astro is a web framework for content‑heavy sites that ships zero JavaScript by default and hydrates interactiv…
 - [`i18n-localization`](../i18n-localization/SKILL.md) — Guides developers to add internationalization (i18n) and localization (L10n) to web and Python projects, cover…
-| [references/nextjs.md](references/nextjs.md) | This skill guides Next.js 14+ App Router development: component type choices, data fetching with fetch and cache, file-system routing with layouts and pages, route handlers for APIs, image and font optimization, metadata API, caching with revalidatePath and unstable_cache, server actions for mutations, and Supabase auth integration. Use when building Next.js apps with app router, server components, client components, route handlers, server actions, middleware, dynamic routes, parallel routes, layout.tsx, page.tsx, loading.tsx, error.tsx, generateMetadata, generateStaticParams, revalidatePath, revalidateTag, unstable_cache, next/image, next/font, next/script, Supabase auth, SSR, SSG, ISR, streaming, edge runtime, vercel deploy. |
-| [references/astro.md](references/astro.md) | Astro builds content-heavy websites with zero JavaScript by default, selective hydration via islands, file-based routing, content collections, layouts, and optional SSR or SSG. Use when creating blogs, docs, marketing pages, portfolios, e-commerce sites, MDX content, RSS feeds, API endpoints, React/Vue/Svelte islands, getStaticPaths routes, or improving Core Web Vitals and Lighthouse scores. |
-| [references/d3-visualization.md](references/d3-visualization.md) | Build interactive D3.js data visualizations with SVG, Canvas, scales, axes, transitions, tooltips, zoom, brush, force layouts, maps, and custom charts. Use when creating bar, line, scatter, network, tree, choropleth, or dashboard graphics, binding data to DOM, animating updates, handling responsive resize, or debugging D3 errors like undefined scales, missing keys, NaN coordinates, and transition conflicts. |
-| [references/progressive-web-app.md](references/progressive-web-app.md) | Builds Progressive Web Apps with a manifest.json for installability, a service worker sw.js implementing cache-first and stale-while-revalidate strategies, beforeinstallprompt handling for native install banners, HTTPS enforcement, and offline fallback pages. Use when users ask for pwa, progressive web app, service worker, manifest, workbox, offline-first, install prompt, add to home screen, cache storage, fetch event, background sync, push notifications, web app installable, app shell, sw.js, registerServiceWorker, navigator.serviceWorker, caches.match, clients.claim, skipWaiting, secure context, Lighthouse audit, Application panel. |
+- [`design`](../design/SKILL.md) — visual design, layout, motion, and CSS for the UI you build.
+- [`swift-ios`](../swift-ios/SKILL.md) — native iOS apps with SwiftUI (use `react-native` for cross-platform).

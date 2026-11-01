@@ -252,6 +252,169 @@ module.exports = {
 ```
 Test the script against both dialects before production.
 
+## Production Rules
+1. **Every change is a migration.** Do not change a production database by hand.
+2. **Production migrations go forward only.** To roll back, write a new forward migration.
+3. **Keep schema and data migrations separate.** Do not mix DDL and DML in one migration.
+4. **Test on production-sized data.** A migration that is fast on 100 rows can lock a table with 10M rows.
+5. **Do not edit a migration after it ran in production.** Write a new one.
+
+Safety checklist before you apply a migration:
+- [ ] It has UP and DOWN, or it is marked as irreversible
+- [ ] No full table lock on a large table (use concurrent operations)
+- [ ] New columns are nullable or have a default
+- [ ] Indexes on existing tables are created concurrently
+- [ ] The data backfill is a different migration from the schema change
+- [ ] Tested on a copy of production data, with a written rollback plan
+
+## PostgreSQL Patterns
+```sql
+-- Add a column: nullable is instant
+ALTER TABLE users ADD COLUMN avatar_url TEXT;
+-- A constant default is instant on PostgreSQL 11+ (no table rewrite)
+ALTER TABLE users ADD COLUMN is_active BOOLEAN NOT NULL DEFAULT true;
+-- BAD: NOT NULL without a default fails on a table that has rows; add nullable, backfill, then set NOT NULL
+ALTER TABLE users ADD COLUMN role TEXT NOT NULL;
+
+-- Index without blocking writes (cannot run inside a transaction block)
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_users_email ON users (email);
+
+-- Remove a column: first remove all code references and deploy, then drop it in the next migration
+ALTER TABLE orders DROP COLUMN legacy_status;
+```
+
+Batched backfill (do not update all rows in one transaction):
+```sql
+-- PostgreSQL 11+: COMMIT in a DO block works only when the block runs outside a transaction
+DO $$
+DECLARE
+  batch_size INT := 10000;
+  rows_updated INT;
+BEGIN
+  LOOP
+    UPDATE users SET normalized_email = LOWER(email)
+    WHERE id IN (
+      SELECT id FROM users WHERE normalized_email IS NULL
+      LIMIT batch_size FOR UPDATE SKIP LOCKED
+    );
+    GET DIAGNOSTICS rows_updated = ROW_COUNT;
+    RAISE NOTICE 'Updated % rows', rows_updated;
+    EXIT WHEN rows_updated = 0;
+    COMMIT;
+  END LOOP;
+END $$;
+```
+
+## More Tool Workflows
+### Prisma: custom SQL
+Prisma cannot generate `CREATE INDEX CONCURRENTLY` or data backfills. Create an empty migration and write the SQL:
+```bash
+npx prisma migrate dev --create-only --name add_email_index
+```
+```sql
+-- prisma/migrations/20240115_add_email_index/migration.sql
+CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_users_email ON users (email);
+```
+Prisma runs each migration file in a transaction by default. Put a `CONCURRENTLY` statement in its own migration file, and do not mix it with other statements.
+
+### Drizzle
+```bash
+npx drizzle-kit generate   # Create a migration from schema changes
+npx drizzle-kit migrate    # Apply migrations
+npx drizzle-kit push       # Dev only: push the schema with no migration file
+```
+For more, see `drizzle-orm.md`.
+
+### Kysely (kysely-ctl)
+```bash
+kysely migrate make add_user_avatar
+kysely migrate latest
+kysely migrate down
+kysely migrate list
+```
+```typescript
+// migrations/2024_01_15_001_create_user_profile.ts
+import { type Kysely, sql } from 'kysely'
+
+// Use Kysely<any>, not the typed DB interface. A migration must not depend on the current schema types.
+export async function up(db: Kysely<any>): Promise<void> {
+  await db.schema
+    .createTable('user_profile')
+    .addColumn('id', 'serial', (col) => col.primaryKey())
+    .addColumn('email', 'varchar(255)', (col) => col.notNull().unique())
+    .addColumn('avatar_url', 'text')
+    .addColumn('created_at', 'timestamp', (col) => col.defaultTo(sql`now()`).notNull())
+    .execute()
+}
+
+export async function down(db: Kysely<any>): Promise<void> {
+  await db.schema.dropTable('user_profile').execute()
+}
+```
+For a programmatic run, use `new Migrator({ db, provider: new FileMigrationProvider({ fs, path, migrationFolder }) })` and `migrateToLatest()`. Stop the process when it returns `error`. Do not set `allowUnorderedMigrations` outside development.
+
+### Django
+```bash
+python manage.py makemigrations
+python manage.py migrate
+python manage.py showmigrations
+python manage.py makemigrations --empty app_name -n description   # For custom SQL or data
+```
+```python
+from django.db import migrations
+
+def backfill_display_names(apps, schema_editor):
+    User = apps.get_model("accounts", "User")   # Historical model, not a direct import
+    qs = User.objects.filter(display_name="")
+    while batch := list(qs[:5000]):
+        for u in batch:
+            u.display_name = u.username
+        User.objects.bulk_update(batch, ["display_name"])
+
+class Migration(migrations.Migration):
+    dependencies = [("accounts", "0015_add_display_name")]
+    operations = [migrations.RunPython(backfill_display_names, migrations.RunPython.noop)]
+```
+To remove a field from the model but keep the column for one more deploy:
+```python
+migrations.SeparateDatabaseAndState(
+    state_operations=[migrations.RemoveField(model_name="user", name="legacy_field")],
+    database_operations=[],   # Drop the column in a later migration
+)
+```
+
+### golang-migrate
+```bash
+migrate create -ext sql -dir migrations -seq add_user_avatar
+migrate -path migrations -database "$DATABASE_URL" up
+migrate -path migrations -database "$DATABASE_URL" down 1
+migrate -path migrations -database "$DATABASE_URL" force VERSION   # Fix a dirty state
+```
+```sql
+-- 000003_add_user_avatar.up.sql
+ALTER TABLE users ADD COLUMN avatar_url TEXT;
+-- 000003_add_user_avatar.down.sql
+ALTER TABLE users DROP COLUMN IF EXISTS avatar_url;
+```
+
+## Expand-Contract Timeline
+```
+Day 1: Migration adds new_status (nullable)
+Day 1: Deploy app v2, which writes to status and new_status
+Day 2: Backfill migration for existing rows, then check consistency
+Day 3: Deploy app v3, which reads and writes only new_status
+Day 7: Migration drops the old status column
+```
+
+| Anti-pattern | Why it fails | Better approach |
+|---|---|---|
+| Manual SQL in production | No audit trail, cannot repeat | Migration files only |
+| Edit a deployed migration | Environments drift | Write a new migration |
+| NOT NULL with no default | Fails or rewrites the table | Nullable, backfill, then add the constraint |
+| Inline index on a large table | Blocks writes | `CREATE INDEX CONCURRENTLY` |
+| Schema and data in one migration | Long transactions, hard rollback | Separate migrations |
+| Drop a column before the code stops using it | Errors for a missing column | Remove code first, drop in the next deploy |
+
 ## Best Practices
 1. **Provide a down migration** for every up migration.
 2. **Test on staging** before applying to production.

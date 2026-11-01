@@ -1,6 +1,6 @@
 ---
 name: software-architecture
-description: "Provides a unified workflow for making software architecture decisions, selecting patterns such as Clean Architecture, Hexagonal, DDD, CQRS, and event sourcing, documenting trade-offs, applying code-style and quality rules, and validating designs. Use when designing a new system, refactoring a monolith, creating an ADR, defining bounded contexts, choosing microservices or modular monolith, setting naming conventions, separation of concerns, error handling, and testing strategy."
+description: "Provides a unified workflow for making software architecture decisions, selecting patterns such as Clean Architecture, Hexagonal, DDD, CQRS, and event sourcing, documenting trade-offs, applying code-style and quality rules, and validating designs. Use when designing a new system, refactoring a monolith, creating an ADR, defining bounded contexts, choosing microservices or modular monolith, setting naming conventions, separation of concerns, error handling, and testing strategy, writing acceptance criteria for risky changes, ports and adapters refactors, module ownership docs, or cross-module regression ledgers. Sub-skills: architecture-decision-records, hexagonal-architecture, intent-driven-development, module-governance, module-regression."
 ---
 
 # Software Architecture Skill
@@ -28,7 +28,7 @@ description: "Provides a unified workflow for making software architecture decis
    | Clean Architecture | Clear separation, testable | More layers, learning curve | Low | Medium |
    | Hexagonal | Infrastructure‑agnostic | May need adapters for each external system | Low | Medium |
    | Monolith (simple) | Fast to implement | Hard to scale later | Medium | Low |
-5. **Decision Record** – Write an Architecture Decision Record (ADR) for each significant choice. Include context, considered options, chosen option, rationale, and consequences.
+5. **Decision Record** – Write an Architecture Decision Record (ADR) for each significant choice. Include context, considered options, chosen option, rationale, and consequences. Use the format, numbering, and lifecycle in [references/architecture-decision-records.md](references/architecture-decision-records.md).
 6. **Validate** – Ensure the chosen design satisfies all high‑priority requirements and that the team has the skills to implement it.
 
 ---
@@ -156,8 +156,9 @@ Date: $(date +%Y-%m-%d)
 ## Consequences
 ...
 EOF
+```
 
-# Visualize architecture (use Mermaid in markdown)
+Visualize architecture with Mermaid in markdown:
 ```mermaid
 graph LR
   UI -->|HTTP| API[API Layer]
@@ -165,7 +166,7 @@ graph LR
   UseCases --> Entities
   Entities --> Repositories
 ```
-```
+
 ---
 
 ## 7. Pitfalls & Anti‑Patterns to Avoid
@@ -188,7 +189,17 @@ graph LR
 
 ---
 
-**End of Skill**
+## Sub-skills
+
+Read a sub-skill file only when the task needs it.
+
+| File | Use when |
+|------|----------|
+| [references/architecture-decision-records.md](references/architecture-decision-records.md) | Record a decision as a numbered ADR in `docs/adr/`, read existing ADRs to answer "why did we choose X?", or manage ADR status and the index. |
+| [references/hexagonal-architecture.md](references/hexagonal-architecture.md) | Design or refactor toward Ports and Adapters in TypeScript, Java, Kotlin, or Go: ports, use cases, adapters, composition root, migration by slice, boundary tests. |
+| [references/intent-driven-development.md](references/intent-driven-development.md) | Turn an ambiguous or high-risk change (security, data, migration, integration) into scoped, observable acceptance criteria and an acceptance brief before or during implementation. |
+| [references/module-governance.md](references/module-governance.md) | Create or maintain local module instructions, domain-context links, and interface ownership when a new business module is added or its responsibilities change. |
+| [references/module-regression.md](references/module-regression.md) | Keep a `REGRESSION.md` ledger of downstream consumers and acceptance commands, and gate a change on the exit codes of the changed module and all affected consumers. |
 
 ## Related skills
 
@@ -198,4 +209,6 @@ Load these when the task spans more than this skill.
 - [`code-review`](../code-review/SKILL.md) — Review code changes for correctness, security, performance, maintainability, tests, and production readiness.…
 - [`cloud-architecture`](../devops-iac/references/cloud-architecture.md) — Provides step‑by‑step guidance, best‑practice rules, and checklists for designing, building, and optimizing se…
 - [`database-design`](../database-design/SKILL.md) — Expert database architect for data layer design, technology selection, and schema modeling. Use for selecting…
+- [`documentation`](../documentation/SKILL.md) — Living docs governance, codebase onboarding, code tours, and context and decision logs.
+- [`product-strategy`](../product-strategy/SKILL.md) — Product capability plans and constraints before architecture work.
 - [`backend-development`](../backend-development/SKILL.md) — Guidance for designing, building, and operating scalable backend services and APIs. Covers REST GraphQL gRPC A…

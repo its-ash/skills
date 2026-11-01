@@ -304,6 +304,81 @@ const { chromium } = require('playwright');
 })();
 ```
 
+## Flaky test patterns
+### Find flakiness
+```bash
+npx playwright test tests/search.spec.ts --repeat-each=10
+npx playwright test tests/search.spec.ts --retries=3
+```
+
+### Quarantine with a tracked issue
+```typescript
+test('complex search', async ({ page }) => {
+  test.fixme(true, 'Flaky - Issue #123');
+});
+
+test('upload flow', async ({ page }) => {
+  test.skip(!!process.env.CI, 'Flaky in CI - Issue #124');
+});
+```
+
+### Common causes and fixes
+| Cause | Bad | Good |
+|-------|-----|------|
+| Race condition | `page.click(sel)` on an element that is not ready | `page.locator(sel).click()` (auto‑wait) |
+| Network timing | `page.waitForTimeout(5000)` | `page.waitForResponse(r => r.url().includes('/api/data'))` |
+| Animation | Click during a transition | `locator.waitFor({ state: 'visible' })`, then click |
+
+## Artifacts
+```typescript
+await page.screenshot({ path: 'artifacts/full-page.png', fullPage: true });
+await page.locator('[data-testid="chart"]').screenshot({ path: 'artifacts/chart.png' });
+```
+In `playwright.config.ts`, set `trace: 'on-first-retry'`, `screenshot: 'only-on-failure'`, and `video: 'retain-on-failure'`. Add `junit` and `json` reporters next to `html` when CI must parse results.
+
+## Test report template
+```markdown
+# E2E Test Report
+**Date:** YYYY-MM-DD HH:MM | **Duration:** Xm Ys | **Status:** PASSING / FAILING
+
+## Summary
+- Total: X | Passed: Y (Z%) | Failed: A | Flaky: B | Skipped: C
+
+## Failed tests
+### test-name
+**File:** `tests/e2e/feature.spec.ts:45`
+**Error:** Expected element to be visible
+**Screenshot:** artifacts/failed.png
+**Recommended fix:** ...
+
+## Artifacts
+- HTML report: playwright-report/index.html
+- Traces: test-results/**/trace.zip
+```
+
+## Web3 wallet mock
+```typescript
+test('wallet connection', async ({ page, context }) => {
+  await context.addInitScript(() => {
+    (window as any).ethereum = {
+      isMetaMask: true,
+      request: async ({ method }: { method: string }) => {
+        if (method === 'eth_requestAccounts') return ['0x1234567890123456789012345678901234567890'];
+        if (method === 'eth_chainId') return '0x1';
+      },
+    };
+  });
+  await page.goto('/');
+  await page.getByTestId('connect-wallet').click();
+  await expect(page.getByTestId('wallet-address')).toContainText('0x1234');
+});
+```
+
+## Critical flows (payments, trades)
+- Skip tests that move real money on production: `test.skip(process.env.NODE_ENV === 'production', 'Real money')`.
+- Wait for the specific API response with a status check, not for a fixed time.
+- Assert the preview values before you confirm the action.
+
 ## Best‑practice checklist
 - [ ] Detect dev server(s) before writing scripts.
 - [ ] Install Playwright and required browsers once.

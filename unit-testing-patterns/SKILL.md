@@ -1,6 +1,6 @@
 ---
 name: unit-testing-patterns
-description: "Covers unit-testing patterns for JavaScript and TypeScript with Jest and for Python with pytest including test-driven development workflows, factory functions for test data, mocking strategies, parametrized tests, async testing, and test structure conventions. Use when writing unit tests, practicing TDD red-green-refactor, creating test data factories, mocking dependencies, parametrizing test cases, testing async code, structuring test files with describe it or pytest fixtures, naming tests with given-when-then or should-expect patterns, fixing flaky tests, or adding coverage for new features, bug fixes, and refactors in Jest, pytest, JavaScript, TypeScript, or Python projects. Sub-skills: playwright."
+description: "Covers unit-testing patterns for JavaScript and TypeScript with Jest and for Python with pytest including test-driven development workflows, factory functions for test data, mocking strategies, parametrized tests, async testing, and test structure conventions. Use when writing unit tests, practicing TDD red-green-refactor, creating test data factories, mocking dependencies, parametrizing test cases, testing async code, structuring test files with describe it or pytest fixtures, naming tests with given-when-then or should-expect patterns, fixing flaky tests, or adding coverage for new features, bug fixes, and refactors in Jest, pytest, JavaScript, TypeScript, or Python projects. Sub-skills: test-driven-development, playwright, react-testing, ai-regression-testing, test-collaboration, browser-qa."
 ---
 
 # unit-testing-patterns
@@ -266,6 +266,11 @@ Read a sub-skill file only when the task needs it.
 | File | Use when |
 |------|----------|
 | [references/test-driven-development.md](references/test-driven-development.md) | Test‑Driven Development (TDD) guides you to write a failing test before any production code, then write the minimal code to make the test pass, and finally refactor while keeping all tests green. Use for new features, bug fixes, refactoring, or any change that needs reliable behavior verification. |
+| [references/playwright.md](references/playwright.md) | Write Playwright E2E tests and browser automation: config, Page Object Model, auth state, fixtures, flaky-test fixes, artifacts, visual regression, and CI sharding. |
+| [references/react-testing.md](references/react-testing.md) | Test React components, hooks, and pages with React Testing Library, Vitest or Jest, MSW network mocks, and axe checks; choose between RTL, Playwright CT, and E2E. |
+| [references/ai-regression-testing.md](references/ai-regression-testing.md) | Add regression tests for AI-written code: sandbox-mode API tests, sandbox/production parity, bug-check procedure, and common AI regression patterns. |
+| [references/test-collaboration.md](references/test-collaboration.md) | Make a test inventory and gap analysis, map requirements, bugs, and contracts to TEST-IDs in a `TESTS.md` registry, and review evidence before delivery. |
+| [references/browser-qa.md](references/browser-qa.md) | Do post-deploy UI checks on staging or preview with a browser tool: smoke, interaction, visual regression, and accessibility, with a SHIP verdict. |
 
 ## Related skills
 

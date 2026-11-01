@@ -159,3 +159,143 @@ node --test src/**/*.test.ts
 - [ ] Write unit tests for services, integration tests for routes, E2E tests for critical flows.
 - [ ] Profile, then optimise only after measurement.
 - [ ] Review code for listed anti‑patterns before release.
+
+## 12. Code patterns
+
+Use these TypeScript shapes for the layers in section 3. For typed errors, retries, and the error envelope, see `backend-development/references/error-handling.md`.
+
+### Repository and service
+
+```typescript
+// Repository: data access only
+interface MarketRepository {
+  findAll(filters?: MarketFilters): Promise<Market[]>
+  findById(id: string): Promise<Market | null>
+  findByIds(ids: string[]): Promise<Market[]>
+  create(data: CreateMarketDto): Promise<Market>
+  update(id: string, data: UpdateMarketDto): Promise<Market>
+  delete(id: string): Promise<void>
+}
+
+// Service: business logic, depends on the interface, not on the ORM
+class MarketService {
+  constructor(private readonly repo: MarketRepository) {}
+
+  async listActive(limit = 20): Promise<Market[]> {
+    return this.repo.findAll({ status: 'active', limit })
+  }
+}
+```
+
+### Middleware as a higher-order function
+
+```typescript
+export function withAuth(handler: (req: Request, user: User) => Promise<Response>) {
+  return async (req: Request): Promise<Response> => {
+    const token = req.headers.get('authorization')?.replace('Bearer ', '')
+    if (!token) return Response.json({ error: 'Unauthorized' }, { status: 401 })
+    try {
+      return await handler(req, await verifyToken(token))
+    } catch {
+      return Response.json({ error: 'Invalid token' }, { status: 401 })
+    }
+  }
+}
+```
+
+### N+1 prevention and column selection
+
+```typescript
+// BAD: one query for each row
+for (const m of markets) m.creator = await getUser(m.creatorId)
+
+// GOOD: one batch query, then a map lookup
+const creators = await getUsers([...new Set(markets.map(m => m.creatorId))])
+const byId = new Map(creators.map(c => [c.id, c]))
+for (const m of markets) m.creator = byId.get(m.creatorId)
+```
+
+Select only the columns that the caller needs. Do not use `SELECT *` on hot paths.
+
+### Cache decorator for a repository
+
+```typescript
+class CachedMarketRepository implements MarketRepository {
+  constructor(private readonly base: MarketRepository, private readonly redis: RedisClient) {}
+
+  async findById(id: string): Promise<Market | null> {
+    const key = `market:${id}`
+    const hit = await this.redis.get(key)
+    if (hit) return JSON.parse(hit)
+    const market = await this.base.findById(id)
+    if (market) await this.redis.setex(key, 300, JSON.stringify(market))
+    return market
+  }
+
+  async update(id: string, data: UpdateMarketDto): Promise<Market> {
+    const market = await this.base.update(id, data)
+    await this.redis.del(`market:${id}`)   // Invalidate on write
+    return market
+  }
+  // Other methods delegate to this.base
+}
+```
+
+For more Redis patterns, see `database-design/references/redis.md`.
+
+### JWT verification and role checks
+
+```typescript
+import jwt from 'jsonwebtoken'
+
+type Role = 'admin' | 'moderator' | 'user'
+type Permission = 'read' | 'write' | 'delete' | 'admin'
+
+const rolePermissions: Record<Role, Permission[]> = {
+  admin: ['read', 'write', 'delete', 'admin'],
+  moderator: ['read', 'write', 'delete'],
+  user: ['read', 'write'],
+}
+
+export function verifyToken(token: string): JwtPayload {
+  const secret = process.env.JWT_SECRET
+  if (!secret) throw new Error('JWT_SECRET is not set')
+  return jwt.verify(token, secret, { algorithms: ['HS256'] }) as JwtPayload
+}
+
+export const requirePermission = (p: Permission) =>
+  (handler: (req: Request, user: User) => Promise<Response>) =>
+    withAuth(async (req, user) =>
+      rolePermissions[user.role].includes(p)
+        ? handler(req, user)
+        : Response.json({ error: 'Forbidden' }, { status: 403 }))
+
+export const DELETE = requirePermission('delete')(async () => new Response(null, { status: 204 }))
+```
+
+### Rate limiting and background jobs
+
+- Keep rate-limit counters in a shared store (Redis, the API gateway, or the platform limiter). In-memory counters reset on deploy, split across replicas, and fail open in serverless.
+- Do not use an in-process array as a job queue in production. Jobs are lost on restart. Use BullMQ, SQS, or a similar durable queue, and make each job idempotent.
+
+### Structured logging
+
+```typescript
+type LogContext = { requestId?: string; userId?: string; method?: string; path?: string; [k: string]: unknown }
+
+const log = (level: 'info' | 'warn' | 'error', message: string, ctx: LogContext = {}) =>
+  console.log(JSON.stringify({ timestamp: new Date().toISOString(), level, message, ...ctx }))
+
+export async function GET(req: Request) {
+  const requestId = crypto.randomUUID()
+  log('info', 'Fetching markets', { requestId, method: 'GET', path: new URL(req.url).pathname })
+  try {
+    return Response.json({ data: await fetchMarkets() })
+  } catch (e) {
+    log('error', 'Failed to fetch markets', { requestId, error: (e as Error).message, stack: (e as Error).stack })
+    return Response.json({ error: 'Internal error' }, { status: 500 })
+  }
+}
+```
+
+In production, use a logger such as `pino` that writes JSON and supports log levels and redaction.

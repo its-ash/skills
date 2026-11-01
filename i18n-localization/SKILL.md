@@ -1,6 +1,6 @@
 ---
 name: i18n-localization
-description: "Adds internationalization and localization to web and Python apps, including string extraction, translation catalogs, pluralization, locale-aware date and number formatting, and RTL layout support. Use when implementing i18n, l10n, react-i18next, next-intl, gettext, .json or .po/.mo translation files, locale routing, language switchers, ICU messages, t() calls, Intl.DateTimeFormat, Intl.NumberFormat, or fixing missing translations and RTL bugs."
+description: "Adds internationalization and localization to web and Python apps, including string extraction, translation catalogs, pluralization, locale-aware date and number formatting, and RTL layout support. Use when implementing i18n, l10n, react-i18next, next-intl, gettext, .json or .po/.mo translation files, locale routing, language switchers, ICU messages, t() calls, Intl.DateTimeFormat, Intl.NumberFormat, or fixing missing translations and RTL bugs. Sub-skills: i18n-sync, bengali-nlp."
 ---
 
 # i18n & Localization
@@ -128,6 +128,15 @@ Run the script from the project root to list possible hard‑coded UI strings.
 - [ ] RTL layout is verified on a right‑to‑left language.
 - [ ] Fallback language is configured and works.
 - [ ] No hard‑coded strings remain after running the checker script.
+
+## Sub-skills
+
+Read a sub-skill file only when the task needs it.
+
+| File | Use when |
+|------|----------|
+| [references/i18n-sync.md](references/i18n-sync.md) | Translate and sync JSON locale files from source-key usage: add keys or languages, review missing or stale translations, keep placeholders and plurals, and validate the patch. |
+| [references/bengali-nlp.md](references/bengali-nlp.md) | Process Bengali (Bangla) text: NFC normalization, conjuncts and grapheme counts, Bengali digits, tokenization, stop words, ICU collation, Banglish, LLM prompts, and MySQL/PostgreSQL encoding. |
 
 ## Related skills
 

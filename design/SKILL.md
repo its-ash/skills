@@ -1,6 +1,6 @@
 ---
 name: design
-description: "Unified frontend design skill from brief to production: content discipline, accessibility, typography, layout composition, motion and spring physics, gestures, component craft, design systems (tokens, theming, dark mode), and modern CSS (Grid, subgrid, container queries, cascade layers, :has(), oklch, scroll-driven animations, view transitions, dialog, anchor positioning). Use when designing websites, landing pages, dashboards, product UIs, app shells, component libraries, animations, or any frontend UI work; writing, reviewing, or debugging CSS; implementing responsive layouts, hero sections, gestures, or spring animations. Sub-skills: immersive-web, figma, mobile-design, brand-theming, motion-canvas."
+description: "Unified frontend design skill from brief to production: content discipline, accessibility, typography, layout composition, motion and spring physics, gestures, component craft, design systems (tokens, theming, dark mode), and modern CSS (Grid, subgrid, container queries, cascade layers, :has(), oklch, scroll-driven animations, view transitions, dialog, anchor positioning). Use when designing websites, landing pages, dashboards, product UIs, app shells, component libraries, animations, or any frontend UI work; writing, reviewing, or debugging CSS; implementing responsive layouts, hero sections, gestures, or spring animations. Sub-skills: immersive-web, figma, mobile-design, brand-theming, motion-canvas, visual-design-direction, design-system, make-interfaces-feel-better, motion-react, html-slides, shadcn-ui, tailwind-css, threejs, gsap."
 ---
 
 # Design
@@ -181,7 +181,7 @@ Translucent chrome (`backdrop-filter`) with content scrolling under; never light
 * Press: `scale(0.97)` 160ms ease-out. Tooltips: delay first, instant after.
 * Transitions over keyframes (retarget mid-flight). Small `blur(2px)` hides rough crossfades.
 * Enter states via `@starting-style` (fallback `data-mounted`). Hold-to-act: `clip-path` 2s linear in, 200ms out.
-* **Floating Pill Nav (default nav):** `rounded-full bg-white shadow-lg/50` over blurred backdrop, text tabs, right accent pill with icon + label + badge.
+* **Header (mandatory):** full-width, square edges (`rounded-none`), never a floating or rounded pill. Pick by theme: `sticky top-0 z-50` with solid or `backdrop-blur` background + bottom hairline for app/dashboard/long-scroll pages; normal static flow for editorial/minimal/landing pages. Nav items inside may use the radius scale.
 
 ### Component Selection & Tabs
 
@@ -251,7 +251,7 @@ Purpose, Agency (undo over confirms), Responsibility, Familiarity, Flexibility, 
 ## 19. Reference Vocabulary
 
 * **Hero:** Asymmetric Split, Editorial Manifesto, Video Mask, Kinetic Type, Curtain Reveal, Scroll-Pinned.
-* **Nav:** Floating Pill Nav, Dock Magnification, Magnetic Button, Gooey Menu, Dynamic Island, Radial Menu, Mega Menu.
+* **Nav:** Sticky Header, Static Header, Dock Magnification, Magnetic Button, Gooey Menu, Dynamic Island, Radial Menu, Mega Menu.
 * **Layout:** Bento, Masonry, Split-Screen Scroll, Sticky-Stack.
 * **Cards:** Parallax Tilt, Spotlight Border, Glass Panel, Swipe Stack, Morphing Modal.
 * **Scroll:** Horizontal Hijack, Zoom Parallax, Progress Path. **Media:** Coverflow, Drag-to-Pan, Hover Trail.
@@ -380,7 +380,15 @@ Apply core rules always; read the matching `references/css/` file before non-tri
 | [`figma`](references/figma.md) | Figma node to production code with 1:1 parity |
 | [`immersive-web`](references/immersive-web.md) | GSAP ScrollTrigger, parallax, React Three Fiber, Three.js, WebGL |
 | [`motion-canvas`](references/motion-canvas.md) | Motion Canvas scenes, Vite plugin setup, video export |
-| [`visual-design-direction`](references/visual-design-direction.md) | Opinionated visual direction: type, color, layout, motion, 3D |
+| [`visual-design-direction`](references/visual-design-direction.md) | Opinionated visual direction: type, color, layout, motion, 3D; product UI evidence contract and finish gate |
+| [`design-system`](references/design-system.md) | Extract tokens from a codebase, 10-dimension visual audit, AI-slop check |
+| [`make-interfaces-feel-better`](references/make-interfaces-feel-better.md) | Polish pass: concentric radius, optical alignment, text wrap, tabular numbers, hit areas |
+| [`motion-react`](references/motion-react.md) | `motion/react` code: tokens, reduced motion, SSR, presence, stagger, drag, gestures, SVG, `useAnimate` |
+| [`html-slides`](references/html-slides.md) | Zero-dependency HTML presentations, PPTX to HTML, viewport-fit slides |
+| [`shadcn-ui`](references/shadcn-ui.md) | shadcn/ui components, registries, presets, and the shadcn CLI |
+| [`tailwind-css`](references/tailwind-css.md) | Tailwind CSS v4 setup, CSS-first config, tokens, dark mode, and UI library build |
+| [`threejs`](references/threejs.md) | Three.js r186 API: scene, geometry, materials, textures, lighting, loaders, glTF pipeline, animation, interaction, shaders/TSL, post-processing, performance, React Three Fiber |
+| [`gsap`](references/gsap.md) | Official GSAP API: tweens, timelines, ScrollTrigger, plugins, utils, React `useGSAP`, Vue/Svelte, performance |
 
 ## Related skills
 

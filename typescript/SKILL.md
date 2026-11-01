@@ -1,6 +1,6 @@
 ---
 name: typescript
-description: "Guides TypeScript compiler options, advanced type patterns, migration, monorepo setup, linting, testing, and debugging. Use when writing .ts, .tsx, or .d.ts; fixing TS errors; configuring tsc, tsconfig.json, strict mode, project references, path aliases; using generics, utility types, type guards, discriminated unions, branded types, conditional types, satisfies, or const assertions; migrating JavaScript to TypeScript; optimizing type-check or build speed; or setting up workspaces with eslint, jest, or vitest. Sub-skills: zod, javascript."
+description: "Guides TypeScript compiler options, advanced type patterns, migration, monorepo setup, linting, testing, and debugging. Use when writing .ts, .tsx, or .d.ts; fixing TS errors; configuring tsc, tsconfig.json, strict mode, project references, path aliases; using generics, utility types, type guards, discriminated unions, branded types, conditional types, satisfies, or const assertions; migrating JavaScript to TypeScript; optimizing type-check or build speed; or setting up workspaces with eslint, jest, or vitest. Sub-skills: zod, javascript, typescript-patterns."
 ---
 
 # TypeScript Expert
@@ -231,6 +231,7 @@ Read a sub-skill file only when the task needs it.
 | File | Use when |
 |------|----------|
 | [references/zod.md](references/zod.md) | Defines, parses, and validates TypeScript schemas with Zod, including primitives, objects, coercion, refinements, transforms, custom errors, and integrations for forms, Next.js actions, and environment variables. Use when working with zod, z.object, z.string, safeParse, parse, zodResolver, z.infer, schema validation, input validation, form validation, env vars, TypeScript types, Next.js server actions, React Hook Form, or tRPC. |
+| [references/typescript-patterns.md](references/typescript-patterns.md) | Application patterns: `unknown` over `any`, explicit public types, discriminated unions with `assertNever`, validated brands, generics, options objects, type predicates and assertion functions, `Result` types, error `cause`, `Promise.allSettled`, bounded concurrency, timeouts, module boundaries, anti-patterns. |
 | [references/javascript.md](references/javascript.md) | Reference for JavaScript primitives, type coercion, equality, scope types, var let const hoisting, closures, call stack, this binding, event loop phases, promise async await, prototype inheritance, and ES6+ features like arrow functions destructuring modules. Use when debugging typeof NaN null undefined coercion, fixing closure loop capture, resolving this loss in callbacks, tracing microtask macrotask order, converting callbacks to promises, refactoring prototypes to classes, writing arrow destructuring syntax, setting babel targets, or explaining scope chain shadowing. |
 
 ## Related skills
