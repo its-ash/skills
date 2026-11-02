@@ -1,6 +1,6 @@
 # Design System: Generate and Audit
 
-Extract a design system from an existing codebase, or audit a UI for visual consistency. The token workflow and theming rules are in the parent [`design`](../SKILL.md) §26; this file adds the generate, audit, and slop-check procedures.
+Extract a design system from an existing codebase, or audit a UI for visual consistency. §26 (token workflow, theming, components) is below; this file also has the generate, audit, and slop-check procedures. Parent § map: [`design`](../SKILL.md).
 
 ## When to use
 
@@ -9,6 +9,16 @@ Extract a design system from an existing codebase, or audit a UI for visual cons
 - Before a redesign, to record what exists (see parent §14).
 - The UI looks "off" and you cannot find the cause.
 - You review a PR that changes styling.
+
+## 26. Design Systems
+
+**Workflow:** principles -> tokens (palette 50-950, modular type, 8pt spacing, radius, shadows, breakpoints) -> theming -> atomic components -> a11y -> docs -> semver.
+
+* **Tokens:** one versioned source; UI uses semantic tokens (`color.semantic.brand.primary`) that reference primitives.
+* **Theming:** swap semantic tokens via `data-theme` on `<html>`, ThemeProvider, or Tailwind `dark:`.
+* **Components:** atoms -> molecules -> organisms -> templates -> pages; props `variant`/`size`/`disabled`/`loading`; composition (`<Card.Header>`) over boolean props; polymorphic `as`.
+* **A11y (WCAG 2.1 AA):** keyboard reach, `:focus-visible`, modal focus traps, `aria-label` on icon buttons, `aria-expanded`, `role="alert"`; axe + manual tests; Storybook a11y addon.
+* **Pitfalls:** hard-coded values, inconsistent props, missing focus, unchecked dark contrast, unversioned tokens.
 
 ## Mode 1: Generate
 
@@ -87,6 +97,6 @@ Report each finding with `file:line` and the parent rule that it breaks.
 
 ## Related skills
 
-- [`design`](../SKILL.md) §26 - token workflow, theming, component structure.
+- [`design`](../SKILL.md) - parent rules and § map.
 - [`brand-theming`](brand-theming.md) - apply a fixed brand palette and fonts.
 - [`make-interfaces-feel-better`](make-interfaces-feel-better.md) - polish details after the audit.

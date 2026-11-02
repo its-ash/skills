@@ -1,284 +1,50 @@
 ---
 name: unit-testing-patterns
-description: "Covers unit-testing patterns for JavaScript and TypeScript with Jest and for Python with pytest including test-driven development workflows, factory functions for test data, mocking strategies, parametrized tests, async testing, and test structure conventions. Use when writing unit tests, practicing TDD red-green-refactor, creating test data factories, mocking dependencies, parametrizing test cases, testing async code, structuring test files with describe it or pytest fixtures, naming tests with given-when-then or should-expect patterns, fixing flaky tests, or adding coverage for new features, bug fixes, and refactors in Jest, pytest, JavaScript, TypeScript, or Python projects. Sub-skills: test-driven-development, playwright, react-testing, ai-regression-testing, test-collaboration, browser-qa."
+description: "Unit-testing patterns for JavaScript/TypeScript with Jest and Python with pytest: TDD red-green-refactor, test data factories, mocking, parametrized and async tests, describe/it and fixture structure, test naming, and flaky-test fixes. Use when writing unit tests, practicing TDD, mocking dependencies, testing async code, or adding coverage for features, bug fixes, and refactors. Sub-skills: test-driven-development, playwright, react-testing, ai-regression-testing, test-collaboration, browser-qa."
 ---
+# Unit Testing Patterns
+Write fast, readable unit tests in Jest and pytest with one shared method.
 
-# unit-testing-patterns
+## Core rules
+- TDD: write a failing test, run it and see it fail, write minimal code to pass, run all tests, refactor while green.
+- One observable behavior per test.
+- Build test data with factories (Jest) or factory fixtures (pytest) with defaults plus `overrides`; override only the fields the test needs.
+- Mock only external boundaries (network, email, analytics, clock); keep core logic real.
+- Patch at the import location the code under test uses; use `autospec=True` to enforce real signatures.
+- Clear mocks between tests: `jest.clearAllMocks()` in `beforeEach`; pytest-mock resets `mocker` per test.
+- Assert on outputs and UI, not mock calls, unless the call is the contract.
+- Await every promise and coroutine; a missing `await` gives a false pass.
+- Name tests as specs in present tense: `creates user with valid data`.
+- Group with nested `describe` (Rendering, User interactions) or a `Test<Unit>` class.
+- Run the full suite after each change; coverage must not drop.
 
-Provide consistent, maintainable unit tests for JavaScript/TypeScript projects that use Jest and for Python projects that use pytest. Follow the same principles across languages: write failing tests first, keep test data DRY, mock external code safely, and structure tests for readability.
+## Decisions
+| Situation | Do | Avoid |
+|---|---|---|
+| Many cases, same logic | `it.each` / `@pytest.mark.parametrize` | Copy-pasted tests |
+| Async function | `async` test + `await`; pytest-asyncio; `AsyncMock` for awaited deps | Fire-and-forget calls |
+| Element must appear later | `await waitFor(...)` / `findBy*` | Fixed sleeps |
+| Element must be absent | `queryBy*` → `toBeNull()` | `getBy*` in a try/catch |
+| DB access in a unit test | In-memory SQLite fixture with `yield` | Shared dev database |
+| Flaky test | Find shared state, timing, or order; fix root cause ([debugging](../systematic-debugging/SKILL.md)) | Retries to hide it |
+| React components, hooks, MSW, axe | [react-testing](references/react-testing.md) | Snapshot-only tests |
+| Full user flow in a browser | [playwright](references/playwright.md) | Unit tests with heavy DOM mocks |
+| Code an AI wrote | [ai-regression-testing](references/ai-regression-testing.md) | Trust without a regression test |
 
-## When to use
-- You need to add or improve unit tests for a JavaScript/TypeScript codebase (React, Node, etc.).
-- You need to add or improve unit tests for a Python codebase.
-- You want to adopt Test‑Driven Development (TDD) or Behavior‑Driven Testing.
-- You need reusable factories for component props, data objects, or fixtures.
-- You need clear patterns for mocking modules, functions, or external services.
-
----
-
-## Test‑Driven Development Workflow
-1. Write a test that fails because the feature does not exist.
-2. Run the test suite; confirm the new test fails.
-3. Write the minimal production code required to make the test pass.
-4. Run the test suite again; confirm all tests pass.
-5. Refactor the production code while keeping the tests green.
-6. Repeat for the next behavior.
-
-> Keep the test focused on a single observable behavior. Do not write production code before a failing test exists.
-
----
-
-## Factory Functions for Test Data
-### JavaScript / TypeScript
-Create a function that returns default props or data objects. Allow an optional `overrides` argument to replace selected fields.
-
-```typescript
-// utils/factories.ts
-export const getMockUser = (overrides?: Partial<User>): User => ({
-  id: 'u-001',
-  name: 'Alice',
-  email: 'alice@example.com',
-  role: 'user',
-  ...overrides,
-});
-
-export const getMockComponentProps = (overrides?: Partial<ComponentProps<typeof MyComponent>>): ComponentProps<typeof MyComponent> => ({
-  title: 'Default Title',
-  count: 0,
-  onPress: jest.fn(),
-  isLoading: false,
-  ...overrides,
-});
-```
-
-**Usage**
-```typescript
-import { getMockUser, getMockComponentProps } from 'utils/factories';
-import { renderWithTheme } from 'utils/testUtils';
-
-it('shows admin badge when role is admin', () => {
-  const user = getMockUser({ role: 'admin' });
-  renderWithTheme(<UserCard user={user} />);
-  expect(screen.getByText('Admin')).toBeTruthy();
-});
-```
-
-### Python (pytest)
-Define reusable fixtures that return default objects. Allow parameter overrides via fixture arguments.
-
-```python
-# tests/conftest.py
-import pytest
-from myapp.models import User
-
-@pytest.fixture
-def mock_user():
-    def _factory(**overrides):
-        defaults = {
-            "id": "u-001",
-            "name": "Alice",
-            "email": "alice@example.com",
-            "role": "user",
-        }
-        defaults.update(overrides)
-        return User(**defaults)
-    return _factory
-```
-
-**Usage**
-```python
-def test_admin_badge(mock_user):
-    user = mock_user(role="admin")
-    response = client.get(f"/users/{user.id}/profile")
-    assert "Admin" in response.text
-```
-
----
-
-## Mocking Strategies
-### Jest (JavaScript)
-- Mock an entire module with `jest.mock('module')`.
-- Provide a factory function to replace specific exports.
-- Access the mock via `jest.requireMock` or the imported name.
-
-```typescript
-jest.mock('utils/analytics', () => ({
-  Analytics: { logEvent: jest.fn() },
-}));
-
-const mockLog = jest.requireMock('utils/analytics').Analytics.logEvent;
-
-it('logs event on click', () => {
-  renderWithTheme(<Button />);
-  fireEvent.press(screen.getByTestId('button'));
-  expect(mockLog).toHaveBeenCalledWith('button_clicked');
-});
-```
-
-- Clear mocks in `beforeEach` with `jest.clearAllMocks()`.
-
-### pytest (Python)
-- Use `unittest.mock.patch` as a decorator or context manager.
-- Patch at the import location used by the code under test.
-- Return a `Mock` object that you can configure.
-
-```python
-from unittest.mock import patch
-
-@patch('myapp.services.email.send_email')
-def test_send_welcome_email(mock_send, mock_user):
-    user = mock_user()
-    send_welcome(user.id)
-    mock_send.assert_called_once_with(user.email, any=str)
-```
-
-- Use `autospec=True` to enforce the real signature.
-
----
-
-## Test Structure and Naming
-### Jest
-```typescript
-describe('MyComponent', () => {
-  beforeEach(() => jest.clearAllMocks());
-
-  describe('Rendering', () => {
-    it('renders with default props', () => { /* ... */ });
-    it('shows loading state when loading', () => { /* ... */ });
-  });
-
-  describe('User interactions', () => {
-    it('calls onPress when button is tapped', async () => { /* ... */ });
-  });
-});
-```
-
-### pytest
-```python
-import pytest
-
-@pytest.mark.describe('UserService')
-class TestUserService:
-    @pytest.fixture(autouse=True)
-    def _clear_mocks(self, mocker):
-        mocker.resetall()
-
-    def test_create_user(self, mock_user, mocker):
-        # test body
-        ...
-```
-
-**Naming rules**
-- Use present tense, describe the observable outcome.
-- Prefix with the unit under test when helpful (e.g., `UserService creates user with valid data`).
-
----
-
-## Query and Interaction Patterns (JavaScript)
-- **Existence**: `expect(screen.getByText('Hello')).toBeTruthy();`
-- **Non‑existence**: `expect(screen.queryByText('Goodbye')).toBeNull();`
-- **Async appearance**:
-  ```typescript
-  await waitFor(() => expect(screen.getByText('Loaded')).toBeTruthy());
-  ```
-- **User events**:
-  ```typescript
-  fireEvent.changeText(screen.getByLabelText('Email'), 'user@example.com');
-  fireEvent.press(screen.getByTestId('submit'));
-  ```
-
----
-
-## pytest Fixtures, Parametrization, and Async Testing (Python)
-- **Simple fixture**: see `mock_user` example above.
-- **Parametrized test**:
-  ```python
-  @pytest.mark.parametrize('role,expected', [
-      ('admin', True),
-      ('user', False),
-  ])
-  def test_is_admin(mock_user, role, expected):
-      user = mock_user(role=role)
-      assert user.is_admin() is expected
-  ```
-- **Async test** (requires `pytest-asyncio`):
-  ```python
-  @pytest.mark.asyncio
-  async def test_fetch_data(mocker):
-      mocker.patch('myapp.api.fetch', return_value={'data': 42})
-      result = await fetch_data()
-      assert result == 42
-  ```
-- **Database fixture** (example with SQLite in‑memory):
-  ```python
-  @pytest.fixture
-  def db_session():
-      engine = create_engine('sqlite:///:memory:')
-      Base.metadata.create_all(engine)
-      Session = sessionmaker(bind=engine)
-      yield Session()
-      Session.close()
-  ```
-
----
-
-## Common Pitfalls
-- **Testing mock implementation instead of behavior** – assert on UI or output, not on `mockFn.called` unless the call itself is the observable effect.
-- **Duplicating test data** – always use factories or fixtures; duplicated literals become out‑of‑sync.
-- **Over‑mocking** – mock only external boundaries. Keep core logic unmocked to retain confidence.
-- **Missing `await` in async tests** – leads to false positives. Always await promises or coroutine calls.
-- **Not clearing mocks between tests** – residual call history can cause flaky assertions.
-
----
-
-## Checklist
-- [ ] Write a failing test before any production code.
-- [ ] Use a factory or fixture to create default data.
-- [ ] Override only the fields needed for the specific test.
-- [ ] Mock external modules at the import location used by the code.
-- [ ] Clear mocks in a `beforeEach` (Jest) or fixture with `autouse=True` (pytest).
-- [ ] Keep each test focused on one behavior.
-- [ ] Use descriptive test names that read like specifications.
-- [ ] Verify observable outcomes, not internal mock calls, unless the call is the contract.
-- [ ] Run the full suite after each change; ensure coverage does not drop.
-- [ ] For async code, await all promises or coroutine calls.
-
----
-
-## Running Tests
-- **Jest**
-  ```bash
-  npm test                 # all tests
-  npm test -- -t "MyComponent"  # specific test name pattern
-  npm run test:coverage    # with coverage report
-  ```
-- **pytest**
-  ```bash
-  pytest                     # all tests
-  pytest -k "UserService"   # tests matching keyword
-  pytest --cov=myapp         # with coverage
-  ```
-
-## Sub-skills
-
-Read a sub-skill file only when the task needs it.
-
-| File | Use when |
-|------|----------|
-| [references/test-driven-development.md](references/test-driven-development.md) | Test‑Driven Development (TDD) guides you to write a failing test before any production code, then write the minimal code to make the test pass, and finally refactor while keeping all tests green. Use for new features, bug fixes, refactoring, or any change that needs reliable behavior verification. |
-| [references/playwright.md](references/playwright.md) | Write Playwright E2E tests and browser automation: config, Page Object Model, auth state, fixtures, flaky-test fixes, artifacts, visual regression, and CI sharding. |
-| [references/react-testing.md](references/react-testing.md) | Test React components, hooks, and pages with React Testing Library, Vitest or Jest, MSW network mocks, and axe checks; choose between RTL, Playwright CT, and E2E. |
-| [references/ai-regression-testing.md](references/ai-regression-testing.md) | Add regression tests for AI-written code: sandbox-mode API tests, sandbox/production parity, bug-check procedure, and common AI regression patterns. |
-| [references/test-collaboration.md](references/test-collaboration.md) | Make a test inventory and gap analysis, map requirements, bugs, and contracts to TEST-IDs in a `TESTS.md` registry, and review evidence before delivery. |
-| [references/browser-qa.md](references/browser-qa.md) | Do post-deploy UI checks on staging or preview with a browser tool: smoke, interaction, visual regression, and accessibility, with a SHIP verdict. |
+## Load on demand
+| Need | Read |
+|---|---|
+| Factories, mocks, structure, Testing Library queries, parametrize, async, DB fixture, run commands | [references/jest-pytest-patterns.md](references/jest-pytest-patterns.md) |
+| Strict TDD cycle for features, fixes, refactors | [references/test-driven-development.md](references/test-driven-development.md) |
+| Playwright E2E: config, POM, auth state, fixtures, flaky fixes, artifacts, visual regression, CI sharding | [references/playwright.md](references/playwright.md) |
+| React Testing Library, Vitest/Jest, MSW, axe; RTL vs Playwright CT vs E2E | [references/react-testing.md](references/react-testing.md) |
+| Regression tests for AI-written code, sandbox/production parity | [references/ai-regression-testing.md](references/ai-regression-testing.md) |
+| Test inventory, gap analysis, `TESTS.md` TEST-ID registry, evidence review | [references/test-collaboration.md](references/test-collaboration.md) |
+| Post-deploy browser QA: smoke, interaction, visual, a11y, SHIP verdict | [references/browser-qa.md](references/browser-qa.md) |
 
 ## Related skills
-
-Load these when the task spans more than this skill.
-
-- [`javascript`](../typescript/references/javascript.md) — A concise reference of core JavaScript concepts—primitives, type coercion, scope, closures, this, event loop,…
-- [`typescript`](../typescript/SKILL.md) — Provides expert guidance for TypeScript projects, covering setup analysis, migration, monorepo configuration,…
-- [`python`](../python/SKILL.md) — Guidance for modern Python 3.12+ development. Includes framework selection, async vs sync decisions, project l…
-- [`systematic-debugging`](../systematic-debugging/SKILL.md) — A step‑by‑step process for diagnosing and fixing bugs, test failures, or unexpected behavior. Use it for any t…
-- [`clean-code`](../clean-code/SKILL.md) — Pragmatic clean code standards for AI-assisted development. Covers naming, function design, code structure, an…
-| [references/playwright.md](references/playwright.md) | Playwright automates Chromium, Firefox, and WebKit for end-to-end testing and browser scripting with TypeScript or JavaScript. Use when writing e2e tests, browser automation scripts, page object models, visual regression snapshots, authentication state fixtures, CI pipeline integration with GitHub Actions, cross-browser viewport testing, login flow verification, network request interception, trace viewer debugging, or generating test reports with HTML output. |
+- [`python`](../python/SKILL.md) — pytest deep dive via python-testing
+- [`typescript`](../typescript/SKILL.md) — TS types and config
+- [`javascript`](../typescript/references/javascript.md) — core JS: closures, event loop
+- [`systematic-debugging`](../systematic-debugging/SKILL.md) — root-cause failing or flaky tests
+- [`clean-code`](../clean-code/SKILL.md) — naming and structure in tests

@@ -1,369 +1,67 @@
 ---
 name: frontend-development
-description: "Build modern React and Next.js applications with TypeScript, MUI v7 components, TanStack Query and Router, and performance-focused patterns for components, routing, styling, data fetching, and bundle optimization. Use when creating React components, Next.js pages, TypeScript interfaces, MUI theming, sx prop styling, TanStack useSuspenseQuery, useQuery, useMutation, TanStack Router routes, server components, SSR hydration, responsive layouts, bundle analysis, re-render reduction, async waterfalls, optimizing Core Web Vitals, or working with React Native/Expo, Vue 3, Pinia, Nuxt 4, Angular signals, Vite config, or Turbopack. Sub-skills: mui, react-patterns, react-performance, nextjs, astro, d3-visualization, progressive-web-app, react-native, vue, nuxt, ui-to-vue, angular, vite."
+description: "Build React and Next.js apps with TypeScript, MUI v7, TanStack Query and Router, and performance patterns. Use when creating React components, Next.js pages, MUI theming, sx styling, useSuspenseQuery, useMutation, TanStack Router routes, server components, SSR hydration, bundle analysis, re-render reduction, async waterfalls, Core Web Vitals, React Native/Expo, Vue 3, Pinia, Nuxt 4, Angular signals, Vite, or Turbopack. Sub-skills: mui, react-patterns, react-performance, nextjs, astro, d3-visualization, progressive-web-app, react-native, vue, nuxt, ui-to-vue, angular, vite."
 ---
 
 # Frontend Development
+Build, organize, and tune React/Next.js apps with TypeScript, MUI v7, and TanStack Query/Router.
 
-A practical guide for building, organizing, and optimizing React/Next.js applications using TypeScript, MUI v7, TanStack Query & Router, and modern performance patterns.
+## Core rules
+- Organize by feature: `src/features/<name>/{api,components,hooks,helpers,types}` + `index.ts` public API.
+- Use import aliases (`@/`, `~types`, `~components`, `~features`); no deep relative paths.
+- Type props with `interface`; type MUI style objects with `SxProps<Theme>`.
+- Fetch server data with `useSuspenseQuery` inside `<Suspense>`. No manual `isLoading` flags.
+- Do not early-return loading spinners. Keep layout stable (prevents CLS).
+- Lazy-load heavy components and route pages with `React.lazy` + `<Suspense fallback={<SuspenseLoader/>}>`.
+- Style with `sx`. Move styles to `<Component>.styles.ts` when the component passes 100 lines.
+- MUI v7 Grid: `<Grid size={{ xs: 12, md: 6 }} />`.
+- Sort a copy: `useMemo(() => [...items].sort(fn), [items])`. `Array.prototype.sort` mutates.
+- Virtualize long lists with `@tanstack/react-virtual`.
+- Wrap the app in an Error Boundary. Show user-visible errors with `useMuiSnackbar`.
+- Give interactive widgets keyboard support, focus management, and correct ARIA roles.
+- Add `*.test.tsx` for new features; lint must pass.
 
-## When to Use
-- Add a new component or page
-- Implement a new feature (API, UI, state)
-- Set up routing or lazy loading
-- Apply styling with MUI
-- Fetch data with `useSuspenseQuery`
-- Optimize bundle size or runtime performance
-- Enforce consistent file structure and TypeScript standards
+## Decisions
+| Situation | Do | Avoid |
+|---|---|---|
+| Server state | TanStack Query | `useEffect` + `useState` fetch |
+| Shared mutable client state | Context + `useReducer` | Prop drilling across many levels |
+| Isolated reusable logic | Custom hook (`useDebounce`, `useToggle`) | Copy logic between components |
+| No data library allowed | Ref-based fallback hook (hooks-and-ui) | Inline fetcher in effect deps (infinite loop) |
+| Expensive calc / handler to child / pure child | `useMemo` / `useCallback` / `React.memo` | Memo everything by default |
+| Simple form | Validate on submit, `Record<field, string>` errors | Silent submit failure |
+| Complex form | React Hook Form or TanStack Form + Zod | Hand-rolled nested validation |
+| Large bundle | `npm run build && npx next-bundle-analyzer`, split code | Barrel imports of heavy libs |
 
----
+| Stack | Read |
+|---|---|
+| Next.js App Router, server actions, Turbopack | nextjs |
+| Content site, zero JS default | astro |
+| Mobile (Expo) | react-native |
+| Vue 3 / Nuxt 4 / Angular | vue / nuxt / angular |
 
-## Project Setup
-```bash
-# Install dependencies
-npm install
-# Copy environment template
-cp .env.example .env
-# Start development server
-npm run dev
-# Run lint and tests
-npm run lint
-npm run test
-```
-
-## Import Aliases (vite/webpack)
-| Alias | Resolves To |
-| ----- | ----------- |
-| `@/` | `src/` |
-| `~types` | `src/types` |
-| `~components` | `src/components` |
-| `~features` | `src/features` |
-
-Use them in imports, e.g. `import { apiClient } from '@/lib/apiClient'`.
-
----
-
-## File Organization
-```
-src/
-├─ components/          # Re‑usable UI pieces (SuspenseLoader, AppBar)
-├─ features/            # Domain‑specific modules
-│   └─ <feature>/
-│       ├─ api/        # API service layer
-│       ├─ components/ # Feature UI
-│       ├─ hooks/      # Custom hooks
-│       ├─ helpers/    # Utilities
-│       └─ types/      # TypeScript types
-├─ routes/              # TanStack Router file‑based routes
-└─ lib/                 # Shared utilities (apiClient, etc.)
-```
-
-### New Feature Checklist
-- Create `src/features/<name>/` with subfolders `api`, `components`, `hooks`, `helpers`, `types`.
-- Add `api/<name>Api.ts` that exports typed request functions.
-- Define TypeScript types in `types/`.
-- Add a route file `src/routes/<name>/index.tsx` that lazy‑loads the feature component.
-- Export a public API from `src/features/<name>/index.ts`.
-
----
-
-## Component Creation Checklist
-- Declare props with `interface Props { … }` and use `React.FC<Props>`.
-- If the component is > 100 lines, move styles to `<Component>.styles.ts`.
-- Lazy‑load heavy components with `React.lazy(() => import('./Heavy'))`.
-- Wrap lazy components in `<Suspense fallback={<SuspenseLoader/>}>`.
-- Use `useSuspenseQuery` for data fetching; avoid manual `isLoading` checks.
-- Memoize event handlers with `useCallback` when passed to children.
-- Export the component as a default export at the bottom of the file.
-- Do **not** return early loading spinners; keep layout stable.
-- Show user notifications with `useMuiSnackbar`.
-
-### Minimal Component Template
-```tsx
-import React, { useState, useCallback } from 'react';
-import { Box, Paper } from '@mui/material';
-import { useSuspenseQuery } from '@tanstack/react-query';
-import { featureApi } from '../api/featureApi';
-import type { FeatureData } from '~types/feature';
-
-interface MyComponentProps { id: number; onAction?: () => void; }
-
-export const MyComponent: React.FC<MyComponentProps> = ({ id, onAction }) => {
-  const { data } = useSuspenseQuery({
-    queryKey: ['feature', id],
-    queryFn: () => featureApi.getFeature(id),
-  });
-
-  const handleAction = useCallback(() => {
-    onAction?.();
-  }, [onAction]);
-
-  return (
-    <Box sx={{ p: 2 }}>
-      <Paper sx={{ p: 3 }}>{/* render data */}</Paper>
-    </Box>
-  );
-};
-
-export default MyComponent;
-```
-
----
-
-## Routing (TanStack Router)
-```tsx
-import { createFileRoute } from '@tanstack/react-router';
-import { lazy } from 'react';
-
-const FeaturePage = lazy(() => import('~features/my-feature/components/FeaturePage'));
-
-export const Route = createFileRoute('/my-feature/')({
-  component: FeaturePage,
-  loader: () => ({ crumb: 'My Feature' }),
-});
-```
-- Place the file at `src/routes/my-feature/index.tsx`.
-- Lazy‑load the feature component.
-- Use `loader` to provide breadcrumb or meta data.
-
----
-
-## Styling (MUI v7)
-- Use the `sx` prop for most styling.
-- Type the style object with `SxProps<Theme>`.
-- Inline styles for < 100 lines; otherwise create `<Component>.styles.ts`.
-```tsx
-import { Box } from '@mui/material';
-import type { SxProps, Theme } from '@mui/material';
-
-const styles: Record<string, SxProps<Theme>> = {
-  container: { p: 2, backgroundColor: theme => theme.palette.background.paper },
-};
-
-export const StyledBox = () => <Box sx={styles.container}>Content</Box>;
-```
-- Grid syntax (v7): `<Grid size={{ xs: 12, md: 6 }} />`.
-
----
-
-## Data Fetching & State
-### Primary Pattern: `useSuspenseQuery`
-```tsx
-const { data } = useSuspenseQuery({
-  queryKey: ['posts', id],
-  queryFn: () => postsApi.get(id),
-});
-```
-- Works inside a `<Suspense>` boundary.
-- Cache‑first strategy; no manual loading flags.
-
-### Custom Hook Example (Toggle)
-```tsx
-export function useToggle(initial = false): [boolean, () => void] {
-  const [value, setValue] = useState(initial);
-  const toggle = useCallback(() => setValue(v => !v), []);
-  return [value, toggle];
-}
-```
-
-### Async Hook Example
-```tsx
-export function useQuery<T>(key: string, fetcher: () => Promise<T>, opts?: { onSuccess?: (d: T) => void; onError?: (e: Error) => void; enabled?: boolean }) {
-  const [data, setData] = useState<T | null>(null);
-  const [error, setError] = useState<Error | null>(null);
-  const [loading, setLoading] = useState(false);
-  const fetcherRef = useRef(fetcher);
-  const optsRef = useRef(opts);
-  useEffect(() => {
-    fetcherRef.current = fetcher;
-    optsRef.current = opts;
-  });
-
-  const refetch = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const result = await fetcherRef.current();
-      setData(result);
-      optsRef.current?.onSuccess?.(result);
-    } catch (e) {
-      const err = e as Error;
-      setError(err);
-      optsRef.current?.onError?.(err);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  const enabled = opts?.enabled !== false;
-  useEffect(() => {
-    if (enabled) refetch();
-  }, [key, enabled, refetch]);
-
-  return { data, error, loading, refetch };
-}
-```
-- Keep `fetcher` and `opts` in refs. Then `refetch` stays stable when callers pass inline functions or object literals. Without the refs, each render makes a new `refetch` and the effect runs again after each state update: an infinite fetch loop.
-- Prefer TanStack Query in production. Use this hook only where you cannot add a library.
-
----
-
-## State Management Patterns
-- **Context + Reducer** for shared mutable state.
-- **Custom hooks** (`useToggle`, `useDebounce`) for isolated logic.
-- **TanStack Query** for server state.
-
-### Debounce Hook
-```tsx
-export function useDebounce<T>(value: T, delay: number): T {
-  const [debounced, setDebounced] = useState(value);
-  useEffect(() => {
-    const id = setTimeout(() => setDebounced(value), delay);
-    return () => clearTimeout(id);
-  }, [value, delay]);
-  return debounced;
-}
-```
-
----
-
-## Performance Optimization
-- **Memoization**: `useMemo` for expensive calculations, `useCallback` for handlers, `React.memo` for pure components.
-- **Code Splitting**: Lazy‑load heavy components with `React.lazy` and `<Suspense>`.
-- **Virtualization**: Use `@tanstack/react-virtual` for long lists.
-- **Sort a copy**: `useMemo(() => [...items].sort(fn), [items])`. `Array.prototype.sort` changes the array in place.
-- **Bundle Analysis**: Run `npm run build && npx next-bundle-analyzer` (or any configured analyzer) to view size and apply recommendations.
-- **Avoid Early Returns** for loading states; keep layout stable to prevent CLS.
-
----
-
-## Error Handling
-- Wrap the app with an **Error Boundary**.
-```tsx
-export class ErrorBoundary extends React.Component<{children: React.ReactNode}, {hasError: boolean; error: Error | null}> {
-  state = {hasError: false, error: null};
-  static getDerivedStateFromError(error: Error) { return {hasError: true, error}; }
-  componentDidCatch(error: Error, info: React.ErrorInfo) { console.error(error, info); }
-  render() {
-    return this.state.hasError ? (
-      <div className="error-fallback">
-        <h2>Something went wrong</h2>
-        <p>{this.state.error?.message}</p>
-        <button onClick={() => this.setState({ hasError: false, error: null })}>Try again</button>
-      </div>
-    ) : this.props.children;
-  }
-}
-```
-- Use `useMuiSnackbar` for user‑visible error messages.
-
----
-
-## Animation (Framer Motion)
-```tsx
-import { motion, AnimatePresence } from 'framer-motion';
-
-export function AnimatedList({items}: {items: string[]}) {
-  return (
-    <AnimatePresence>
-      {items.map(i => (
-        <motion.div key={i} initial={{opacity:0, y:20}} animate={{opacity:1, y:0}} exit={{opacity:0, y:-20}} transition={{duration:0.3}}>
-          {i}
-        </motion.div>
-      ))}
-    </AnimatePresence>
-  );
-}
-```
-- For modals, animate the overlay with `opacity` and the panel with `opacity`, `scale: 0.9 → 1`, and `y: 20 → 0`, both inside one `<AnimatePresence>`.
-
----
-
-## Forms
-- Validate on submit; store errors in a `Record<field, string>` and show each error next to its field.
-- Trim strings before you check for empty values, and enforce maximum lengths.
-- Wrap the submit call in `try/catch` and show the failure to the user.
-- For complex forms, use React Hook Form or TanStack Form with a Zod schema (see [`zod`](../typescript/references/zod.md)).
-
----
-
-## Accessibility
-- Provide keyboard navigation (arrow keys, Enter, Escape) for interactive widgets.
-- Manage focus when opening/closing dialogs: save previous focus, move focus into the modal, restore on close.
-- Use proper ARIA roles (`role="dialog"`, `aria-modal="true"`, `role="combobox"`).
-
----
-
-## Checklist for New Feature
-- [ ] Directory `src/features/<name>/` with required subfolders.
-- [ ] TypeScript types defined and exported.
-- [ ] API service (`api/<name>Api.ts`) with typed functions.
-- [ ] Feature components use `React.FC`, lazy loading, and `SuspenseLoader`.
-- [ ] Custom hooks placed in `hooks/` and exported.
-- [ ] Route file created under `src/routes/<name>/index.tsx`.
-- [ ] Styles follow inline vs separate rule.
-- [ ] Performance: memoize, lazy load, avoid unnecessary re‑renders.
-- [ ] Accessibility: keyboard support, focus management.
-- [ ] Tests added (`*.test.tsx`) and lint passes.
-
----
-
-## Common Commands
-```bash
-# Development
-npm run dev               # Start dev server
-npm run lint              # Lint code
-npm run test              # Run unit/integration tests
-
-# Build & Analyze
-npm run build             # Production build (Next.js)
-npx next-bundle-analyzer # View bundle size report
-
-# Docker (optional)
-docker build -t my-app .
-docker compose up -d
-```
-
----
-
-## Resources
-- **Component Patterns** – composition, compound components, render props.
-- **Data Fetching** – `useSuspenseQuery` and API service layer.
-- **File Organization** – feature‑first folder layout.
-- **Styling Guide** – MUI `sx` usage and theme access.
-- **Routing Guide** – TanStack Router file‑based routes.
-- **Performance Guide** – memoization, virtualization, bundle analysis.
-- **Accessibility Guide** – keyboard navigation and focus management.
-- **Animation Guide** – Framer Motion patterns.
-
-## Sub-skills
-
-Read a sub-skill file only when the task needs it.
-
-| File | Use when |
-|------|----------|
-| [references/mui.md](references/mui.md) | Provides concise patterns for using Material‑UI v7 components, sx prop styling, theme integration, responsive design, and MUI‑specific hooks in React projects. |
-| [references/react-patterns.md](references/react-patterns.md) | Provides production‑ready React patterns for component design, hooks, state selection, TypeScript typing, React 19 updates, composition, performance, error handling, UI states, routing, server components, and useEffect best practices. |
-| [references/react-performance.md](references/react-performance.md) | Guidelines and workflow for optimizing React and Next.js performance. Use when writing, reviewing, or refactoring components, pages, or data‑fetching code to eliminate async waterfalls, shrink bundles, improve server‑side rendering, and reduce unnecessary re‑renders. |
-| [references/nextjs.md](references/nextjs.md) | Next.js 14+ App Router: component types, data fetching and caching, routing, route handlers, server actions, metadata, Supabase auth, Next.js 16 Turbopack and `proxy.ts`. |
-| [references/astro.md](references/astro.md) | Astro content sites: zero JS by default, islands, content collections, SSG/SSR. |
-| [references/d3-visualization.md](references/d3-visualization.md) | D3.js charts with SVG/Canvas, scales, axes, transitions, zoom, force layouts, and maps. |
-| [references/progressive-web-app.md](references/progressive-web-app.md) | PWA manifest, service worker caching, install prompt, offline fallback, push. |
-| [references/react-native.md](references/react-native.md) | React Native / Expo screens: Expo Router, state separation, TanStack Query + Zod, FlatList/FlashList, NativeWind, native APIs, secure storage. |
-| [references/vue.md](references/vue.md) | Vue 3 Composition API, SFC structure, composables, Pinia, Vue Router, testing, Vue 3.5+ APIs. |
-| [references/nuxt.md](references/nuxt.md) | Nuxt 4 hydration safety, `useFetch`/`useAsyncData`, route rules, lazy loading and lazy hydration. |
-| [references/ui-to-vue.md](references/ui-to-vue.md) | Batch-convert design screenshots into Vue 3 components (Vant, Element Plus, Ant Design Vue). |
-| [references/angular.md](references/angular.md) | Angular projects: signals, `linkedSignal`, `resource`, signal/reactive forms, DI, routing, SSR, Angular Aria, testing, CLI. Detail files in `references/angular/`. |
-| [references/vite.md](references/vite.md) | `vite.config.ts`, plugins, HMR, env variables, proxy, library mode, pre-bundling, build optimization. |
+## Load on demand
+| Need | Read |
+|---|---|
+| Setup, aliases, file layout, feature and component checklists, component template, TanStack route, MUI styling basics | [references/project-conventions.md](references/project-conventions.md) |
+| useDebounce, fallback async hook, Error Boundary, Framer Motion, forms, accessibility | [references/hooks-and-ui.md](references/hooks-and-ui.md) |
+| MUI v7 components, sx, theme, responsive, MUI hooks | [references/mui.md](references/mui.md) |
+| Component design, hooks, state selection, React 19, composition, UI states, useEffect rules | [references/react-patterns.md](references/react-patterns.md) |
+| Waterfalls, bundle size, SSR, re-renders, Web Vitals | [references/react-performance.md](references/react-performance.md) |
+| Next.js 14+ App Router, caching, route handlers, server actions, metadata, Supabase auth, Next 16 `proxy.ts` | [references/nextjs.md](references/nextjs.md) |
+| Astro islands, content collections, SSG/SSR | [references/astro.md](references/astro.md) |
+| D3 charts: scales, axes, transitions, zoom, force, maps | [references/d3-visualization.md](references/d3-visualization.md) |
+| PWA manifest, service worker cache, install, offline, push | [references/progressive-web-app.md](references/progressive-web-app.md) |
+| React Native / Expo Router, FlashList, NativeWind, secure storage | [references/react-native.md](references/react-native.md) |
+| Vue 3 Composition API, Pinia, Vue Router | [references/vue.md](references/vue.md) |
+| Nuxt 4 hydration, `useFetch`/`useAsyncData`, route rules | [references/nuxt.md](references/nuxt.md) |
+| Screenshots to Vue 3 components (Vant, Element Plus, Ant Design Vue) | [references/ui-to-vue.md](references/ui-to-vue.md) |
+| Angular signals, forms, DI, routing, SSR, testing (detail in `references/angular/`) | [references/angular.md](references/angular.md) |
+| `vite.config.ts`, plugins, HMR, env, proxy, library mode | [references/vite.md](references/vite.md) |
 
 ## Related skills
-
-Load these when the task spans more than this skill.
-
-- [`nextjs`](references/nextjs.md) — Guidelines for building Next.js 14+ applications with the App Router. Includes component type decisions, data…
-- [`typescript`](../typescript/SKILL.md) — Provides expert guidance for TypeScript projects, covering setup analysis, migration, monorepo configuration,…
-- [`web-performance`](../web-quality-audit/references/web-performance.md) — Provides step‑by‑step guidance to measure, diagnose, and improve web performance, focusing on Core Web Vitals…
-- [`astro`](references/astro.md) — Astro is a web framework for content‑heavy sites that ships zero JavaScript by default and hydrates interactiv…
-- [`i18n-localization`](../i18n-localization/SKILL.md) — Guides developers to add internationalization (i18n) and localization (L10n) to web and Python projects, cover…
-- [`design`](../design/SKILL.md) — visual design, layout, motion, and CSS for the UI you build.
-- [`swift-ios`](../swift-ios/SKILL.md) — native iOS apps with SwiftUI (use `react-native` for cross-platform).
+- [`typescript`](../typescript/SKILL.md) — types, tsconfig, Zod schemas
+- [`design`](../design/SKILL.md) — visual design, layout, motion, CSS
+- [`web-performance`](../web-quality-audit/references/web-performance.md) — measure and fix Core Web Vitals
+- [`i18n-localization`](../i18n-localization/SKILL.md) — translations, locale formatting, RTL
+- [`swift-ios`](../swift-ios/SKILL.md) — native iOS with SwiftUI

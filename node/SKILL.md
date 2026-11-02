@@ -1,103 +1,41 @@
 ---
 name: node
-description: "Defines Node.js project conventions covering version pinning with .nvmrc, package.json scripts, Makefile targets, dependency management, TypeScript configuration, error handling patterns, and environment file structure. Use when initializing a Node.js project, configuring npm pnpm yarn workspaces, writing package.json scripts for build test lint dev start, setting .nvmrc for version consistency, creating Makefile targets for common tasks, adding TypeScript with tsconfig.json, structuring .env .env.local .env.production files, or scaffolding Express Fastify NestJS CLI applications, or using Bun (bun install, bun test, bun.lock, Bun.serve). Sub-skills: bun."
+description: "Defines Node.js project conventions covering version pinning with .nvmrc, package.json scripts, Makefile targets, dependency management, TypeScript configuration, error handling patterns, and environment file structure. Use when initializing a Node.js project, configuring npm pnpm yarn workspaces, writing package.json scripts for build test lint dev start, setting .nvmrc, creating Makefile targets, adding TypeScript with tsconfig.json, structuring .env files, scaffolding Express Fastify NestJS CLI apps, or using Bun (bun install, bun test, bun.lock, Bun.serve). Sub-skills: bun."
 ---
 
-# Node.js Skill
+# Node.js
+Conventions for new and existing Node.js projects.
 
-## Version management
-- **Always** add `.nvmrc` at project root with the LTS or installed Node version.
-  ```bash
-  node -v > .nvmrc
-  ```
-- Pin the exact version (e.g. `20.17.0`), never a vague major like `20`.
+## Core rules
+- Add `.nvmrc` at root with the exact version (`20.17.0`), never a bare major. Match `engines.node` to it.
+- Set `"type": "module"` unless the framework requires CommonJS.
+- Include scripts `dev`, `build`, `start` at minimum; add `lint` and `typecheck` when TS or ESLint exist.
+- Use TypeScript for new projects: `strict`, `esModuleInterop`, `skipLibCheck`; source in `src/`, output in `dist/`.
+- Makefile `run` → `npm run dev`, `build` → `npm run build`; `deploy` per root conventions.
+- `.gitignore` at minimum: `node_modules/`, `dist/`, `.env`, `.DS_Store`.
+- Validate env vars, request bodies, and CLI args with zod or similar.
+- Keep `.env` gitignored; commit `.env.example` with every required key and no real values.
+- Load env with `node --env-file=.env` (Node 20+) and `process.env`; use dotenv only on older Node.
+- Use `helmet` in Express apps. No `eval`; no `child_process` with unsanitized input.
 
-## package.json
-- `type: "module"` by default unless the framework requires CommonJS.
-- Scripts: always include `dev`, `build`, `start` at minimum.
-  ```json
-  {
-    "scripts": {
-      "dev": "<framework dev command>",
-      "build": "<framework build command>",
-      "start": "node dist/index.js",
-      "lint": "eslint .",
-      "typecheck": "tsc --noEmit"
-    }
-  }
-  ```
-- Engines field matching `.nvmrc`:
-  ```json
-  { "engines": { "node": ">=20.0.0" } }
-  ```
+## Decisions
+| Situation | Do | Avoid |
+|---|---|---|
+| Choose package manager | npm; keep the existing manager in an existing project | Mixing lockfiles |
+| Pin dependency versions | Exact for prod deps, caret for dev deps | Caret on prod deps |
+| Lockfile | Commit for apps; do not commit `package-lock.json` for libraries | Lockfile in a published library |
+| Nuxt static site | `nuxt generate` → `docs/` + `.nojekyll`; set Pages manually | Adding a deploy workflow unasked |
+| Project uses Bun or user asks | Read [references/bun.md](references/bun.md) | npm commands in a Bun repo |
 
-## Makefile (Node.js specific)
-```makefile
-run:
-	npm run dev
-
-build:
-	npm run build
-
-deploy: build
-	git checkout main
-	git add -A
-	git commit -m "$$(copilot -sp 'Analyze the staged git changes and generate a concise commit message. Output ONLY the commit message. Do not execute any commands. Do not include quotes, markdown, explanation, or bullet points.')"
-	git push origin main
-```
-
-### Nuxt.js variant
-- `build`: `nuxt generate`, output copied/configured into `docs/` at project root + `.nojekyll` file.
-- `docs/` is served via GitHub Pages configured manually in repo settings — never add a GitHub Actions/extension deploy workflow unless explicitly asked.
-```makefile
-build:
-	npx nuxt generate
-	cp -r .output/public/* docs/ 2>/dev/null || cp -r dist/* docs/ 2>/dev/null
-	touch docs/.nojekyll
-```
-
-## Project setup (all mandatory)
-1. `.nvmrc` — per above.
-2. `package.json` — per above.
-3. `Makefile` — per above.
-4. `.gitignore` — at minimum: `node_modules/`, `dist/`, `.env`, `.DS_Store`.
-5. `git init` + `git checkout -B main`.
-
-## Dependencies
-- Prefer npm over yarn/pnpm unless the existing project uses another manager.
-- Install exact versions for prod deps, caret for dev deps.
-- Never commit `package-lock.json` for libraries; always commit for apps.
-
-## TypeScript
-- Use TypeScript by default for new Node.js projects.
-- `tsconfig.json` with `strict: true`, `esModuleInterop: true`, `skipLibCheck: true`.
-- Output to `dist/`, source in `src/`.
-
-## Error handling & security
-- Validate all external input (env vars, request bodies, CLI args) — use zod or similar.
-- Never hardcode secrets; load from env with a `.env` file (gitignored) + dotenv.
-- Use helmet for Express apps.
-- No `eval`, no `child_process` with unsanitized input.
-
-## Env files
-- `.env` in `.gitignore`.
-- `.env.example` committed with all required keys documented (no real values).
-- Load via `process.env` directly (Node 20+ loads `.env` natively with `--env-file`).
-
-## Sub-skills
-
-Read a sub-skill file only when the task needs it.
-
-| File | Use when |
-|------|----------|
-| [references/bun.md](references/bun.md) | The project uses Bun or the user asks for it: Bun vs Node, migration, `bun install`/`bun test` commands, `bun audit`, workspaces, built-in APIs (`Bun.serve`, `bun:sqlite`, `Bun.sql`), Bun Makefile, Vercel `bunVersion`. |
+## Load on demand
+| Need | Read |
+|---|---|
+| Templates: `.nvmrc`, `package.json`, Makefile, Nuxt `build` target, `.gitignore` | [references/project-setup.md](references/project-setup.md) |
+| Bun vs Node, migration, `bun install`/`bun test`, `bun audit`, workspaces, `Bun.serve`, `bun:sqlite`, `Bun.sql`, Bun Makefile, Vercel `bunVersion` | [references/bun.md](references/bun.md) |
 
 ## Related skills
-
-Load these when the task spans more than this skill.
-
-- [`typescript`](../typescript/SKILL.md) — Provides expert guidance for TypeScript projects, covering setup analysis, migration, monorepo configuration,…
-- [`nextjs`](../frontend-development/references/nextjs.md) — Guidelines for building Next.js 14+ applications with the App Router. Includes component type decisions, data…
-- [`nestjs`](../backend-development/references/nestjs.md) — Expert guidance for NestJS applications covering module architecture, dependency injection, middleware, guards…
-- [`prisma`](../database-design/references/prisma.md) — Provides expert guidance for Prisma ORM tasks such as schema design, migrations, query optimization, relation…
-- [`docker`](../devops-iac/references/docker.md) — Provides expert guidance for Dockerfile optimization, multi‑stage builds, image size reduction, container secu…
+- [`typescript`](../typescript/SKILL.md) — TS setup, migration, monorepo config
+- [`nextjs`](../frontend-development/references/nextjs.md) — Next.js App Router apps
+- [`nestjs`](../backend-development/references/nestjs.md) — NestJS modules, DI, guards
+- [`prisma`](../database-design/references/prisma.md) — Prisma schema, migrations, queries
+- [`docker`](../devops-iac/references/docker.md) — multi-stage Node images

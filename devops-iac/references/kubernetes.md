@@ -782,6 +782,30 @@ spec:
 
 ---
 
+## Helm Release
+
+Use Helm charts for reusable apps; Kustomize overlays per environment; keep both in Git and apply via GitOps. Replace pods, never patch live.
+
+```yaml
+# values.yaml (partial)
+replicaCount: 3
+image:
+  repository: myapp/backend
+  tag: "{{ .Chart.AppVersion }}"
+service:
+  type: LoadBalancer
+  port: 80
+resources:
+  limits: { cpu: "500m", memory: "256Mi" }
+  requests: { cpu: "250m", memory: "128Mi" }
+```
+
+```bash
+helm upgrade --install myapp ./chart -f values.yaml --namespace prod
+```
+
+---
+
 ## Related
 
 - [docker.md](docker.md) — Multi-stage Dockerfiles and image security

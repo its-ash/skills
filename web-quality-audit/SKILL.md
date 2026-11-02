@@ -1,193 +1,55 @@
 ---
 name: web-quality-audit
-description: "Performs a full web quality audit measuring Core Web Vitals LCP FID CLS TTFB resource loading, accessibility WCAG ARIA screen reader compliance, SEO meta tags structured data sitemaps robots.txt, security headers CSP HSTS X-Frame-Options, HTML validation standards, and code quality best practices. Use when you need to audit analyze scan assess review optimize a website webpage for speed performance accessibility a11y SEO security compliance standards code quality linting Lighthouse PageSpeed scores before launch redesign migration or debugging slow loading broken markup ranking drops vulnerabilities. Sub-skills: web-performance, performance, web-accessibility, benchmark, latency-critical-systems, production-audit, canary-watch."
+description: "Full web quality audit: Core Web Vitals (LCP, INP, CLS, TTFB), resource loading, accessibility (WCAG, ARIA, screen readers), SEO (meta tags, structured data, sitemaps, robots.txt), security headers (CSP, HSTS, X-Frame-Options), HTML validity, and code quality. Use to audit or optimize a site for speed, a11y, SEO, or security, run Lighthouse or PageSpeed, check launch readiness, or debug slow loads, broken markup, ranking drops, or regressions after deploy. Sub-skills: web-performance, performance, web-accessibility, benchmark, latency-critical-systems, production-audit, canary-watch."
 ---
-
 # Web Quality Audit
+Audit a site for Performance, Accessibility, SEO, and Best Practices; report findings by severity with exact fixes.
 
-Perform a systematic review of a website. The audit evaluates **Performance**, **Accessibility**, **SEO**, and **Best Practices** (security, compatibility, code quality). Findings are grouped by severity and include concrete remediation steps.
+## Core rules
+- Run Lighthouse (or equivalent) on each target page. Export JSON and parse it; do not guess scores.
+- Classify each finding by category and severity (Critical, High, Medium, Low).
+- Give each finding a file path and line, its impact, and an exact code or config fix.
+- Use the report format in the checklist reference.
+- Fix order: Critical security and CWV → High a11y barriers → Medium SEO/perf → Low code quality.
+- CWV targets: LCP < 2.5 s, INP < 200 ms, CLS < 0.1. INP replaces FID.
+- Prefer field data (Search Console, CrUX) over one lab run when they disagree.
+- Prefer native HTML to ARIA. Contrast ≥ 4.5:1 (large text ≥ 3:1).
+- Do not run audits or load tests against third-party sites without permission.
 
-## When to use
-- Requested to “audit my site”, “review web quality”, or “run a Lighthouse audit”.
-- Before a public launch or major release.
-- As part of regular maintenance (weekly or monthly checks).
+## Decisions
+| Severity | Criteria | Fix by |
+|---|---|---|
+| Critical | Security flaw, total failure, CWV that breaks the page | Now |
+| High | CWV failure, major a11y barrier, broken function | Before launch |
+| Medium | Perf or SEO gain, non-blocking best-practice gap | This sprint |
+| Low | Minor tuning, lint warning, cosmetic | When convenient |
 
-## Workflow
-1. **Run Lighthouse** (or an equivalent tool) on the target pages.
-2. Export the JSON report and parse the relevant sections.
-3. Classify each issue by category and severity (Critical, High, Medium, Low).
-4. Write a summary with actionable fixes and code snippets.
-5. Deliver the report in the prescribed markdown format.
+| Situation | Do | Avoid |
+|---|---|---|
+| "Audit my site" / pre-launch | Full four-category audit + report | Perf-only Lighthouse score |
+| Slow page, CWV regression | Load `performance` (DevTools MCP trace) then `web-performance` fixes | Guessing from source alone |
+| Before/after a change | `benchmark` baseline and compare | Single unpaired run |
+| "Ready to ship?" | `production-audit` score + blockers | Generic checklist only |
+| Just deployed | `canary-watch` against baseline | Waiting for user reports |
+| p95/p99, feeds, streams | `latency-critical-systems` | Page-load tuning only |
+| HSTS | Enable only after HTTPS works on all subdomains | `preload` before rollback is clear |
+| Polyfills | Load on demand, self-host | `polyfill.io` (compromised 2024) |
 
-## Severity levels
-| Level | When to fix |
-|-------|-------------|
-| **Critical** | Security flaws, complete failures, or Core Web Vitals that break the page experience. Fix immediately. |
-| **High** | Core Web Vitals failures, major accessibility barriers, or broken functionality. Fix before launch. |
-| **Medium** | Performance improvements, SEO enhancements, or non‑blocking best‑practice gaps. Fix within the current sprint. |
-| **Low** | Minor optimisations, lint warnings, or cosmetic issues. Fix when convenient. |
-
-## Audit categories
-
-### Performance (≈40 % of issues)
-- **Core Web Vitals**
-  - **LCP** < 2.5 s – optimise images, fonts, and server response time.
-  - **INP** < 200 ms – reduce long JavaScript tasks, split code, use web workers.
-  - **CLS** < 0.1 – set explicit width/height on media, avoid layout‑shifting ads.
-- **Resource optimisation**
-  - Serve images in WebP/AVIF, use `srcset` for responsive sizes.
-  - Minify and tree‑shake JavaScript; defer non‑critical scripts.
-  - Extract critical CSS, remove unused rules, avoid `@import`.
-  - Use `font-display: swap`; preload key fonts; subset to needed glyphs.
-- **Loading strategy**
-  - `<link rel="preconnect">` to third‑party origins.
-  - `<link rel="preload">` for LCP images, fonts, and above‑fold CSS.
-  - Lazy‑load below‑fold images, iframes, and heavy components.
-  - Set long `Cache‑Control` TTLs for static assets; use immutable caching for hashed files.
-
-### Accessibility (≈30 % of issues)
-- **Perceivable**
-  - Every `<img>` has meaningful `alt`; decorative images use `alt=""`.
-  - Text contrast ≥ 4.5:1 (large text ≥ 3:1).
-  - Provide captions for video and transcripts for audio.
-- **Operable**
-  - All interactive elements reachable via keyboard; no focus traps.
-  - Visible focus indicator on focusable elements.
-  - Include a “Skip to main content” link.
-  - Allow users to extend time limits; avoid auto‑advancing content.
-- **Understandable**
-  - Set `<html lang="…">`.
-  - Consistent navigation across pages.
-  - Clear form error messages linked to the offending fields.
-  - Every form control has an associated `<label>`.
-- **Robust**
-  - Valid HTML (no duplicate IDs, proper nesting).
-  - Prefer native elements; use ARIA only when needed and ensure role/name/value are correct.
-
-### SEO (≈15 % of issues)
-- **Crawlability**
-  - `robots.txt` does not block essential resources.
-  - XML sitemap submitted to Search Console.
-  - Canonical tags prevent duplicate content.
-  - No `noindex` on pages that should be indexed.
-- **On‑page**
-  - Unique `<title>` (50‑60 chars) with primary keyword.
-  - Compelling `<meta name="description">` (150‑160 chars).
-  - Single `<h1>` per page; logical heading hierarchy.
-  - Descriptive link text, avoid generic “click here”.
-- **Technical**
-  - Mobile‑friendly responsive layout; tap targets ≥ 48 px.
-  - Serve over HTTPS.
-  - Fast loading (performance directly impacts ranking).
-  - Structured data via JSON‑LD for rich snippets (Article, Product, FAQ, etc.).
-
-### Best Practices (≈15 % of issues)
-#### Security
-- Enforce HTTPS; eliminate mixed content.
-- Enable HSTS: `Strict-Transport-Security: max-age=31536000; includeSubDomains; preload`.
-- Deploy a strict Content‑Security‑Policy (CSP) header; use nonces for allowed inline scripts.
-- Add security headers: `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy` to disable unused features.
-- Run `npm audit` / `yarn audit` regularly; fix vulnerable dependencies.
-- Sanitize any HTML inserted from user input (e.g., `DOMPurify`).
-- Set cookies with `Secure; HttpOnly; SameSite=Strict`.
-#### Compatibility & Standards
-- Use HTML5 doctype `<!DOCTYPE html>`.
-- Declare charset first in `<head>`: `<meta charset="UTF-8">`.
-- Include responsive viewport meta tag.
-- Prefer feature detection over user‑agent sniffing.
-- Load polyfills only when needed (e.g., via `polyfill.io`).
-- Avoid deprecated APIs: `document.write`, synchronous XHR, Application Cache.
-- Use passive listeners for scroll/touch events unless `preventDefault` is required.
-#### Code Quality
-- No console errors or `console.log` statements in production.
-- Implement global error handling and, for React, error boundaries.
-- Hide source maps in production (`devtool: 'hidden-source-map'` or disabled).
-- Use semantic HTML5 elements (`<header>`, `<nav>`, `<main>`, `<article>`, etc.).
-- Ensure valid HTML (no duplicate IDs, proper nesting).
-- Apply event delegation instead of attaching identical listeners to many elements.
-- Clean up listeners, timers, or AbortControllers when components unmount.
-
-## Audit output format
-```markdown
-## Audit results
-
-### Critical issues (X found)
-- **[Category]** Issue description. File: `path/to/file.js:123`
-  - **Impact:** Brief explanation of why it matters.
-  - **Fix:** Precise code change or configuration recommendation.
-
-### High priority (X found)
-- …
-
-### Summary
-- Performance: X issues (Y critical)
-- Accessibility: X issues (Y critical)
-- SEO: X issues
-- Best Practices: X issues
-
-### Recommended priority
-1. Fix critical security and Core Web Vitals failures.
-2. Resolve high‑impact accessibility barriers.
-3. Apply medium‑level SEO and performance improvements.
-4. Tackle low‑priority code‑quality items.
-```
-
-## Checklists
-### Before every deploy
-- Core Web Vitals pass the thresholds.
-- No accessibility violations reported by axe/Lighthouse.
-- No console errors or uncaught exceptions.
-- HTTPS works without mixed‑content warnings.
-- Essential meta tags (`title`, `description`, `viewport`, `charset`) are present.
-
-### Weekly review
-- Scan Search Console for crawl or indexing issues.
-- Monitor Core Web Vitals trends.
-- Run `npm audit` and update vulnerable packages.
-- Test major pages with a screen‑reader (NVDA, VoiceOver).
-
-### Monthly deep dive
-- Run a full Lighthouse audit on all critical pages.
-- Profile performance with Chrome DevTools (CPU, network).
-- Conduct a manual accessibility walkthrough with real users.
-- Review keyword rankings and update on‑page SEO content.
-
-## Tools
-| Tool | Purpose |
-|------|---------|
-| Lighthouse | Automated performance, accessibility, SEO, and best‑practice scores |
-| axe-core (browser extension or CLI) | Detailed accessibility testing |
-| WebPageTest | Real‑world performance metrics and filmstrip view |
-| npm audit / yarn audit | Dependency vulnerability detection |
-| W3C Markup Validation Service | HTML validation |
-| SecurityHeaders.com | Verify security header configuration |
-| Google Search Console | Crawl errors, indexing status, and Core Web Vitals reports |
-
----
-*This skill provides the structure and guidance needed to deliver a thorough web quality audit. Adapt the recommendations to the specific technology stack and project constraints.*
-
-## Sub-skills
-
-Read a sub-skill file only when the task needs it.
-
-| File | Use when |
-|------|----------|
-| [references/web-performance.md](references/web-performance.md) | Measures, diagnoses, and improves website speed and runtime efficiency, covering Core Web Vitals (LCP, INP, FID, CLS), bundle size, caching, critical rendering path, resource loading, image and font optimization, and JavaScript performance. Use when optimizing Lighthouse scores, fixing slow page loads, reducing bundle size, improving Time to First Byte, lazy loading assets, tuning cache headers, or debugging layout shift and input delay. |
-| [references/performance.md](references/performance.md) | Analyzes web page performance with Chrome DevTools MCP, measuring Core Web Vitals (LCP, INP, CLS), FCP, TBT, Speed Index, render-blocking resources, network chains, layout shifts, caching, and accessibility gaps, preferring current documentation over pre-trained knowledge. Use when asked to audit, profile, debug, or optimize page load performance, Lighthouse scores, site speed, bundle size, slow rendering, network waterfall, or Core Web Vitals regressions. |
-| [references/web-accessibility.md](references/web-accessibility.md) | Provides guidance for auditing and fixing web accessibility to meet WCAG 2.1 POUR principles and ARIA standards covering alt text, color contrast, keyboard navigation, landmarks, forms, modals, and media. Use when adding alt attributes, checking contrast ratios, fixing semantic HTML, labeling form inputs, implementing skip links, testing with axe-core or Lighthouse, running keyboard-only navigation audits, debugging screen-reader issues in NVDA or VoiceOver, remediating ARIA role violations, or validating focus management in React, Vue, or vanilla JavaScript components. Also covers WCAG 2.2 additions, iOS/Android mapping, and React form, dropdown, and modal patterns. |
-| [references/benchmark.md](references/benchmark.md) | Set performance baselines for pages, APIs, and builds, compare before/after a change, and run a bounded, measured optimization loop with a correctness gate. |
-| [references/latency-critical-systems.md](references/latency-critical-systems.md) | Optimize realtime dashboards, data feeds, streams, queues, and caches where p95/p99 latency, throughput, or data freshness is important. |
-| [references/production-audit.md](references/production-audit.md) | Answer "is this ready to ship?" or "what breaks in prod?" with a local-evidence readiness audit, a score, blockers, and a next action. |
-| [references/canary-watch.md](references/canary-watch.md) | Monitor a deployed URL after a deploy, merge, or dependency upgrade: HTTP, assets, SSE, console errors, and performance against a baseline. |
+## Load on demand
+| Need | Read |
+|---|---|
+| Per-category checklists, report template, cadence, tools | [references/audit-checklist.md](references/audit-checklist.md) |
+| Fix CWV, bundles, caching, images, fonts | [references/web-performance.md](references/web-performance.md) |
+| Chrome DevTools MCP traces, LCP/INP/CLS diagnosis | [references/performance.md](references/performance.md) |
+| WCAG 2.1/2.2, ARIA, forms, modals, mobile a11y | [references/web-accessibility.md](references/web-accessibility.md) |
+| Baselines and before/after measurement loop | [references/benchmark.md](references/benchmark.md) |
+| Realtime p95/p99 latency, throughput, freshness | [references/latency-critical-systems.md](references/latency-critical-systems.md) |
+| Ship-readiness score and blockers | [references/production-audit.md](references/production-audit.md) |
+| Post-deploy URL monitoring | [references/canary-watch.md](references/canary-watch.md) |
 
 ## Related skills
-
-Load these when the task spans more than this skill.
-
-- [`web-performance`](references/web-performance.md) — Provides step‑by‑step guidance to measure, diagnose, and improve web performance, focusing on Core Web Vitals…
-- [`web-accessibility`](references/web-accessibility.md) — Provides concise guidance for auditing and fixing web accessibility to meet WCAG 2.1 (POUR) and ARIA standards…
-- [`seo`](../seo/SKILL.md) — SEO provides a complete audit and optimization guide covering technical SEO, on-page elements, content quality…
-- [`web-vulnerability-testing`](../secure-coding/references/web-vulnerability-testing.md) — Test web applications for OWASP-aligned vulnerabilities across injection, authentication, access control, API,…
-- [`progressive-web-app`](../frontend-development/references/progressive-web-app.md) — Guides you to build a Progressive Web App (PWA) with HTTPS, a web app manifest, a service worker, offline fall…
-- [`performance`](references/performance.md) — Analyzes web performance using Chrome DevTools MCP. Measures Core Web Vitals (LCP, INP, CLS) and supplementary…
-- [`screenshot`](../screenshot/SKILL.md) — Capture a desktop screenshot (full screen, window, region, or app) on macOS, Linux, or Windows. Use when the u…
+- [`seo`](../seo/SKILL.md) — deep SEO audit and schema markup
+- [`secure-coding`](../secure-coding/SKILL.md) — CSP, headers, cookies in code
+- [`web-vulnerability-testing`](../secure-coding/references/web-vulnerability-testing.md) — OWASP pentest of the site
+- [`progressive-web-app`](../frontend-development/references/progressive-web-app.md) — manifest, service worker, offline
+- [`screenshot`](../screenshot/SKILL.md) — capture pages for the report

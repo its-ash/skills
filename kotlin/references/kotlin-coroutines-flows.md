@@ -204,6 +204,18 @@ viewModelScope.launch {
 }
 ```
 
+### Suspend calls in cleanup and partial failure
+
+Wrap suspend cleanup in `NonCancellable`. In `supervisorScope`, rethrow `CancellationException` before you fall back:
+
+```kotlin
+try { res.process() } finally { withContext(NonCancellable) { res.release() } }
+
+val recs = try { recsDeferred.await() }
+    catch (e: CancellationException) { throw e }
+    catch (e: Exception) { emptyList() }
+```
+
 ## Testing
 
 ### Testing StateFlow with Turbine

@@ -2,123 +2,57 @@
 name: database-design
 description: "Designs data layers by selecting database technologies, modeling schemas, and planning migrations for scalable architectures. Use when choosing SQL or NoSQL databases like PostgreSQL MySQL MongoDB, creating entity relationship diagrams ERD, normalizing tables, defining constraints indexes partitions, writing migration scripts, optimizing query performance, or reviewing production schema designs. Sub-skills: postgresql, mysql-patterns, clickhouse, redis, database-migration, database-optimization, prisma, drizzle-orm."
 ---
-
 # Database Design
 
-Expert guidance for designing scalable, performant, and maintainable data layers. This skill covers the entire lifecycle from technology selection and conceptual modeling to physical implementation and migration planning.
+Choose the store, model the schema, index it, and evolve it safely.
 
-## When to use
-- Selecting database technologies or storage patterns based on access patterns.
-- Designing schemas, partitions, or replication strategies.
-- Planning migrations or re-architecting existing data layers.
-- Designing for specific workloads: OLTP (transactional) or OLAP (analytical).
-- Implementing multi-tenancy, event sourcing, or CQRS architectures.
+## Core rules
+- Pick the database from access patterns, consistency needs (CAP), and scale. Do not default to one engine.
+- Model business concepts, not UI layouts.
+- Enforce integrity in the database: `NOT NULL`, `UNIQUE`, `CHECK`.
+- Use `BIGINT` primary keys; use UUIDs for distributed systems.
+- Define every FK with an explicit `ON DELETE` strategy, and index every FK.
+- Store money as `DECIMAL`/`NUMERIC`, never FLOAT. Store dates as `DATE`/`TIMESTAMP`, never strings.
+- Add `created_at` and `updated_at` to every table.
+- Index columns used in `WHERE`, `ORDER BY`, and `JOIN`. Order composite columns most selective first.
+- List columns explicitly; avoid `SELECT *`. Prevent N+1 with JOINs or eager loading.
+- Version every migration (Flyway, Liquibase, Alembic, Prisma Migrate) and write a `DOWN` script.
+- Add `NOT NULL` to a live table in steps: add nullable → backfill → apply constraint.
+- Use online schema-change tools on large tables to avoid locks.
 
-## Technology Selection
+## Decisions
 
-Choose the database based on the data domain, consistency requirements (CAP theorem), and scale targets. Do not default to a single database (e.g., PostgreSQL) for every project.
+| Situation | Do | Avoid |
+|---|---|---|
+| Transactional, relational data (OLTP) | PostgreSQL / MySQL, normalize to 3NF | Document store for joins-heavy data |
+| Simple or local app | SQLite | A database server |
+| Analytics, events, time-series (OLAP) | ClickHouse / TimescaleDB | Row-store aggregates at scale |
+| Cache, sessions, rate limits, locks | Redis | Cache in the primary DB |
+| Flexible nested documents read together | Document DB, embed | Reference when always read together |
+| Large or independently updated children | Reference | Unbounded embedded arrays |
+| Full-text or faceted search | Elasticsearch / OpenSearch / Meilisearch | `LIKE '%x%'` scans |
+| Relationship traversal | Graph DB (Neo4j) | Deep recursive SQL joins |
+| Global scale + strong consistency | NewSQL (CockroachDB, Spanner) | Hand-rolled sharding |
+| Read-heavy hot path proven slow | Denormalize or add a replica | Denormalize before you measure |
+| Large re-architecture | Strangler pattern, expand-contract | Big-bang cutover |
 
-### Database Categories
-- **Relational (SQL):** PostgreSQL, MySQL, MariaDB, SQL Server, SQLite (for simple/local apps).
-- **NoSQL Document:** MongoDB, Firestore, CouchDB.
-- **Key-Value:** Redis, DynamoDB, Memcached.
-- **Wide-Column:** Cassandra, ScyllaDB, HBase.
-- **Time-Series:** TimescaleDB, InfluxDB, ClickHouse.
-- **Graph:** Neo4j, Amazon Neptune.
-- **Search Engines:** Elasticsearch, OpenSearch, Meilisearch.
-- **NewSQL/Distributed:** CockroachDB, TiDB, Google Spanner.
+## Load on demand
 
-## Data Modeling & Schema Design
-
-### Design Workflow
-1. **Analysis:** Identify entities, relationships, and access patterns (read-heavy vs. write-heavy).
-2. **Conceptual Design:** Map business requirements to entities; create ERDs (use Mermaid syntax).
-3. **Logical Design:** 
-   - **SQL:** Normalize to 3NF to reduce redundancy. Use denormalization only for read-performance optimization.
-   - **NoSQL:** Decide between embedding (for fast reads of related data) or referencing (for flexibility/large datasets).
-4. **Physical Design:** Select precise data types, define constraints, and plan indexing.
-
-### Core Rules
-- **Model the Domain:** Design based on business concepts, not UI layouts.
-- **Data Integrity:** Enforce constraints at the database level (NOT NULL, UNIQUE, CHECK).
-- **Primary Keys:** Use BIGINT for standard IDs or UUIDs for distributed systems.
-- **Foreign Keys:** Always define FK constraints and specify an `ON DELETE` strategy.
-- **Money/Currency:** Never use FLOAT; always use `DECIMAL` or `NUMERIC`.
-- **Timestamps:** Include `created_at` and `updated_at` for every table.
-
-## Indexing & Performance
-
-### Indexing Strategy
-- **Mandatory Indexes:** Index every foreign key to prevent slow JOINs.
-- **Query-Based Indexing:** Create indexes on columns frequently used in `WHERE`, `ORDER BY`, and `JOIN` clauses.
-- **Index Types:**
-  - **B-Tree:** Standard for equality and range queries.
-  - **Composite:** Order columns by selectivity (most selective first).
-  - **GIN/GiST:** For JSONB, full-text search, or spatial data.
-  - **Partial:** Index only a subset of rows to save space.
-
-### Optimization Patterns
-- **N+1 Prevention:** Use eager loading or JOINs instead of multiple queries in a loop.
-- **Query Design:** Avoid `SELECT *`; explicitly list required columns.
-- **Caching:** Implement Cache-aside or Write-through patterns using Redis/Memcached.
-- **Scaling:** 
-  - **Vertical:** Increase resources.
-  - **Horizontal:** Read replicas, sharding (select shard keys carefully), and partitioning (range, hash, or list).
-
-## Migration & Evolution
-
-### Migration Strategy
-- **Version Control:** Use tools like Flyway, Liquibase, Alembic, or Prisma Migrate.
-- **Reversibility:** Every migration must have a corresponding `DOWN` script to rollback changes.
-- **Zero-Downtime Patterns:** 
-  - Use the Strangler pattern for large re-architectures.
-  - For `NOT NULL` constraints on existing tables: Add as nullable $\rightarrow$ backfill data $\rightarrow$ apply constraint.
-  - Use online schema change tools for large tables to avoid locking.
-
-## Pitfalls & Anti-Patterns
-
-| Anti-Pattern | Why it's bad | Better Approach |
-| :--- | :--- | :--- |
-| `VARCHAR(255)` everywhere | Wastes storage; hides intent | Size appropriately per field |
-| FLOAT for money | Rounding errors | `DECIMAL(10,2)` |
-| Missing FK constraints | Orphaned data/corruption | Define explicit Foreign Keys |
-| Storing dates as strings | Cannot sort or compare | `DATE` or `TIMESTAMP` types |
-| Non-reversible migrations | Cannot recover from failure | Always write `DOWN` scripts |
-| Defaulting to SQL for all | Overkill for simple apps | Consider SQLite or NoSQL |
-
-## Checklist
-- [ ] Every table has a primary key.
-- [ ] All relationships have foreign key constraints and `ON DELETE` strategies.
-- [ ] Indexes exist on all foreign keys and high-cardinality filter columns.
-- [ ] Appropriate data types used (e.g., `DECIMAL` for money, `TIMESTAMP` for dates).
-- [ ] `NOT NULL` constraints applied to all required fields.
-- [ ] `created_at` and `updated_at` timestamps included.
-- [ ] Migration scripts are reversible and backward compatible.
-- [ ] Access patterns analyzed to justify normalization vs. denormalization.
-
-## Sub-skills
-
-Read a sub-skill file only when the task needs it.
-
-| File | Use when |
-|------|----------|
-| [references/postgresql.md](references/postgresql.md) | Guidelines for designing PostgreSQL schemas, selecting data types, defining constraints, creating indexes, partitioning, RLS, extensions, and performance‑related best practices. Use when you need a production‑ready PostgreSQL table design or want to review an existing schema. |
-| [references/mysql-patterns.md](references/mysql-patterns.md) | MySQL and MariaDB schema defaults, composite indexes, EXPLAIN signals, upserts across engines, keyset pagination, JSON generated columns, full-text search, short transactions, SKIP LOCKED queues, pools, replica lag, least-privilege users, and server config. Use when you design MySQL or MariaDB schemas or debug slow queries, lock waits, deadlocks, or replicas. |
-| [references/clickhouse.md](references/clickhouse.md) | ClickHouse MergeTree, ReplacingMergeTree, and AggregatingMergeTree tables, partition and ordering keys, aggregation and window queries, batch and stream inserts, materialized views, system-table monitoring, and funnel, retention, and cohort queries. Use when you build analytics on ClickHouse or an analytical query is too slow. |
-| [references/redis.md](references/redis.md) | Redis data structures, cache-aside and write-through, tag invalidation, sessions, fixed and sliding-window rate limits, distributed locks, Pub/Sub and Streams, key naming, TTLs, pools, Cluster, Sentinel, eviction policies, and stampede prevention. Use when you add caching, locks, rate limits, or messaging with Redis. |
-| [references/database-migration.md](references/database-migration.md) | Guides database schema and data migrations across Sequelize, TypeORM, Prisma, Drizzle, Kysely, Django, and golang-migrate with production rules, PostgreSQL-safe column and index changes, batched backfills, expand-contract timelines, and rollback scripts. Use when you add a column or index to a large table, rename or remove columns, backfill data, or plan a zero-downtime deploy. |
-| [references/database-optimization.md](references/database-optimization.md) | Expert database optimization for SQL and NoSQL systems. Use when tuning slow queries, designing indexing strategies, analyzing performance bottlenecks, or scaling architectures in PostgreSQL, MySQL, Snowflake, MongoDB, BigQuery, and Aurora. Covers query plan analysis, execution time reduction, storage efficiency, caching patterns, and cloud-native database configuration. Trigger terms include slow query, index optimization, EXPLAIN plan, query performance, database scaling, connection pooling, partitioning, and latency reduction. |
-| [references/prisma.md](references/prisma.md) | Provides expert guidance for Prisma ORM tasks such as schema design, migrations, query optimization, relation modeling, connection management, and transactions, plus production traps (updateMany counts, @updatedAt on bulk writes, 5-second interactive transactions, migrate dev resets, checksum errors, soft delete with findUniqueOrThrow). Use when you encounter schema errors, migration conflicts, performance issues, or connection problems in PostgreSQL, MySQL, or SQLite projects, or when working with Prisma schema, Prisma Client, prisma migrate, relations, indexes, N+1 queries, connection pooling, driver adapters, serverless, transactions, or error codes P2002, P2025, P2003. |
-| [references/drizzle-orm.md](references/drizzle-orm.md) | Use Drizzle ORM in TypeScript projects to define schemas, infer types, run relational queries, manage migrations, and connect serverless databases. Use when working with drizzle-orm, drizzle-kit, pgTable, mysqlTable, sqliteTable, relations, db.select, db.insert, db.update, db.delete, drizzle-kit generate, drizzle-kit migrate, drizzle-kit push, schema.ts, .sql migration files, Neon, Vercel Postgres, Turso, or Next.js data access. |
+| Need | Read |
+|---|---|
+| Engine catalog, design workflow, index types, scaling, anti-patterns, review checklist | [references/schema-design.md](references/schema-design.md) |
+| PostgreSQL types, constraints, indexes, partitioning, RLS, extensions | [references/postgresql.md](references/postgresql.md) |
+| MySQL/MariaDB defaults, EXPLAIN, upserts, keyset pagination, locks, replicas | [references/mysql-patterns.md](references/mysql-patterns.md) |
+| ClickHouse MergeTree family, materialized views, funnel/retention queries | [references/clickhouse.md](references/clickhouse.md) |
+| Redis caching, locks, rate limits, Streams, eviction, stampede prevention | [references/redis.md](references/redis.md) |
+| Zero-downtime migrations, backfills, expand-contract, rollback (many ORMs) | [references/database-migration.md](references/database-migration.md) |
+| Slow queries, EXPLAIN plans, indexing strategy, pooling, scaling | [references/database-optimization.md](references/database-optimization.md) |
+| Prisma schema, migrate, relations, transactions, P2002/P2025/P2003 | [references/prisma.md](references/prisma.md) |
+| Drizzle ORM schema, queries, drizzle-kit, serverless DBs | [references/drizzle-orm.md](references/drizzle-orm.md) |
 
 ## Related skills
-
-Load these when the task spans more than this skill.
-
-- [`database-migration`](references/database-migration.md) — Provides step‑by‑step guidance for database schema and data migrations using Sequelize, TypeORM, and Prisma, c…
-- [`database-optimization`](references/database-optimization.md) — Expert database optimization for SQL and NoSQL systems. Use for query tuning, indexing strategies, performance…
-- [`backend-development`](../backend-development/SKILL.md) — Guidance for designing, building, and operating scalable backend services and APIs. Covers REST GraphQL gRPC A…
-- [`software-architecture`](../software-architecture/SKILL.md) — Provides a unified workflow for making software architecture decisions, selecting patterns (Clean, Hexagonal,…
-- [`nestjs`](../backend-development/references/nestjs.md) — Expert guidance for NestJS applications covering module architecture, dependency injection, middleware, guards…
-- [`java`](../java/SKILL.md) — JPA, Hibernate, and MyBatis data access for Java backends.
-- [`kotlin`](../kotlin/SKILL.md) — Exposed ORM, HikariCP, and Flyway for Kotlin backends.
+- [`backend-development`](../backend-development/SKILL.md) — APIs and services on top of the data layer
+- [`software-architecture`](../software-architecture/SKILL.md) — CQRS, event sourcing, multi-tenancy decisions
+- [`nestjs`](../backend-development/references/nestjs.md) — NestJS data access and modules
+- [`java`](../java/SKILL.md) — JPA, Hibernate, MyBatis
+- [`kotlin`](../kotlin/SKILL.md) — Exposed ORM, HikariCP, Flyway

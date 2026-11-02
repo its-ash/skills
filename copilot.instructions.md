@@ -75,6 +75,17 @@ Match task nouns/verbs to triggers below; load each matching `<skill>/SKILL.md` 
 | web-scraping-apis | Firecrawl, Tavily, CF Browser Rendering, Xquik → bright-data, data-scraper-agent |
 | web3-security | Solidity, DeFi audit, token decimals, agent wallet, x402 → defi-amm-security, evm-token-decimals |
 
+## Skill authoring (`<skill>/SKILL.md`)
+Keep each skill small. Load detail only when the task needs it.
+- **Progressive disclosure**: `SKILL.md` ≤ 100 lines (hard cap 120). Move code examples, long checklists, and catalogs to `references/<topic>.md`.
+- **Load priority**:
+  - P0 `SKILL.md` → `## Core rules` (≤ 15 imperative bullets, always apply) + `## Decisions`.
+  - P1 `## Load on demand` table (`Need | Read`) → `references/*.md`, read only on a match.
+  - P2 `## Related skills` → other skills, one hop, ≤ 10 words each.
+- **Decision tables**: replace prose with `Situation | Do | Avoid` tables.
+- **Compress**: imperative, one fact per line, no filler, no "When to use" / "How it works" sections (the frontmatter `description` covers them). Keep the description ≤ 600 chars with trigger words and the `Sub-skills:` list.
+- **No redundancy**: state a rule once. Do not repeat rules from this file or from sibling skills; link to them.
+
 ## Project conventions
 - **Icon**: copy matching SVG from `/Users/ashvinijangid/Desktop/Icons` (e.g. `robot.svg` for AI) into `public/` or `assets/`; convert to PNG/ICO if needed.
 - **Makefile** at root, exactly `run`, `build`, `deploy`:

@@ -15,7 +15,7 @@ Application-level TypeScript patterns: type design, narrowing, error handling, a
 
 ### 1. Strict Mode Is the Baseline
 
-`strict: true` (which enables `strictNullChecks`, `noImplicitAny`, `strictFunctionTypes`, and the rest) is not optional in a healthy codebase. If a codebase cannot compile under strict, that is a migration task, not an excuse to leave the flag off. Use the strict base in the parent [`typescript`](../SKILL.md) ("Strict Compiler Configuration"), plus `noFallthroughCasesInSwitch`, `noUnusedLocals`, `noUnusedParameters`, and `verbatimModuleSyntax`.
+`strict: true` (which enables `strictNullChecks`, `noImplicitAny`, `strictFunctionTypes`, and the rest) is not optional in a healthy codebase. If a codebase cannot compile under strict, that is a migration task, not an excuse to leave the flag off. Use the strict base in [tooling-and-config.md](tooling-and-config.md#strict-compiler-configuration), plus `noFallthroughCasesInSwitch`, `noUnusedLocals`, `noUnusedParameters`, and `verbatimModuleSyntax`.
 
 `noUncheckedIndexedAccess` makes array and record access possibly-undefined, which surfaces a whole class of runtime crashes at compile time. If it produces too much noise, this is the pattern to add, not the flag to remove:
 
@@ -468,7 +468,7 @@ Schemas that validate at runtime (Zod, validators, or hand-written guards) are t
 
 ### Keep the Compiler Incremental and Fast
 
-Slow type-checking is a workflow problem that pushes developers off the type system — invest in narrowing the checked surface over relaxing it. Use `moduleResolution: bundler` where the bundler supports it. For project references, `incremental`, and diagnostics, see the parent "Performance Optimization" section.
+Slow type-checking is a workflow problem that pushes developers off the type system — invest in narrowing the checked surface over relaxing it. Use `moduleResolution: bundler` where the bundler supports it. For project references, `incremental`, and diagnostics, see [tooling-and-config.md](tooling-and-config.md#performance-optimization).
 
 ## Performance
 
@@ -488,7 +488,7 @@ Pure, expensive derivations belong behind a cache if they repeat with the same i
 
 ### Assert the Types, Not Just the Runtime
 
-Behavior tests prove runtime behavior; dedicated type tests lock in the public API contract. A type that silently loosens is a regression. Setup is in the parent "Type Testing with Vitest".
+Behavior tests prove runtime behavior; dedicated type tests lock in the public API contract. A type that silently loosens is a regression. Setup is in [tooling-and-config.md](tooling-and-config.md#type-testing-with-vitest).
 
 ```typescript
 import { expectTypeOf } from 'vitest'
