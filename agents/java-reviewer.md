@@ -91,18 +91,18 @@ If any CRITICAL security issue is found, stop and escalate to `security-reviewer
 - **Missing `@Transactional` awareness**: MongoDB multi-document transactions require an explicit `ClientSession` — Panache MongoDB does not auto-manage transactions like Hibernate ORM; document the consistency guarantees
 
 ### MEDIUM -- NoSQL General
-- **Schema evolution without migration strategy**: Changing document shapes without a versioned migration plan (e.g. a `schemaVersion` field or migration script) — leads to runtime deserialization failures on old documents
-- **Storing large blobs in documents**: Embedding large binary data directly in documents instead of using GridFS or external storage — causes memory pressure and hits the 16 MB BSON limit
-- **Overly nested documents**: Deeply nested document structures that should be modelled as separate collections with references — query and update complexity grows exponentially
-- **Missing TTL or expiry policy**: Time-sensitive data (sessions, tokens, caches) stored without a TTL index — leads to unbounded collection growth
-- **No read preference / write concern configuration**: Production deployments using defaults without evaluating consistency requirements
+- **Schema evolution without migration strategy**: Version documents (`schemaVersion`) and migrate old shapes
+- **Large blobs in documents**: Use GridFS or object storage; 16 MB BSON limit
+- **Overly nested documents**: Split into collections with references
+- **Missing TTL index**: Sessions, tokens, and caches grow without bound
+- **Default read preference / write concern** in production without a consistency review
 
 ### MEDIUM -- Concurrency and State
 - **Mutable singleton fields**: Non-final instance fields in singleton-scoped beans are a race condition
   - **[SPRING]**: `@Service` / `@Component`
   - **[QUARKUS]**: `@ApplicationScoped` / `@Singleton`
 - **Unbounded async execution**:
-  - **[SPRING]**: `CompletableFuture` or `@Async` without a custom `Executor` — default creates unbounded threads
+  - **[SPRING]**: `CompletableFuture` or `@Async` without a custom `Executor`; prefer virtual threads (`spring.threads.virtual.enabled=true`, Java 21+) over pool tuning
   - **[QUARKUS]**: `ExecutorService.submit()` or `@ActivateRequestContext` with `@Async` without a managed `ManagedExecutor`
 - **Blocking `@Scheduled`**: Long-running scheduled methods that block the scheduler thread
   - **[QUARKUS]**: Use `concurrentExecution = SKIP` or offload to a worker thread
@@ -111,8 +111,11 @@ If any CRITICAL security issue is found, stop and escalate to `security-reviewer
 ### MEDIUM -- Java Idioms and Performance
 - **String concatenation in loops**: Use `StringBuilder` or `String.join`
 - **Raw type usage**: Unparameterised generics (`List` instead of `List<T>`)
-- **Missed pattern matching**: `instanceof` check followed by explicit cast — use pattern matching (Java 16+)
-- **Null returns from service layer**: Prefer `Optional<T>` over returning null
+- **Missed pattern matching**: `instanceof` check followed by explicit cast; use pattern matching, record patterns, and switch patterns (Java 21+)
+- **DTOs as classes**: Use `record` for DTOs and projections; use sealed interfaces for closed hierarchies
+- **Null returns from service layer**: Prefer `Optional<T>` over returning null; annotate APIs with JSpecify `@Nullable` (Spring Framework 7)
+- **[SPRING] Legacy HTTP clients**: `RestTemplate` or `WebClient` for simple calls; use `RestClient` or HTTP interface clients (Spring Boot 4)
+- **`javax.*` imports**: Must be `jakarta.*`
 - **[QUARKUS] Not leveraging build-time init**: Using runtime reflection or classpath scanning that could be replaced by Quarkus build-time extensions or `@RegisterForReflection`
 
 ### MEDIUM -- Testing
@@ -120,7 +123,7 @@ If any CRITICAL security issue is found, stop and escalate to `security-reviewer
   - **[SPRING]**: `@SpringBootTest` for unit tests — use `@WebMvcTest` for controllers, `@DataJpaTest` for repositories
   - **[QUARKUS]**: `@QuarkusTest` for unit tests — reserve for integration tests; use plain JUnit 5 + Mockito for units
 - **Missing mock setup**:
-  - **[SPRING]**: Service tests must use `@ExtendWith(MockitoExtension.class)`
+  - **[SPRING]**: Service tests must use `@ExtendWith(MockitoExtension.class)`; in slice tests use `@MockitoBean`, not the removed `@MockBean`
   - **[QUARKUS]**: `@InjectMock` misuse — reserve for CDI integration tests, use plain Mockito for unit tests
 - **[QUARKUS] Missing `@QuarkusTestResource`**: Integration tests requiring external services should use Dev Services or `@QuarkusTestResource` with Testcontainers
 - **`Thread.sleep()` in tests**: Use `Awaitility` for async assertions
@@ -157,10 +160,7 @@ git diff -- '*.java'
 # Framework detection greps
 grep -rn "@Autowired" src/main/java --include="*.java"          # [SPRING]
 grep -rn "@Inject" src/main/java --include="*.java"             # [QUARKUS]
-grep -rn "FetchType.EAGER" src/main/java --include="*.java"
-grep -rn "@Singleton" src/main/java --include="*.java"          # [QUARKUS]
-grep -rn "listAll\|findAll" src/main/java --include="*.java"
-grep -rn "PanacheMongoEntity\|PanacheMongoRepository" src/main/java --include="*.java"  # [QUARKUS]
+grep -rn "FetchType.EAGER\|listAll\|findAll" src/main/java --include="*.java"
 ```
 
 Read `pom.xml`, `build.gradle`, or `build.gradle.kts` to determine the build tool and framework version before reviewing.

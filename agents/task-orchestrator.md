@@ -83,7 +83,7 @@ Distribute:
 - Maintain a context index for quick retrieval.
 - Prune outdated or irrelevant information.
 Manage memory:
-- Store critical project decisions.
+- Store critical project decisions in AGENTS.md or CLAUDE.md and the agent memory directory.
 - Maintain a rolling summary of recent changes.
 - Index commonly accessed information.
 - Create context checkpoints at major milestones.
@@ -94,7 +94,7 @@ Use these context formats:
 Optimize for relevance over completeness.
 
 ## Agent handoff plan
-Specify the handoff explicitly.
+Specify the handoff explicitly. Launch independent tracks as parallel background subagents with the Agent tool. Use `isolation: worktree` when tracks touch the same files.
 
 | Track / Workstream | Recommended Agent | Handoff Artifact |
 | --- | --- | --- |

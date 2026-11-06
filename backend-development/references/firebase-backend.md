@@ -2,15 +2,13 @@
 
 Firebase provides a suite of cloud services for authentication, database, storage, and hosting. Because Firebase shifts much of the backend logic to the client, strict security rules and query-driven data modeling are critical to prevent data breaches and runaway costs.
 
-## When to use
-Use this skill when implementing any of the following:
-- **Firebase Authentication**: Managing user identity and OAuth flows.
-- **Cloud Firestore**: Designing NoSQL document structures and complex queries.
-- **Realtime Database**: Implementing low-latency, synchronized state.
-- **Cloud Functions**: Writing serverless triggers and HTTPS endpoints.
-- **Cloud Storage**: Managing user-uploaded files and assets.
-- **Firebase Hosting**: Deploying static and dynamic web content.
-- **Security Rules**: Writing access control logic for Firestore and Storage.
+## Service map
+- **Firebase Authentication**: user identity, OAuth, passkeys via Identity Platform.
+- **Cloud Firestore**: NoSQL documents, vector search, pipelines.
+- **Firebase Data Connect**: relational data on Cloud SQL for PostgreSQL with generated typed SDKs.
+- **Cloud Functions (2nd gen)**: `firebase-functions` v6/v7 on the Node.js 22 or 24 runtime.
+- **Cloud Storage** and **App Hosting**: files, and server-rendered Next.js or Angular apps.
+- **Security Rules v2** and **App Check**: access control and client attestation.
 
 ## Data Modeling and Queries
 
@@ -21,6 +19,7 @@ Firebase is optimized for read-heavy, denormalized data. Unlike SQL, you must de
 - **Avoid Deep Nesting**: Use sub-collections instead of deeply nested maps to keep document sizes under the 1MB limit.
 - **Query-First Design**: Define the exact filters and sorts needed for a view before creating the collection structure.
 - **Use Composite Indexes**: Create composite indexes for queries involving multiple fields with inequality filters.
+- **Relational data**: Use Data Connect (Postgres) when the model needs joins, constraints, or transactions across entities.
 
 ## Security Rules
 
@@ -42,9 +41,10 @@ Security rules are the only line of defense for client-side SDKs. Never deploy t
 
 ## Cloud Functions
 
-Use Cloud Functions for operations that require administrative privileges or heavy computation.
+Use Cloud Functions (2nd gen) for operations that require administrative privileges or heavy computation.
 
 ### Implementation Guidelines
+- **Use 2nd gen APIs**: Import from `firebase-functions/v2` (`onRequest`, `onCall`, `onDocumentWritten`). Set `region`, `memory`, and `concurrency` per function.
 - **Use Firebase Admin SDK**: Always use `firebase-admin` in functions to bypass security rules for trusted server-side operations.
 - **Idempotency**: Ensure functions are idempotent, as they may execute more than once for a single event.
 - **Cold Start Optimization**: Keep function dependencies minimal to reduce latency.
@@ -58,7 +58,7 @@ Use Cloud Functions for operations that require administrative privileges or hea
 - **Aggregation**: Use aggregation queries (`count()`, `sum()`, `avg()`) instead of fetching all documents to calculate a total.
 
 ### SDK Usage
-- **Modular Imports**: Use the v9+ modular SDK to enable tree-shaking and reduce bundle size.
+- **Modular Imports**: Use the Firebase SDK 12 modular API to enable tree-shaking and reduce bundle size.
   ```javascript
   import { getFirestore, collection, getDocs } from 'firebase/firestore';
   ```
@@ -74,7 +74,7 @@ Use Cloud Functions for operations that require administrative privileges or hea
 - [ ] Security rules are defined for every collection and storage path.
 - [ ] Data model is optimized for the specific UI query patterns.
 - [ ] Modular SDK imports are used to minimize bundle size.
-- [ ] Cloud Functions are idempotent and use the Admin SDK.
+- [ ] Cloud Functions are 2nd gen, idempotent, and use the Admin SDK. App Check is enforced.
 - [ ] Pagination is implemented for all large list views.
 - [ ] Firebase Emulators are used for local development and testing.
 

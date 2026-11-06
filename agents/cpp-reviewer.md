@@ -32,15 +32,15 @@ You are a senior C++ code reviewer. You make sure that changed code follows mode
 ### HIGH -- Concurrency
 - **Data races**: Shared mutable state without synchronization
 - **Deadlocks**: Multiple mutexes locked in inconsistent order
-- **Missing lock guards**: Manual `lock()`/`unlock()` instead of `std::lock_guard`
-- **Detached threads**: `std::thread` without `join()` or `detach()`
+- **Missing lock guards**: Manual `lock()`/`unlock()` instead of `std::scoped_lock` or `std::lock_guard`
+- **Unjoined threads**: `std::thread` without `join()`; prefer `std::jthread`
 
 ### HIGH -- Code Quality
 - **No RAII**: Manual resource management
 - **Rule of Five violations**: Incomplete special member functions
 - **Large functions**: Over 50 lines
 - **Deep nesting**: More than 4 levels
-- **C-style code**: `malloc`, C arrays, `typedef` instead of `using`
+- **C-style code**: `malloc`, C arrays, `typedef` instead of `using`, `printf` instead of `std::print`
 
 ### MEDIUM -- Performance
 - **Unnecessary copies**: Pass large objects by value instead of `const&`
@@ -57,7 +57,7 @@ You are a senior C++ code reviewer. You make sure that changed code follows mode
 ## Diagnostic Commands
 
 ```bash
-clang-tidy --checks='*,-llvmlibc-*' src/*.cpp -- -std=c++17
+clang-tidy --checks='*,-llvmlibc-*' src/*.cpp -- -std=c++23
 cppcheck --enable=all --suppress=missingIncludeSystem src/
 cmake --build build 2>&1 | head -50
 ```

@@ -13,16 +13,14 @@ Translate a Figma frame, component, or variant into production code with pixel�
 ---
 
 ## Prerequisites
-- Figma MCP server reachable (e.g., `https://mcp.figma.com/mcp`).
-- `codex` CLI installed.
-- Project design‑system tokens and components are defined.
+- Figma MCP server (Dev Mode) reachable: remote `https://mcp.figma.com/mcp` or the Figma Desktop local server.
+- Project design‑system tokens and components are defined. Figma variables map to DTCG tokens; Code Connect maps components when the file has it.
 
 ## Setup (run once per environment)
 ```bash
-codex mcp add figma --url https://mcp.figma.com/mcp
-# Enable remote MCP client if required
-codex --enable rmcp_client   # or set [features].rmcp_client = true in config.toml
-codex mcp login figma        # OAuth login, then restart codex
+claude mcp add --transport http figma https://mcp.figma.com/mcp   # Claude Code
+codex mcp add figma --url https://mcp.figma.com/mcp                 # Codex CLI
+# Complete the OAuth login in the client, then restart it
 ```
 If any MCP call fails, pause, run the steps above, then continue with the workflow.
 
@@ -40,7 +38,7 @@ If any MCP call fails, pause, run the steps above, then continue with the workfl
 ```bash
 get_design_context(fileKey="<fileKey>", nodeId="<nodeId>")
 ```
-The response includes layout, typography, colors, component hierarchy, and spacing.
+The response includes layout, typography, colors, component hierarchy, and spacing. Call `get_variable_defs` for the variables used by the node and map them to project tokens. Use Code Connect mappings when the response lists them.
 
 **If the response is truncated**:
 ```bash
@@ -71,7 +69,7 @@ Keep the image for visual validation.
 ### 6. Achieve 1:1 visual parity
 - Use design tokens from the context data wherever possible.
 - Prefer project tokens for consistency; adjust spacing or size minimally to match the screenshot.
-- Ensure WCAG accessibility (contrast, focus states).
+- Meet WCAG 2.2 AA (contrast, visible focus, targets 24px minimum).
 - Avoid hard‑coded values; extract them to constants or token references.
 
 ### 7. Validate against the screenshot
@@ -94,8 +92,8 @@ If any discrepancy appears, iterate: adjust code, re‑run the relevant step, an
 - **Design‑system alignment**: Always map Figma tokens to project tokens before coding.
 - **Component reuse**: Extend existing components; create new ones only when no suitable component exists.
 - **Asset policy**: Use only assets delivered by the MCP server. Do not import external icon libraries.
-- **Code quality**: Add TypeScript types, JSDoc comments, and avoid inline styles unless dynamic.
-- **Documentation**: Document any new component or deviation from the Figma design in code comments.
+- **Code quality**: Add TypeScript types; avoid inline styles unless dynamic; use container queries, not viewport breakpoints, for component constraints.
+- **Documentation**: Record each new component or deviation from the Figma design in the handoff note.
 
 ---
 
@@ -108,7 +106,7 @@ If any discrepancy appears, iterate: adjust code, re‑run the relevant step, an
 - [ ] Tailwind classes replaced with project tokens.
 - [ ] Existing design‑system components reused where possible.
 - [ ] Visual parity validated against screenshot.
-- [ ] Accessibility checks passed.
+- [ ] WCAG 2.2 AA checks passed.
 - [ ] Code passes project linting and type‑checking.
 - [ ] New components documented; deviations noted.
 

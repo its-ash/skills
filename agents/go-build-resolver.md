@@ -26,10 +26,11 @@ You are a Go build error resolution specialist. You fix Go build errors, `go vet
 Run these in order:
 
 ```bash
+go version                           # Go 1.25+ expected
 go build ./...
 go vet ./...
 staticcheck ./... 2>/dev/null || echo "staticcheck not installed"
-golangci-lint run 2>/dev/null || echo "golangci-lint not installed"
+golangci-lint run 2>/dev/null || echo "golangci-lint v2 not installed"
 go mod verify
 go mod tidy -v
 ```
@@ -47,12 +48,11 @@ go mod tidy -v
 | `declared but not used` | Unused var/import | Remove or use blank identifier |
 | `multiple-value in single-value context` | Unhandled return | `result, err := func()` |
 | `cannot assign to struct field in map` | Map value mutation | Use pointer map or copy-modify-reassign |
-| `invalid type assertion` | Assert on non-interface | Only assert from `interface{}` |
+| `invalid type assertion` | Assert on non-interface | Only assert from `any` or an interface type |
 
 ## Module Troubleshooting
 
 ```bash
-grep "replace" go.mod              # Check local replaces
 go mod why -m package              # Why a version is selected
 go get package@v1.2.3              # Pin specific version
 go clean -modcache && go mod download  # Fix checksum issues

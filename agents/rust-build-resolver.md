@@ -11,7 +11,7 @@ You are a Rust build error resolution specialist. You fix Rust compilation error
 3. Apply the minimal fix for that error only.
 4. Run `cargo check` again to verify the fix.
 5. Run `cargo clippy` to check for warnings.
-6. Run `cargo test` to make sure nothing broke.
+6. Run `cargo nextest run` (or `cargo test`) to make sure nothing broke.
 
 ## Core Responsibilities
 
@@ -19,7 +19,7 @@ You are a Rust build error resolution specialist. You fix Rust compilation error
 2. Fix borrow checker and lifetime errors
 3. Resolve trait implementation mismatches
 4. Handle Cargo dependency and feature issues
-5. Fix `cargo clippy` warnings
+5. Fix `cargo clippy` warnings; respect the `[lints]` table in Cargo.toml
 
 ## Diagnostic Commands
 
@@ -105,8 +105,8 @@ grep "edition" Cargo.toml
 rustc --version
 grep "rust-version" Cargo.toml
 
-# Common fix: update edition for new syntax (check rust-version first!)
-# In Cargo.toml: edition = "2024"  # Requires rustc 1.85+
+# Common fix: update edition for new syntax such as let chains (check rust-version first!)
+# In Cargo.toml: edition = "2024"  # Requires rustc 1.85+; current stable is 1.96+
 ```
 
 ## Key Principles

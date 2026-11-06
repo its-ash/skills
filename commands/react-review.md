@@ -66,7 +66,7 @@ On a TSX/JSX PR, invoke both `react-reviewer` and `typescript-reviewer`. Finding
 
 ### MEDIUM (Consider)
 
-- Over-memoization without measured win
+- Manual `useMemo`/`useCallback` where React Compiler already optimizes
 - Inline new object/function as prop to memoized child
 - Suspense at route root only (no progressive reveal)
 - Long lists without virtualization
@@ -80,7 +80,7 @@ On a TSX/JSX PR, invoke both `react-reviewer` and `typescript-reviewer`. Finding
 
 ```bash
 # Lint (required for any meaningful review)
-npx eslint . --ext .tsx,.jsx,.ts,.js
+npx eslint .
 
 # Typecheck (skip cleanly for JS-only projects)
 npm run typecheck --if-present

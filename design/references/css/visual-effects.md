@@ -84,7 +84,7 @@ background: repeating-conic-gradient(#ccc 0 25%, #fff 0 50%) 0 0 / 2rem 2rem;   
 .zigzag      { --s: 1rem; mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) 50% / var(--s) 100%; }
 ```
 - `mask-composite`: `add`, `subtract`, `intersect`, `exclude`.
-- Unprefixed `mask` is Baseline since late 2023. Keep `-webkit-mask` only for old Safari.
+- Unprefixed `mask` is Baseline Widely available. Do not write `-webkit-mask`.
 - Decorative edges (wavy, scalloped, torn) are repeated radial/conic gradients in `mask` or `clip-path: shape()`.
 
 ## Filters and blending
@@ -110,5 +110,4 @@ background: repeating-conic-gradient(#ccc 0 25%, #fff 0 50%) 0 0 / 2rem 2rem;   
 - `clip-path` and `mask` create a stacking context and clip hit-testing to the visible area.
 - `filter` (any value other than `none`) creates a containing block for fixed/absolute descendants.
 - `background-clip: text` needs `color: transparent` and fails on text with `text-shadow` behind it.
-- Gradients with `transparent` in old Safari interpolated through gray; use the same color at zero alpha when you target old engines.
 - Sub-pixel gradient stops render differently across browsers. Do not rely on rendering bugs for noise textures; use SVG `feTurbulence`.

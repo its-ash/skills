@@ -79,7 +79,7 @@ Links to other codemaps
 ## Documentation Update Workflow
 
 1. **Extract** — Read JSDoc/TSDoc, README sections, env vars, API endpoints
-2. **Update** — README.md, docs/GUIDES/*.md, package.json, API docs
+2. **Update** — README.md, AGENTS.md, docs/GUIDES/*.md, package.json, API docs
 3. **Validate** — Verify files exist, links work, examples run, snippets compile
 
 ## Key Principles

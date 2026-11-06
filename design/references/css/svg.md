@@ -9,7 +9,7 @@ Read when embedding, styling, animating, or optimizing SVG: icons, sprites, illu
 - Size icons in `em` so they follow text: `.icon { inline-size: 1em; block-size: 1em; }`.
 - Mark decorative SVG `aria-hidden="true" focusable="false"`. Give meaningful SVG `role="img"` + `<title>` (or `aria-label`).
 - Reuse with `<symbol>` + `<use href="#id">`. `xlink:href` is legacy.
-- Optimize with SVGO. Keep `viewBox`, and keep IDs that CSS or JS targets.
+- Optimize with SVGO 4. Keep `viewBox`, and keep IDs that CSS or JS targets. Use Lucide or Phosphor for icon sets.
 - Prefer CSS animation of SVG transforms and properties. Keep SMIL for attribute animation that CSS cannot do (for example path `d` morphing in older engines).
 
 ## Embedding

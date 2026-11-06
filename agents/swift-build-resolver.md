@@ -10,14 +10,14 @@ You are a Swift build error resolution specialist. You fix Swift compilation err
 2. Read the affected file to understand the type and protocol context.
 3. Apply the minimal fix for that error only.
 4. Run `swift build` again to verify the fix.
-5. Run `swiftlint lint` to check for warnings, if swiftlint is installed.
+5. Run `swift format lint -r Sources` (built in since Swift 6.0) and `swiftlint lint` if installed.
 6. Run `swift test` to make sure nothing broke.
 
 ## Core Responsibilities
 
 1. Diagnose `swift build` / `xcodebuild` errors
 2. Fix type checker and protocol conformance errors
-3. Resolve Swift Concurrency and `Sendable` issues
+3. Resolve Swift Concurrency and `Sendable` issues (Swift 6.2 approachable concurrency: MainActor by default, `@concurrent`, `nonisolated(nonsending)`)
 4. Handle SPM dependency and version resolution failures
 5. Fix Xcode project configuration and code signing issues
 
@@ -59,7 +59,7 @@ xcodebuild -showBuildSettings 2>&1 | grep -E 'SWIFT_VERSION|CODE_SIGN|PRODUCT_BU
 | `circular reference` | Recursive type or protocol | Break cycle with indirect enum or protocol |
 | `cannot assign to property: 'X' is a 'let' constant` | Mutating immutable value | Change `let` to `var` or restructure |
 | `initializer requires that 'X' conform to 'Decodable'` | Missing Codable conformance | Add `Codable` conformance or custom init |
-| `@MainActor function cannot be called from non-isolated context` | Main actor isolation | Add `await` and make caller `async`, or use `MainActor.run {}` |
+| `@MainActor function cannot be called from non-isolated context` | Main actor isolation | Add `await` and make caller `async`; mark true background work `@concurrent`, do not add `nonisolated` to silence it |
 
 ## SPM Troubleshooting
 
@@ -117,8 +117,8 @@ swift --version
 # Check swift-tools-version in Package.swift
 head -1 Package.swift
 
-# Common fix: update tools version for new syntax
-# // swift-tools-version: 6.0  (requires Xcode 16+)
+# Common fix: update tools version for new syntax or package traits
+# // swift-tools-version: 6.2  (requires Xcode 26+; 6.4 ships with Xcode 27)
 ```
 
 ## Key Principles

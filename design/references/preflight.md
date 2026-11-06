@@ -13,12 +13,12 @@ Sections §10 and §21 of [`design`](../SKILL.md). Run §21 before you deliver a
 
 - [ ] Design read + dials declared (§0-1); system honest (§2); redesign audited (§14)
 - [ ] One theme, accent, radius scale; zero em-dashes; no banned serif/palette; descender clearance (§4)
-- [ ] AA contrast on CTAs/forms/focus; CTAs one line; one label per intent; empty/loading/error states; reduced motion; dark mode tested
+- [ ] WCAG 2.2 AA contrast on CTAs/forms/focus; targets 24px (44px touch); focus not obscured; CTAs one line; one label per intent; empty/loading/error states; reduced motion; dark mode via `light-dark()` tested
 - [ ] Hero rules; eyebrow cap; no split headers; zigzag cap; >= 4 layout families; bento cell count; logo wall under hero (§4.7)
 - [ ] Nav one line <= 80px; explicit mobile collapse; `100dvh`
 - [ ] Real images; no fake screenshots; lists > 5 reshaped; quotes <= 3 lines
 - [ ] Filled rounded tabs; selection not border-only; filled checkbox/radio (§7)
 - [ ] No §10 tells
-- [ ] Every animation justified; motion shown if claimed; one marquee max; no scroll listeners; `useEffect` cleanup
+- [ ] Every animation justified; motion shown if claimed; one marquee max; no scroll listeners (scroll-driven animations or `IntersectionObserver`); native `<dialog>`/`popover`; `useEffect` cleanup
 - [ ] Allowed icon library (§3); CWV plausible (§8); one design system
 - [ ] Raw CSS written: CSS pre-flight passes (§25.E)

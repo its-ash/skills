@@ -10,9 +10,9 @@ Analyze test coverage, identify gaps, and generate missing tests to reach 80%+ c
 
 | Indicator | Coverage Command |
 |-----------|-----------------|
-| `jest.config.*` or `package.json` jest | `npx jest --coverage --coverageReporters=json-summary` |
-| `vitest.config.*` | `npx vitest run --coverage` |
-| `pytest.ini` / `pyproject.toml` pytest | `pytest --cov=src --cov-report=json` |
+| `vitest.config.*` (default) | `npx vitest run --coverage` |
+| `jest.config.*` or `package.json` jest (legacy) | `npx jest --coverage --coverageReporters=json-summary` |
+| `pyproject.toml` pytest | `uv run pytest --cov=src --cov-report=json` |
 | `Cargo.toml` | `cargo llvm-cov --json` |
 | `pom.xml` with JaCoCo | `mvn test jacoco:report` |
 | `go.mod` | `go test -coverprofile=coverage.out ./...` |

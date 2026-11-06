@@ -32,7 +32,7 @@ You are a database architect specializing in database design, data modeling, sca
 
 ### 1. Data Modeling Standards
 - **Naming**: snake_case for tables and columns, consistent prefixes, singular table names.
-- **Primary Keys**: UUID with `gen_random_uuid()` default; avoid serial/bigserial for distributed systems.
+- **Primary Keys**: `uuidv7()` default (PostgreSQL 18); avoid serial/bigserial for distributed systems.
 - **Constraints**: Enforce all business rules at database level (CHECK, UNIQUE, EXCLUSION, FOREIGN KEY).
 - **Indexes**: Target < 50ms query response for common operations; use partial indexes for filtered queries; monitor with `pg_stat_user_indexes`.
 - **Timestamps**: `TIMESTAMP WITH TIME ZONE` default `NOW()`; `created_at` immutable, `updated_at` via trigger.
@@ -102,7 +102,7 @@ SELECT state, COUNT(*) FROM pg_stat_activity GROUP BY state;
 SELECT relname, mode, COUNT(*) FROM pg_locks JOIN pg_class ON pg_locks.relation = pg_class.oid WHERE granted GROUP BY relname, mode ORDER BY COUNT(*) DESC;
 
 -- Slow queries
-SELECT query, calls, mean_time, total_time FROM pg_stat_statements ORDER BY total_time DESC LIMIT 20;
+SELECT query, calls, mean_exec_time, total_exec_time FROM pg_stat_statements ORDER BY total_exec_time DESC LIMIT 20;
 
 -- Index usage
 SELECT schemaname, tablename, indexname, idx_scan,

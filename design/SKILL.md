@@ -12,14 +12,15 @@ Make frontend UI that is specific to the brief, accessible, and free of AI-defau
 - Before code, output one line: "Reading this as: <page kind> for <audience>, with a <vibe> language, leaning toward <system/aesthetic>." (§0). Declare the three dials (§1).
 - Quiet constraints (a11y-first, public-sector, regulated, kids) override aesthetics (§0).
 - Use one design system per project. Never hand-roll CSS for an official package (§2).
-- Lock one theme, one accent (saturation < 80%), one gray family, one radius scale per page. No pure `#000`/`#fff` (§4.2, §4.4, §4.11).
-- Pass AA contrast on CTAs, inputs, placeholders, focus rings, helper and error text. Touch targets 44px (§4.5, §9).
+- Lock one theme, one accent (saturation < 80%), one gray family, one radius scale per page. Define them as `oklch()` tokens with `color-scheme` + `light-dark()`. No pure `#000`/`#fff` (§4.2, §4.4, §4.11).
+- Pass WCAG 2.2 AA: contrast on CTAs, inputs, placeholders, focus rings, helper and error text; targets 24px minimum, 44px on touch; focus never obscured by sticky chrome (§4.5, §9).
+- Native first: `<dialog>`, `popover`, anchor positioning, `<details name>`, container queries, view transitions. No div modals, no JS-positioned tooltips (§7, §25).
 - Keep CTAs on one line at desktop, one label per intent. Keep the hero inside the viewport (§4.5, §4.7).
 - Use real images, real or labeled-mock numbers, and audited copy. No fake div screenshots (§4.8, §4.9).
 - Justify each animation in one sentence. Animate only `transform`/`opacity`. Never `ease-in`. Keep UI motion < 300ms (§5, §6).
 - For reduced motion, cross-fade; do not remove all motion (§9).
 - Make the header full-width with square edges. Fill and round active tabs. Never mark selection with a one-side border. Fill checked checkbox and radio (§7).
-- Never use scroll listeners, `scrollY` in state, or rAF loops on React state. Use `IntersectionObserver` and motion values (§8, §12).
+- Never use scroll listeners, `scrollY` in state, or rAF loops on React state. Use scroll-driven animations, `IntersectionObserver`, and motion values (§8, §12).
 - Check `package.json`; output the install command for each missing dependency (§3).
 - Ban every anti-slop tell: em-dashes, banned words, placeholder names, default purple glow (§10).
 - For raw CSS, apply the §25.B rules.
@@ -48,12 +49,12 @@ Make frontend UI that is specific to the brief, accessible, and free of AI-defau
 | Brief | Use | Avoid |
 |---|---|---|
 | Microsoft / enterprise | `@fluentui/react-components` | Custom Fluent look-alike |
-| Material | `@material/web` + M3 tokens | Hand-rolled Material CSS |
+| Material | `@material/web` + M3 Expressive tokens | Hand-rolled Material CSS |
 | IBM B2B | `@carbon/react` | Mixing a second system |
 | Shopify / Atlassian / GitHub | Polaris / `@atlaskit/*` / `@primer/*` | Copying their CSS |
 | UK / US public-sector | `govuk-frontend` / `uswds` | Custom aesthetics |
-| Accessible React base / own components | `@radix-ui/themes` / shadcn/ui | Default shadcn look (§10) |
-| Tailwind SaaS | Tailwind v4 + `dark:` | Runtime CSS-in-JS |
+| Accessible React base / own components | Base UI 1.0 / `@radix-ui/themes` / shadcn/ui (CLI 3) | Default shadcn look (§10) |
+| Tailwind SaaS | Tailwind 4.3 CSS-first `@theme` + `light-dark()` tokens | `tailwind.config.js`, runtime CSS-in-JS, `dark:` on every class |
 | No library (aesthetic) | Glassmorphism (`backdrop-filter` + layered borders, solid fallback for `prefers-reduced-transparency`), bento, brutalism, editorial, dark tech, mesh gradients, kinetic type | Calling a web Liquid Glass copy real (label it an approximation) |
 
 ## Load on demand
@@ -75,13 +76,13 @@ Make frontend UI that is specific to the brief, accessible, and free of AI-defau
 | `motion/react` code patterns | [motion-react.md](references/motion-react.md) |
 | HTML slide decks, PPTX to HTML | [html-slides.md](references/html-slides.md) |
 | shadcn/ui components, registries, CLI | [shadcn-ui.md](references/shadcn-ui.md) |
-| Tailwind v4 setup, CSS-first config, dark mode | [tailwind-css.md](references/tailwind-css.md) |
-| Three.js r186 API, shaders/TSL, R3F | [threejs.md](references/threejs.md) |
+| Tailwind 4.3 setup, CSS-first config, dark mode | [tailwind-css.md](references/tailwind-css.md) |
+| Three.js r186+ API, shaders/TSL, R3F 9 | [threejs.md](references/threejs.md) |
 | GSAP API, timelines, ScrollTrigger, `useGSAP` | [gsap.md](references/gsap.md) |
 
 ## Related skills
 
 - [`frontend-development`](../frontend-development/SKILL.md) - React/Next.js, TypeScript, MUI, TanStack
 - [`ux-research`](../ux-research/SKILL.md) - personas, journeys, usability tests
-- [`web-accessibility`](../web-quality-audit/references/web-accessibility.md) - WCAG 2.1 and ARIA audits
+- [`web-accessibility`](../web-quality-audit/references/web-accessibility.md) - WCAG 2.2 and ARIA 1.3 audits
 - [`web-performance`](../web-quality-audit/references/web-performance.md) - Core Web Vitals diagnosis

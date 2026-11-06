@@ -12,12 +12,6 @@ A diagnostic workflow for agent systems that hide failures behind wrapper layers
 - Same model works in playground but breaks inside your wrapper
 - Debugging agent behavior for more than 15 minutes without finding root cause
 
-**Especially critical when:**
-- You've added new prompt layers, tool definitions, or memory systems
-- Different agents in your system behave inconsistently
-- The model was fine yesterday but is hallucinating today
-- You suspect hidden repair/retry loops silently mutating responses
-
 **Do not use for:**
 - Debugging one failing agent run — use `references/agent-introspection-debugging.md`
 - Code review — use `code-review/SKILL.md`
@@ -114,7 +108,7 @@ Define what you're auditing:
 Gather evidence from the codebase:
 
 - **Source code** — agent loop, tool router, memory admission, prompt assembly
-- **Logs** — historical session traces, tool call records
+- **Logs**: session traces (OpenTelemetry GenAI spans in Langfuse or LangSmith), tool call records
 - **Config** — prompt templates, tool schemas, provider settings
 - **Memory files** — SOPs, knowledge bases, session archives
 

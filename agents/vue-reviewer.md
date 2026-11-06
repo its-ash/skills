@@ -13,8 +13,8 @@ You are a senior Vue.js engineer reviewing Vue component code for correctness, r
    - Local review: prefer `git diff --staged -- '*.vue' '*.ts' '*.js'` then `git diff -- '*.vue' '*.ts' '*.js'`.
    - If history is shallow or single-commit, fall back to `git show --patch HEAD -- '*.vue' '*.ts' '*.js'`.
 2. Before reviewing a PR, inspect merge readiness if metadata is available (`gh pr view --json mergeStateStatus,statusCheckRollup`). If checks are red or there are merge conflicts, stop and report.
-3. Run the project's lint command if present — confirm `eslint-plugin-vue` is configured. If the project lacks `vue/multi-word-component-names` or `vue/require-default-prop`, flag as appropriate for project conventions.
-4. Run the project's typecheck command if present (`vue-tsc --noEmit`). Skip cleanly for JS-only projects.
+3. Run the project's lint command if present (ESLint 9 flat config, `npx eslint .`) and confirm `eslint-plugin-vue` is configured. If the project lacks `vue/multi-word-component-names` or `vue/require-default-prop`, flag as appropriate for project conventions.
+4. Run the project's typecheck command if present (`vue-tsc --noEmit`, vue-tsc 3). Skip cleanly for JS-only projects.
 5. If no `.vue` files or Vue-related changes are present in the diff, defer to `typescript-reviewer` and stop.
 6. Focus on modified `.vue` files and related `.ts`/`.js` files; read surrounding context before commenting.
 7. Begin review.
@@ -52,7 +52,7 @@ For a `.vue` PR, invoke both agents. For a pure `.ts` change with no Vue imports
 
 ### CRITICAL — Reactivity
 
-- **Destructuring reactive props (Vue < 3.5)**: In Vue < 3.5, `const { title, count } = defineProps(...)` captures snapshot copies — destructured values are not reactive. Use `toRefs()` or access via `props.xxx`. **Vue 3.5+**: Reactive Props Destructure is stabilized and enabled by default — destructured variables are automatically reactive. However, you cannot `watch()` a destructured prop variable directly; must wrap in a getter: `watch(() => count, ...)`.
+- **Destructured props (Vue 3.5+ baseline)**: `const { title, count } = defineProps(...)` is reactive by default. You cannot `watch()` a destructured prop directly; wrap it in a getter: `watch(() => count, ...)`. On projects pinned below 3.5, destructuring captures snapshots; use `toRefs()` or `props.xxx`.
 
 - **`ref()` wrapping an object but accessing without `.value`**: `<script setup>` auto-unwraps refs in templates, but inside `<script>` the `.value` is mandatory.
 - **Creating reactive primitives with `reactive()`**: `reactive()` only works on objects/arrays. Use `ref()` for primitives.
@@ -63,7 +63,7 @@ For a `.vue` PR, invoke both agents. For a pure `.ts` change with no Vue imports
 ### HIGH — Composables
 
 - **Composable with side effects in module scope**: Initializing state, starting timers, or subscribing outside `setup` / component lifecycle means the side effect persists across component instances.
-- **Missing cleanup**: `watch`, `watchEffect`, event listeners, intervals, and fetch requests inside composables must clean up in the returned teardown function or via `onUnmounted`.
+- **Missing cleanup**: `watch`, `watchEffect`, event listeners, intervals, and fetch requests inside composables must clean up via `onWatcherCleanup`, the returned teardown function, or `onUnmounted`.
 - **Composable receiving reactive state but storing a snapshot**: Accepting a `ref` parameter but reading `.value` once and storing the unwrapped value — changes to the source won't propagate.
 - **Composable returning non-reactive data**: Plain objects or primitives that should use `ref()`/`reactive()`/`computed()` so consumers stay reactive.
 - **Composable not prefixed `use`**: Breaks lint detection and the Vue convention — rename to `useFoo`.
@@ -73,7 +73,7 @@ For a `.vue` PR, invoke both agents. For a pure `.ts` change with no Vue imports
 - **`v-for` without `:key`**: Vue can't track identity, causing incorrect DOM reuse and state mismatches on re-render.
 - **`v-for` with `key={index}`**: Reordering, insertion, or deletion attaches state/children to the wrong row. Use stable database IDs.
 - **`v-if` + `v-for` on the same element**: `v-if` evaluates per-item before `v-for` iterates; the condition runs on item, not on iteration. Almost always a logic error. Use `<template v-for>` + inner `v-if` or a computed filtered list.
-- **`v-model` bound to a computed without a setter**: User input silently ignored — must provide both `get` and `set`, or bind to a writable ref.
+- **`v-model` bound to a computed without a setter**: User input silently ignored — must provide both `get` and `set`, or bind to a writable ref. Use `defineModel()` for component `v-model`.
 - **`v-bind="$attrs"` without `inheritAttrs: false`**: Attributes silently applied to both the root element and the forwarded target. Must disable inheritance explicitly.
 
 ### HIGH — Component Architecture
@@ -100,7 +100,7 @@ For a `.vue` PR, invoke both agents. For a pure `.ts` change with no Vue imports
 
 ### HIGH — SSR (Nuxt-specific)
 
-- **Browser-only API used without `process.client` guard or `onMounted`**: `window`, `document`, `localStorage` crash the server build.
+- **Browser-only API used without `import.meta.client` guard or `onMounted`**: `window`, `document`, `localStorage` crash the server build. `process.client` is deprecated in Nuxt 4.
 - **`useAsyncData` / `useFetch` without `key`**: Duplicate server requests, broken cache deduplication.
 - **`<ClientOnly>` wrapping content needed for SEO**: Server-rendered empty wrapper — search engines see nothing.
 - **Environment variable leaked via `useRuntimeConfig().public`**: Treat all `.public` runtime config as exposed to the client.
@@ -125,7 +125,7 @@ For a `.vue` PR, invoke both agents. For a pure `.ts` change with no Vue imports
 ### MEDIUM — Composition
 
 - **Options API in new code** (Vue 3 projects): New components should use `<script setup>` Composition API unless the team has an explicit migration freeze. The ecosystem (docs, tooling, TS support, composables) has standardized on Composition API.
-- **Mixins in Vue 3 projects**: Mixins are source-of-truth collisions and opaque data flow. Replace with composables.
+- **Mixins in Vue 3 projects**: Mixins are source-of-truth collisions and opaque data flow. Replace with composables. Vapor components (Vue 3.6 RC, opt-in) require Composition API only; flag Options API or mixins there as errors.
 - **`defineExpose` exposing more than necessary**: Component internals leaked to parent via template ref — expose only the intended public API.
 - **Component over 300 lines (template + script)**: Extract subcomponents or composables.
 - **Plain ref for template references (Vue 3.5+)**: Prefer `useTemplateRef('name')` over matching a plain `ref` variable name to the template `ref` attribute. `useTemplateRef` supports dynamic ref IDs and provides better type safety.
@@ -134,7 +134,7 @@ For a `.vue` PR, invoke both agents. For a pure `.ts` change with no Vue imports
 
 ```bash
 # Required
-npx eslint . --ext .vue,.ts,.js                    # ensure eslint-plugin-vue is configured
+npx eslint .                                       # flat config; ensure eslint-plugin-vue is configured
 vue-tsc --noEmit                                   # Vue-specific type checking
 npm run typecheck --if-present                     # respect project's canonical command
 

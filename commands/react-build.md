@@ -1,5 +1,5 @@
 ---
-description: Fix React build failures (Vite, webpack, Next.js, CRA, Parcel, esbuild, Bun) incrementally — JSX/TSX compile errors, hydration mismatches, server/client component boundary failures, missing types. Invokes the react-build-resolver agent for minimal, surgical fixes.
+description: Fix React build failures (Vite, Next.js, Bun, esbuild, webpack, Parcel, legacy CRA) incrementally — JSX/TSX compile errors, hydration mismatches, server/client component boundary failures, missing types. Invokes the react-build-resolver agent for minimal, surgical fixes.
 ---
 
 # React Build and Fix
@@ -8,7 +8,7 @@ This command invokes the **react-build-resolver** agent to incrementally fix Rea
 
 ## What This Command Does
 
-1. **Detect Build System**: Identify Vite, webpack, Next.js, CRA, Parcel, esbuild, or Bun
+1. **Detect Build System**: Identify Vite, Next.js, Bun, esbuild, webpack, Parcel, or legacy CRA
 2. **Run Build**: Execute the project's build script
 3. **Parse Errors**: Group by layer (TypeScript / bundler config / runtime / hydration)
 4. **Fix Incrementally**: One error at a time, re-running build after each change
@@ -45,7 +45,7 @@ tsc --noEmit -p tsconfig.json
 # Bundler-specific fallback
 next build                          # Next.js
 vite build                          # Vite
-react-scripts build                 # CRA
+react-scripts build                 # CRA (legacy, migrate to Vite)
 webpack --mode=production           # webpack
 parcel build src/index.html         # Parcel
 bun build ./src/index.tsx --outdir=dist
@@ -146,7 +146,8 @@ Build Status: PASS: SUCCESS
 
 | Error | Typical Fix |
 |---|---|
-| `'React' is not defined` | Set `"jsx": "react-jsx"` in tsconfig (React 17+) |
+| `'React' is not defined` | Set `"jsx": "react-jsx"` in tsconfig |
+| `middleware.ts` ignored or deprecated (Next.js 16) | Rename to `proxy.ts` and export `proxy` |
 | Missing `@types/react` | `npm i -D @types/react @types/react-dom` |
 | `Unexpected token '<'` | Add `@vitejs/plugin-react` / `babel-loader` |
 | `You're importing a component that needs useState` (Next.js) | Add `"use client"` or move hook to a Client Component child |
@@ -162,7 +163,6 @@ Build Status: PASS: SUCCESS
 3. **Bundler config third** — restore plugin/loader correctness
 4. **One fix at a time** — verify each change
 5. **Minimal changes** — never `// @ts-ignore` without explanation
-6. **Re-run after each fix** — surface new errors immediately
 
 ## Stop Conditions
 

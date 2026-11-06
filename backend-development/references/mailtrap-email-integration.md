@@ -2,13 +2,6 @@
 
 Patterns for adding transactional email sending to an application using Mailtrap's Email API and Sandbox, covering authentication, environment separation, and common delivery pitfalls.
 
-## When to use
-
-- Implementing a "send email" feature (signup confirmation, password reset, notifications, receipts)
-- Debugging why emails aren't arriving in dev/staging
-- Setting up a project's first email-sending integration
-- Reviewing code that calls an email API directly without sandbox separation
-
 ## Core Concepts
 
 **Sandbox vs. Production separation.** Mailtrap provides a Sandbox API that captures emails without delivering them, used for dev/staging so test emails never reach real inboxes. Production sending uses a separate, verified-domain endpoint. Never point a dev environment at the production sending endpoint.
@@ -61,6 +54,7 @@ const MAILTRAP_ENDPOINT = process.env.NODE_ENV === "production"
 
 ## Best Practices
 
+- Use the official `mailtrap` Node SDK or a Nodemailer 7 transport when the repo already has one; the raw `fetch` call above needs no extra dependency.
 - Keep sandbox and production tokens in separate environment variables, never share one token across environments
 - Verify sending domain DNS records before any production launch involving email
 - Log delivery failures with enough context to debug (recipient, template, timestamp, response code)

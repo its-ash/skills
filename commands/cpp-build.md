@@ -33,7 +33,7 @@ cmake -B build -S .
 cmake --build build 2>&1 | head -100
 
 # Static analysis (if available)
-clang-tidy src/*.cpp -- -std=c++17
+clang-tidy src/*.cpp -- -std=c++23
 cppcheck --enable=all src/
 ```
 

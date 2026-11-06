@@ -85,7 +85,7 @@ Read when building page or component layout: Flexbox, Grid, subgrid, masonry, mu
 
 ## Sizing keywords
 - `min-content`, `max-content`, `fit-content` / `fit-content(20rem)` for intrinsic sizing.
-- `width: stretch` fills the containing block while respecting margins (unlike `100%`, which ignores margins and can overflow). Chromium has shipped it; keep `-webkit-fill-available` / `-moz-available` fallbacks.
+- `width: stretch` fills the containing block while respecting margins (unlike `100%`, which ignores margins and can overflow). Chromium has shipped it; declare `-webkit-fill-available` first as the Safari fallback.
 - `interpolate-size: allow-keywords` on `:root` lets transitions animate to and from `auto`, `min-content`, `stretch` (Chromium).
 
 ## Centering

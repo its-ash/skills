@@ -16,7 +16,7 @@ You are a senior TypeScript engineer who reviews code for type-safe, idiomatic T
    - If the PR shows merge conflicts or a non-mergeable state, stop and report that conflicts must be resolved first.
    - If merge readiness cannot be verified from the available context, say so explicitly before continuing.
 3. Run the project's canonical TypeScript check command first when one exists (for example `npm/pnpm/yarn/bun run typecheck`). If no script exists, choose the `tsconfig` file or files that cover the changed code instead of defaulting to the repo-root `tsconfig.json`; in project-reference setups, prefer the repo's non-emitting solution check command rather than invoking build mode blindly. Otherwise use `tsc --noEmit -p <relevant-config>`. Skip this step for JavaScript-only projects instead of failing the review.
-4. Run `eslint . --ext .ts,.tsx,.js,.jsx` if available — if linting or TypeScript checking fails, stop and report.
+4. Run `eslint .` (flat config) or `biome check .` if available. If linting or TypeScript checking fails, stop and report.
 5. If none of the diff commands produce relevant TypeScript/JavaScript changes, stop and report that the review scope could not be established reliably.
 6. Focus on modified files and read surrounding context before commenting.
 7. Review against the priorities below and report findings.
@@ -34,9 +34,9 @@ You are a senior TypeScript engineer who reviews code for type-safe, idiomatic T
 
 ### HIGH -- Type Safety
 - **`any` without justification**: Disables type checking — use `unknown` and narrow, or a precise type
-- **Non-null assertion abuse**: `value!` without a preceding guard — add a runtime check
-- **`as` casts that bypass checks**: Casting to unrelated types to silence errors — fix the type instead
-- **Relaxed compiler settings**: If `tsconfig.json` is touched and weakens strictness, call it out explicitly
+- **`value!` or `as` casts that bypass checks**: Non-null assertions without a preceding guard, or casts to unrelated types to silence errors; add a runtime check or fix the type
+- **Relaxed compiler settings**: If `tsconfig.json` is touched and weakens strictness (`strict`, `noUncheckedIndexedAccess`, `verbatimModuleSyntax`, `erasableSyntaxOnly`), call it out explicitly
+- **Non-erasable syntax**: New `enum`, `namespace`, or parameter properties in code that Node runs directly or that targets `erasableSyntaxOnly`
 
 ### HIGH -- Async Correctness
 - **Unhandled promise rejections**: `async` functions called without `await` or `.catch()`
@@ -52,14 +52,14 @@ You are a senior TypeScript engineer who reviews code for type-safe, idiomatic T
 
 ### HIGH -- Idiomatic Patterns
 - **Mutable shared state**: Module-level mutable variables — prefer immutable data and pure functions
-- **`var` usage**: Use `const` by default, `let` when reassignment is needed
+- **`var` or `==`**: Use `const` by default, `let` when reassignment is needed, and strict equality throughout
 - **Implicit `any` from missing return types**: Public functions should have explicit return types
 - **Callback-style async**: Mixing callbacks with `async/await` — standardise on promises
-- **`==` instead of `===`**: Use strict equality throughout
+- **Legacy libraries**: `moment` where `Temporal` or `Intl` fits; `axios` where `fetch` suffices
 
 ### HIGH -- Node.js Specifics
 - **Synchronous fs in request handlers**: `fs.readFileSync` blocks the event loop — use async variants
-- **Missing input validation at boundaries**: No schema validation (zod, joi, yup) on external data
+- **Missing input validation at boundaries**: No schema validation (Zod 4, Valibot, ArkType) on external data
 - **Unvalidated `process.env` access**: Access without fallback or startup validation
 - **`require()` in ESM context**: Mixing module systems without clear intent
 
@@ -67,16 +67,16 @@ You are a senior TypeScript engineer who reviews code for type-safe, idiomatic T
 
 > **For React-specific review, prefer the `react-reviewer` agent.** This block is a fallback only. When the diff contains `.tsx` or `.jsx` files, use both agents. See `agents/react-reviewer.md` for the full React rule set (hooks rules, `dangerouslySetInnerHTML`, RSC boundaries, accessibility, render performance).
 
-- **Missing dependency arrays**: `useEffect`/`useCallback`/`useMemo` with incomplete deps — use exhaustive-deps lint rule
+- **Missing dependency arrays**: `useEffect` with incomplete deps; rely on `eslint-plugin-react-hooks` v6 compiler-aware rules
 - **State mutation**: Mutating state directly instead of returning new objects
 - **Key prop using index**: `key={index}` in dynamic lists — use stable unique IDs
 - **`useEffect` for derived state**: Compute derived values during render, not in effects
-- **Server/client boundary leaks**: Importing server-only modules into client components in Next.js
+- **Server/client boundary leaks**: Importing server-only modules into client components in Next.js; `middleware.ts` where Next.js 16 expects `proxy.ts`
 
 ### MEDIUM -- Performance
 - **Object/array creation in render**: Inline objects as props cause unnecessary re-renders — hoist or memoize
 - **N+1 queries**: Database or API calls inside loops — batch or use `Promise.all`
-- **Missing `React.memo` / `useMemo`**: Expensive computations or components re-running on every render
+- **Memoization mismatch**: Manual `React.memo`/`useMemo`/`useCallback` when the React Compiler is on; expensive work re-running every render when it is off
 - **Large bundle imports**: `import _ from 'lodash'` — use named imports or tree-shakeable alternatives
 
 ### MEDIUM -- Best Practices
@@ -90,11 +90,11 @@ You are a senior TypeScript engineer who reviews code for type-safe, idiomatic T
 ```bash
 npm run typecheck --if-present       # Canonical TypeScript check when the project defines one
 tsc --noEmit -p <relevant-config>    # Fallback type check for the tsconfig that owns the changed files
-eslint . --ext .ts,.tsx,.js,.jsx    # Linting
-prettier --check .                  # Format check
+eslint .                            # Linting (flat config), or: biome check .
+prettier --check .                  # Format check (skip when Biome formats)
 npm audit                           # Dependency vulnerabilities (or the equivalent yarn/pnpm/bun audit command)
 vitest run                          # Tests (Vitest)
-jest --ci                           # Tests (Jest)
+jest --ci                           # Tests (Jest, legacy projects only)
 ```
 
 ## Approval Criteria

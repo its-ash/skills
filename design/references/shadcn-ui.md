@@ -1,6 +1,6 @@
 # shadcn/ui
 
-A framework for building UI components and design systems. Components are added as source code to your project via the CLI. Run all CLI commands using the project's package runner: `npx shadcn@latest`, `pnpm dlx shadcn@latest`, or `bunx --bun shadcn@latest` — substitute the correct runner for the project's `packageManager`.
+A framework for building UI components and design systems. Components are added as source code to your project via the CLI (shadcn CLI 3). Run all CLI commands using the project's package runner: `npx shadcn@latest`, `pnpm dlx shadcn@latest`, or `bunx --bun shadcn@latest`; substitute the correct runner for the project's `packageManager`.
 
 ## When to Use
 
@@ -15,10 +15,10 @@ Run `npx shadcn@latest info --json` to get the project config and installed comp
 
 - **`aliases`** — use the actual alias prefix for imports (e.g. `@/`, `~/`), never hardcode.
 - **`isRSC`** — when `true`, components using `useState`, `useEffect`, event handlers, or browser APIs need `"use client"` at the top of the file.
-- **`tailwindVersion`** — `"v4"` uses `@theme inline` blocks; `"v3"` uses `tailwind.config.js`.
+- **`tailwindVersion`**: `"v4"` uses `@theme inline` blocks. `"v3"` is legacy; run `npx @tailwindcss/upgrade` before new work.
 - **`tailwindCssFile`** — the global CSS file where custom CSS variables are defined. Always edit this file, never create a new one.
 - **`style`** — component visual treatment (e.g. `nova`, `vega`).
-- **`base`** — primitive library (`radix` or `base`). Affects component APIs and available props.
+- **`base`**: primitive library (`radix` or `base` for Base UI 1.0). Affects component APIs and available props.
 - **`iconLibrary`** — determines icon imports. Use `lucide-react` for `lucide`, `@tabler/icons-react` for `tabler`, etc. Never assume `lucide-react`.
 - **`resolvedPaths`** — exact file-system destinations for components, utils, hooks, etc.
 - **`framework`** — routing and file conventions (e.g. Next.js App Router vs Vite SPA).

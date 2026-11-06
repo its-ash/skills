@@ -15,7 +15,7 @@ Read when deciding whether a CSS feature is safe to ship, writing `@supports` fa
 ```css
 @supports (container-type: inline-size) { … }
 @supports not (anchor-name: --a) { .menu { inset-block-start: 100%; } }
-@supports selector(:has(*)) { … }
+@supports selector(::scroll-marker) { … }
 @supports (animation-timeline: view()) {
   @media (prefers-reduced-motion: no-preference) { … }   /* combine by nesting */
 }
@@ -64,7 +64,7 @@ Verify current numbers on caniuse.com, MDN browser-compat data, or webstatus.dev
 
 ## Polyfills
 - Prefer polyfills that defer to native support and are removable (they check `CSS.supports` first).
-- Common ones: anchor positioning (`@oddbird/css-anchor-positioning`), scroll-driven animations (`scroll-timeline` polyfill), `inert` (old Safari), `dialog-polyfill` (only for very old browsers).
+- Common ones: anchor positioning (`@oddbird/css-anchor-positioning`) and scroll-driven animations (`scroll-timeline` polyfill). `inert` and `<dialog>` are Baseline Widely available and need no polyfill.
 - CSS polyfills that parse stylesheets in JS cause a flash of unstyled content and cost INP. Load them only when the feature is missing.
 - Some features cannot be polyfilled well (`:has()`, container queries without layout cost, `sibling-index()`). Design a non-feature layout instead.
 
@@ -85,5 +85,4 @@ Verify current numbers on caniuse.com, MDN browser-compat data, or webstatus.dev
 ## Gotchas
 - `@supports` with a valid-looking but wrong syntax returns false silently. Test the exact form you ship.
 - Old browsers that do not understand `@supports` ignore the whole block. That is the fallback path, so keep base styles outside.
-- `@layer` is not understood by pre-2022 browsers; they drop all layered rules. Keep a pre-layer fallback only if you must support them.
-- `-webkit-` prefixes still needed: `-webkit-line-clamp` (with `display: -webkit-box`), `-webkit-text-stroke`, `-webkit-text-size-adjust`, `-webkit-backdrop-filter` for Safari before 18, and `-webkit-mask` for Safari before 15.4.
+- `-webkit-` prefixes still needed: `-webkit-line-clamp` (with `display: -webkit-box`), `-webkit-text-stroke`, and `-webkit-text-size-adjust`. Let Lightning CSS add the rest from `browserslist`. Do not write `-moz-` or `-ms-` prefixes.

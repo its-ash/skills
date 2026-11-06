@@ -43,7 +43,7 @@ Create `~/.claude/session-data/YYYY-MM-DD-<short-id>-session.tmp`, using today's
 Valid examples: `abc123de`, `a1b2c3d4`, `frontend-worktree-1`, `ChezMoi_2`
 Avoid for new files: `A`, `test_id1`, `ABC123de`
 
-Full valid filename example: `2024-01-15-abc123de-session.tmp`
+Full valid filename example: `2026-01-15-abc123de-session.tmp`
 
 The legacy filename `YYYY-MM-DD-session.tmp` is still valid, but new session files should prefer the short-id form to avoid same-day collisions.
 
@@ -88,7 +88,7 @@ Include: what it does, why it's needed, how it fits into the larger system.]
 ## What WORKED (with evidence)
 
 [List only things that are confirmed working. For each item include WHY you
-know it works — test passed, ran in browser, Postman returned 200, etc.
+know it works — test passed, ran in browser, curl returned 200, etc.
 Without evidence, move it to "Not Tried Yet" instead.]
 
 - **[thing that works]** — confirmed by: [specific evidence]
@@ -184,7 +184,7 @@ required, services that need to be running, etc. Skip if standard setup.]
 ## Example Output
 
 ```markdown
-# Session: 2024-01-15
+# Session: 2026-01-15
 
 **Started:** ~2pm
 **Last Updated:** 5:30pm
@@ -204,7 +204,7 @@ refreshes without exposing the token to JavaScript.
 
 ## What WORKED (with evidence)
 
-- **`/api/auth/register` endpoint** — confirmed by: Postman POST returns 200 with user
+- **`/api/auth/register` endpoint** — confirmed by: curl POST returns 200 with user
   object, row visible in Supabase dashboard, bcrypt hash stored correctly
 - **JWT generation in `lib/auth.ts`** — confirmed by: unit test passes
   (`npm test -- auth.test.ts`), decoded token at jwt.io shows correct payload
@@ -226,8 +226,8 @@ refreshes without exposing the token to JavaScript.
 ## What Has NOT Been Tried Yet
 
 - Store JWT as httpOnly cookie in the login route response (most likely solution)
-- Use `cookies()` from `next/headers` to read token in server components
-- Write middleware.ts to protect routes by checking cookie existence
+- Use `await cookies()` from `next/headers` to read token in server components
+- Write proxy.ts (Next.js 16) to protect routes by checking cookie existence
 
 ---
 
@@ -238,7 +238,7 @@ refreshes without exposing the token to JavaScript.
 | `app/api/auth/register/route.ts` | PASS: Complete    | Works, tested                                   |
 | `app/api/auth/login/route.ts`    |  In Progress | Token generates but not setting cookie yet      |
 | `lib/auth.ts`                    | PASS: Complete    | JWT helpers, all tested                         |
-| `middleware.ts`                  |  Not Started | Route protection, needs cookie read logic first |
+| `proxy.ts`                       |  Not Started | Route protection, needs cookie read logic first |
 | `app/login/page.tsx`             |  Not Started | UI not started                                  |
 
 ---
@@ -252,15 +252,15 @@ refreshes without exposing the token to JavaScript.
 
 ## Blockers & Open Questions
 
-- Does `cookies().set()` work inside a Route Handler or only in Server Actions? Need to verify.
+- Does `(await cookies()).set()` work inside a Route Handler or only in Server Actions? Need to verify.
 
 ---
 
 ## Exact Next Step
 
 In `app/api/auth/login/route.ts`, after generating the JWT, set it as an httpOnly
-cookie using `cookies().set('token', jwt, { httpOnly: true, secure: true, sameSite: 'strict' })`.
-Then test with Postman — the response should include a `Set-Cookie` header.
+cookie using `(await cookies()).set('token', jwt, { httpOnly: true, secure: true, sameSite: 'strict' })`.
+Then test with `curl -i` — the response should include a `Set-Cookie` header.
 ```
 
 ---

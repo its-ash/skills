@@ -11,13 +11,6 @@ The point is to match the host repository's pattern:
 - test style
 - registration/discovery wiring
 
-## When to use
-
-- "Build a Jira connector for this project"
-- "Add a Slack provider following the existing pattern"
-- "Create a new integration for this API"
-- "Build a plugin that matches the repo's connector style"
-
 ## Guardrails
 
 - do not invent a new integration architecture when the repo already has one

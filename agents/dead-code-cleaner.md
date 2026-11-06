@@ -69,10 +69,10 @@ Remove SAFE items first. For each candidate, grep for all references (including 
 
 ## Entry points to preserve
 - Python: `main.py`, `__main__.py`, `app.py`, `run.py`.
-- JavaScript: `index.js`, `main.js`, `server.js`, `app.js`.
+- JavaScript/TypeScript: `index.{js,ts}`, `main.{js,ts}`, `server.{js,ts}`, `app.{js,ts}`.
 - Java: `Main.java`, `*Application.java`, `*Controller.java`.
 - Configuration: `*.config.*`, `settings.*`, `setup.*`.
-- Tests: `test_*.py`, `*.test.js`, `*.spec.js`.
+- Tests: `test_*.py`, `*.test.{js,ts,tsx}`, `*.spec.{js,ts}`.
 - Migrations and generated files.
 
 ## Execution process
@@ -86,21 +86,17 @@ rsync -a --exclude="$backup_dir" . "$backup_dir/"
 ### 2. Language-specific analysis
 ```bash
 # Python
-python -m py_compile file.py
-python -m pytest
+uv run ruff check --select F401,F841 .   # unused imports and variables
+uv run pytest
 
 # JavaScript/TypeScript
-npx eslint file.js
-npm test
-npx depcheck
-npx ts-unused-exports tsconfig.json
-npx knip                                         # unused files, exports, dependencies
-npx ts-prune                                     # unused TypeScript exports
-npx eslint . --report-unused-disable-directives  # unused eslint directives
+npx knip                     # unused files, exports, dependencies
+npx eslint .                 # or: npx biome lint .
+npm test                     # Vitest
 
 # Java
 javac -Xlint file.java
-mvn test
+mvn test   # or ./gradlew test
 ```
 
 ### 3. Safe removal
@@ -113,9 +109,9 @@ mvn test
 - After each batch, confirm the build succeeds and tests pass, then commit with a descriptive message.
 
 ### 4. Validation commands
-- Python: `python -m py_compile file.py` and `python -m pytest`.
-- JavaScript: `npx eslint file.js` and `npm test`.
-- Java: `javac -Xlint file.java` and `mvn test`.
+- Python: `uv run ruff check .` and `uv run pytest`.
+- JavaScript/TypeScript: `npx tsc --noEmit`, `npx eslint .` or `npx biome lint .`, `npm test`.
+- Java: `javac -Xlint file.java` and `mvn test` or `./gradlew test`.
 
 ## Safety guidelines
 Do:

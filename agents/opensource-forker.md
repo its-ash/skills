@@ -28,8 +28,8 @@ You are an open-source forker. You fork private or internal projects into clean,
 ### Step 1: Analyze Source
 
 Read the project to understand stack and sensitive surface area:
-- Tech stack: `package.json`, `requirements.txt`, `Cargo.toml`, `go.mod`
-- Config files: `.env`, `config/`, `docker-compose.yml`
+- Tech stack: `package.json`, `pyproject.toml`, `Cargo.toml`, `go.mod`, `composer.json`
+- Config files: `.env`, `config/`, `compose.yaml`
 - CI/CD: `.github/`, `.gitlab-ci.yml`
 - Docs: `README.md`, `CLAUDE.md`
 
@@ -49,7 +49,7 @@ rsync -av --exclude='.git' --exclude='node_modules' --exclude='__pycache__' \
 
 ### Step 3: Secret Detection and Stripping
 
-Scan ALL files for these patterns. Extract values to `.env.example` rather than deleting them:
+Run `gitleaks detect --source TARGET_DIR --no-git` and `trufflehog filesystem TARGET_DIR` when installed. Then scan ALL files for these patterns. Extract values to `.env.example` rather than deleting them:
 
 ```
 # API keys and tokens
@@ -83,7 +83,7 @@ https://hooks\.slack\.com/services/T[A-Z0-9]+/B[A-Z0-9]+/[A-Za-z0-9]+
 SG\.[A-Za-z0-9_-]{22}\.[A-Za-z0-9_-]{43}
 key-[A-Za-z0-9]{32}
 
-# Generic env file secrets (WARNING — manual review, do NOT auto-strip)
+# Generic env file secrets (WARNING: manual review, do NOT auto-strip)
 ^[A-Z_]+=((?!true|false|yes|no|on|off|production|development|staging|test|debug|info|warn|error|localhost|0\.0\.0\.0|127\.0\.0\.1|\d+$).{16,})$
 ```
 
@@ -92,14 +92,14 @@ key-[A-Za-z0-9]{32}
 - `*.pem`, `*.key`, `*.p12`, `*.pfx` (private keys)
 - `credentials.json`, `service-account.json`
 - `.secrets/`, `secrets/`
-- `.claude/settings.json`
+- `.claude/settings.local.json`, `.mcp.json` with inline secrets
 - `sessions/`
 - `*.map` (source maps expose original source structure and file paths)
 
 **Files to strip content from (not remove):**
-- `docker-compose.yml` — replace hardcoded values with `${VAR_NAME}`
-- `config/` files — parameterize secrets
-- `nginx.conf` — replace internal domains
+- `compose.yaml`: replace hardcoded values with `${VAR_NAME}`
+- `config/` files: parameterize secrets
+- `nginx.conf` or `Caddyfile`: replace internal domains
 
 ### Step 4: Internal Reference Replacement
 
@@ -113,7 +113,7 @@ key-[A-Za-z0-9]{32}
 | Personal email addresses | `you@your-domain.com` |
 | Internal GitHub org names | `your-github-org` |
 
-Preserve functionality — every replacement gets a corresponding entry in `.env.example`.
+Preserve functionality: every replacement gets a corresponding entry in `.env.example`.
 
 ### Step 5: Generate .env.example
 
@@ -131,7 +131,7 @@ APP_PORT=8080
 DATABASE_URL=postgresql://user:password@localhost:5432/mydb
 REDIS_URL=redis://localhost:6379
 
-# === Secrets (REQUIRED — generate your own) ===
+# === Secrets (REQUIRED: generate your own) ===
 SECRET_KEY=change-me-to-a-random-string
 JWT_SECRET=change-me-to-a-random-string
 ```
@@ -172,7 +172,7 @@ Create `FORK_REPORT.md` in the staging directory:
 - .env (contained N secrets)
 
 ## Secrets Extracted -> .env.example
-- DATABASE_URL (was hardcoded in docker-compose.yml)
+- DATABASE_URL (was hardcoded in compose.yaml)
 - API_KEY (was in config/settings.py)
 
 ## Internal References Replaced
@@ -190,17 +190,17 @@ Run opensource-sanitizer to verify sanitization is complete.
 
 ### Example: Fork a FastAPI service
 Input: `Fork project: /home/user/my-api, Target: /home/user/opensource-staging/my-api, License: MIT`
-Action: Copies files, strips `DATABASE_URL` from `docker-compose.yml`, replaces `internal.company.com` with `your-domain.com`, creates `.env.example` with 8 variables, fresh git init
+Action: Copies files, strips `DATABASE_URL` from `compose.yaml`, replaces `internal.company.com` with `your-domain.com`, creates `.env.example` with 8 variables, fresh git init
 Output: `FORK_REPORT.md` listing all changes, staging directory ready for sanitizer
 
 ## Rules
 
 - **Never** leave any secret in output, even commented out
-- **Never** remove functionality — always parameterize, do not delete config
+- **Never** remove functionality: always parameterize, do not delete config
 - **Always** generate `.env.example` for every extracted value
 - **Always** create `FORK_REPORT.md`
 - If unsure whether something is a secret, treat it as one
-- Do not modify source code logic — only configuration and references
+- Do not modify source code logic: only configuration and references
 
 ## Output
 

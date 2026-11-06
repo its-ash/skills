@@ -98,7 +98,7 @@ If PR not found, stop with error. Store PR metadata for later phases.
 
 Build review context:
 
-1. **Project rules** — Read `CLAUDE.md`, `.claude/docs/`, and any contributing guidelines
+1. **Project rules** — Read `AGENTS.md`, `CLAUDE.md`, `.claude/docs/`, and any contributing guidelines
 2. **Planning artifacts** — Check `.claude/prds/`, `.claude/plans/`, `.claude/reviews/`, and legacy `.claude/PRPs/{prds,plans,reports,reviews}/` for context related to this PR
 3. **PR intent** — Parse PR description for goals, linked issues, test plans
 4. **Changed files** — List all modified files and categorize by type (source, test, config, docs)
@@ -163,9 +163,10 @@ go test ./...   # Tests
 go build ./...  # Build
 ```
 
-**Python** (has `pyproject.toml` / `setup.py`):
+**Python** (has `pyproject.toml`):
 ```bash
-pytest  # Tests
+uv run ruff check .  # Lint
+uv run pytest        # Tests
 ```
 
 Run only the commands that apply to the detected project type. Record pass/fail for each.

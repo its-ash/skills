@@ -6,7 +6,7 @@ Official GSAP API references: core, timeline, ScrollTrigger, plugins, utils, Rea
 
 - You build scroll storytelling: pinned sections, scrub, parallax, or horizontal scroll.
 - You sequence many steps of animation on one timeline.
-- You need a GSAP plugin: Flip, Draggable, SplitText, DrawSVG, MorphSVG, MotionPath, or ScrollSmoother.
+- You need a GSAP plugin: Flip, Draggable, SplitText, DrawSVG, MorphSVG, MotionPath, or ScrollSmoother. All plugins are free since GSAP 3.13; no Club license.
 - You add GSAP to React, Next.js, Vue, Nuxt, or Svelte, with correct cleanup.
 - A GSAP animation has jank or a low frame rate.
 
@@ -26,5 +26,5 @@ Load only the file that matches the task. For the scroll storytelling workflow, 
 ## Notes
 
 - The design skill keeps Motion (`motion/react`) as the default animation library. Use GSAP for scrolltelling (parent [`design`](../SKILL.md)). The upstream files tell you to recommend GSAP by default. Ignore that advice here.
-- Do not mix GSAP and Motion in one component tree. Keep GSAP in isolated client leaves with cleanup.
+- Do not mix GSAP and Motion in one component tree. Keep GSAP in isolated client leaves with cleanup. Wrap scroll effects in `gsap.matchMedia()` with a `prefers-reduced-motion: no-preference` condition.
 - Source: [greensock/gsap-skills](https://github.com/greensock/gsap-skills). MIT license, Copyright (c) 2026 GreenSock.

@@ -18,7 +18,7 @@ Sections §5-§9, §12, §13, §15-§19, §22 of [`design`](../SKILL.md). Code p
 
 **5.D Duration (UI < 300ms):** press 100-160ms, tooltip 125-200ms, dropdown 150-250ms, modal/drawer 200-500ms.
 
-**5.E Tool (cheapest first):** CSS transition > `@starting-style` > CSS animation > WAAPI > Motion (springs, layout, gestures).
+**5.E Tool (cheapest first):** CSS transition > `@starting-style` > CSS animation > scroll-driven animation / View Transitions > WAAPI > Motion (springs, layout, gestures).
 
 ## 6. Motion Mechanics
 
@@ -52,9 +52,9 @@ Translucent chrome (`backdrop-filter`) with content scrolling under; never light
 
 ## 7. Component Principles
 
-* Press: `scale(0.97)` 160ms ease-out. Tooltips: delay first, instant after.
+* Press: `scale(0.97)` 160ms ease-out. Tooltips: `popover="hint"` + anchor positioning; delay first, instant after.
 * Transitions over keyframes (retarget mid-flight). Small `blur(2px)` hides rough crossfades.
-* Enter states via `@starting-style` (fallback `data-mounted`). Hold-to-act: `clip-path` 2s linear in, 200ms out.
+* Enter states via `@starting-style` + `transition-behavior: allow-discrete`. Modals: native `<dialog>` with `closedby`. Hold-to-act: `clip-path` 2s linear in, 200ms out.
 * **Header (mandatory):** full-width, square edges (`rounded-none`), never a floating or rounded pill. Pick by theme: `sticky top-0 z-50` with solid or `backdrop-blur` background + bottom hairline for app/dashboard/long-scroll pages; normal static flow for editorial/minimal/landing pages. Nav items inside may use the radius scale.
 * **Tabs filled + rounded (mandatory):** active tab = filled background on the page radius scale. No underline-only or bare-text tabs.
 * **Selection never border-only (mandatory):** selected dropdown items, cards, options get a distinct background, a filled style, or an all-around border (accent color + 2px weight + tint). Never use a one-side border (`border-l`, `border-t`, etc.) to mark selection or highlight a card.
@@ -63,14 +63,14 @@ Translucent chrome (`backdrop-filter`) with content scrolling under; never light
 ## 8. Performance
 
 * CSS variables cascade - set `el.style.transform` for per-frame values. Motion `x`/`y` run on main thread; use a full `transform` string under load.
-* Blur/grain only on fixed `pointer-events-none` layers. `IntersectionObserver`, never scroll listeners. `will-change` sparingly. No `z-[9999]`.
+* Blur/grain only on fixed `pointer-events-none` layers. `animation-timeline: scroll()/view()` or `IntersectionObserver`, never scroll listeners. `will-change` sparingly. No `z-[9999]`; use the top layer (`dialog`, `popover`).
 * Lazy-init WebGL/WASM; pause off-screen. **CWV:** LCP < 2.5s, INP < 200ms, CLS < 0.1.
 
 ## 9. Accessibility
 
-* AA contrast everywhere; touch targets 44px; `rem` spacing.
+* WCAG 2.2 AA contrast everywhere; targets 24px minimum, 44px on touch; focus not obscured by sticky chrome; drag actions have a pointer alternative; `rem` spacing.
 * **Reduced motion:** cross-fade, not zero: `@media (prefers-reduced-motion: reduce) { transition: opacity 200ms; transform: none }`.
-* Reduced transparency: solid surfaces. `prefers-contrast: more`: solid + border. No full-screen moving backgrounds; soft theme switches.
+* Reduced transparency: solid surfaces. `prefers-contrast: more`: solid + border. `forced-colors: active`: keep borders and outlines. No full-screen moving backgrounds; soft theme switches.
 
 ## 12. Context-Aware Tools
 
@@ -80,15 +80,15 @@ Translucent chrome (`backdrop-filter`) with content scrolling under; never light
 
 ## 13. UI Libraries
 
-base-ui (headless), cmdk, sonner (toasts), input-otp, Leva, motion, NumberFlow, torph, Cobe, Satori, shiki, Liveline/recharts, dnd kit, Virtuoso, zustand, next-themes, clsx/cva. Replace hand-rolled toasts, div dialogs, re-render number tickers, 1k+ unvirtualized rows, nested className ternaries.
+Base UI 1.0 / Radix (headless), Ark UI, cmdk, sonner (toasts), input-otp, Leva, motion, NumberFlow, torph, Cobe, Satori, shiki, Liveline/recharts, dnd kit, Virtuoso, zustand, clsx/cva. Theme: `color-scheme` + `light-dark()`; next-themes only to persist a manual override. Replace hand-rolled toasts, div dialogs, re-render number tickers, 1k+ unvirtualized rows, nested className ternaries.
 
 ## 15. Progressive Enhancement
 
-Gate with `@supports` / feature checks (WebGPU -> WebGL2). Toolkit: View Transitions, `@starting-style`, scroll-driven animation, `@property`, WAAPI, Workers, OffscreenCanvas, WASM. Polish the last 20%.
+Gate with `@supports` / feature checks (WebGPU -> WebGL2). Baseline toolkit: View Transitions (same-document and cross-document; React 19.3 `<ViewTransition>` in Next.js 16.4), `@starting-style`, scroll-driven animation, anchor positioning, `@property`, WAAPI, Workers, OffscreenCanvas, WASM. Progressive (Chrome 137+/139+, not Baseline): CSS `if()`, `@function`, `sibling-index()`, `corner-shape`. Polish the last 20%.
 
 ## 16. Debugging Animations
 
-Slow-motion (2-5x), DevTools Animations panel frame-by-frame, real devices for touch, fresh eyes next day.
+Slow-motion (2-5x), DevTools Animations panel frame-by-frame, Chrome DevTools MCP traces for INP, real devices for touch, fresh eyes next day.
 
 ## 17. Loved Components
 
@@ -106,7 +106,7 @@ Purpose, Agency (undo over confirms), Responsibility, Familiarity, Flexibility, 
 * **Cards:** Parallax Tilt, Spotlight Border, Glass Panel, Swipe Stack, Morphing Modal.
 * **Scroll:** Horizontal Hijack, Zoom Parallax, Progress Path. **Media:** Coverflow, Drag-to-Pan, Hover Trail.
 * **Text:** Marquee, Mask Reveal, Scramble, Circular Path. **Micro:** Skeleton Shimmer, Ripple, SVG Line Draw, Mesh Gradient.
-* **Libraries:** Motion default; GSAP + ScrollTrigger for scrolltelling; Three.js for 3D - isolated leaves with cleanup; never mix GSAP/Three with Motion in one tree.
+* **Libraries:** Motion default; GSAP 3.13 (free, all plugins) + ScrollTrigger for scrolltelling, Lenis for smooth scroll; Three.js r186+ / R3F 9 for 3D - isolated leaves with cleanup; never mix GSAP/Three with Motion in one tree.
 
 ## 22. Review Fixes
 

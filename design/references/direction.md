@@ -14,11 +14,11 @@ Output one line first: **"Reading this as: \<page kind> for \<audience>, with a 
 
 ## 3. Default Architecture
 
-* **Stack:** React/Next.js Server Components; motion/scroll/pointer code only in `'use client'` leaves. Tailwind v4. Raw CSS -> §25 ([css-implementation.md](css-implementation.md)).
-* **Animation:** Motion (`motion/react`). **Fonts:** `next/font` or self-hosted + `font-display: swap`; never Google Fonts `<link>`.
+* **Stack:** React 19.3 / Next.js 16.4 Server Components; React Compiler on, no manual `memo`; motion/scroll/pointer code only in `'use client'` leaves. Tailwind 4.3 CSS-first. Raw CSS -> §25 ([css-implementation.md](css-implementation.md)).
+* **Animation:** Motion (`motion/react` v12). **Fonts:** variable fonts via `next/font` or self-hosted (Fontsource) + `font-display: swap` + `size-adjust` fallback; never Google Fonts `<link>`.
 * **State:** local first; global only vs prop-drilling. Never `useState` for continuous input - use `useMotionValue`/`useTransform`/`useScroll`.
-* **Icons:** `@phosphor-icons/react` > `hugeicons-react` > `@radix-ui/react-icons` > `@tabler/icons-react` (`lucide-react` only if present). One family, global `strokeWidth`, never hand-rolled SVG. **No emoji** unless asked.
-* **Layout:** breakpoints `640/768/1024/1280/1536`; `max-w-7xl`; `min-h-[100dvh]` never `h-screen`; Grid over `calc()` flex math.
+* **Icons:** `@phosphor-icons/react` > `hugeicons-react` > `lucide-react` > Material Symbols > `@tabler/icons-react`. One family, global `strokeWidth`, never hand-rolled SVG. **No emoji** unless asked.
+* **Layout:** breakpoints `640/768/1024/1280/1536` for pages; `@container` queries for components; subgrid for aligned rows; `max-w-7xl`; `min-h-dvh` never `h-screen`; Grid over `calc()` flex math.
 * **Dependencies (mandatory):** check `package.json`; output install command if missing.
 
 ## 4. Bias Correction
@@ -33,7 +33,7 @@ Output one line first: **"Reading this as: \<page kind> for \<audience>, with a 
 
 ### 4.2 Color
 
-* One accent (saturation < 80%), one gray family, no pure `#000`/`#fff`. **Lock (mandatory):** same accent on the whole page.
+* One accent (saturation < 80%), one gray family, no pure `#000`/`#fff`. Define colors in `oklch()`; derive states with relative color syntax or `color-mix()`. **Lock (mandatory):** same accent on the whole page.
 * **Lila rule:** no default purple/blue glow - neutral base + one sharp accent (Emerald, Electric Blue, Deep Rose, Burnt Orange) unless brand says purple.
 * **Premium-consumer ban (mandatory):** no beige/cream + brass/oxblood + espresso. Rotate: Cold Luxury, Forest, Black and Tan, Cobalt + Cream, Terracotta + Slate, mono + one pop.
 
@@ -67,7 +67,7 @@ Label above, helper in markup, error below, `gap-2`. Never placeholder-as-label.
 
 ### 4.8 Images
 
-Order: image-gen tool -> `picsum.photos/seed/{seed}/{w}/{h}` / provided URLs -> labeled slots. Minimal sites still need real images. Logos via Simple Icons CDN, no category labels. **Banned:** div-based fake screenshots, decorative hand-rolled SVG, text + blob heroes.
+Order: image-gen tool -> `picsum.photos/seed/{seed}/{w}/{h}` / provided URLs -> labeled slots. Minimal sites still need real images. Serve AVIF first with WebP fallback, responsive `srcset`, `fetchpriority="high"` on the LCP image, native `loading="lazy"` below the fold (`next/image` or unpic). Logos via Simple Icons CDN, no category labels. **Banned:** div-based fake screenshots, decorative hand-rolled SVG, text + blob heroes.
 
 ### 4.9 Content Density
 
@@ -81,12 +81,12 @@ Max 3 lines; name + role (+ company); real typographic quotes.
 
 ### 4.11 Theme Lock
 
-One theme per page, set at root; no inverted sections (except a deliberate single theme switch). Respect `prefers-color-scheme`.
+One theme per page, set at root with `color-scheme: light dark` and `light-dark()` tokens; no inverted sections (except a deliberate single theme switch). A manual toggle only changes `color-scheme`; it does not duplicate colors in JS.
 
 ## 11. Dial Definitions
 
 * **VARIANCE** 1-3 centered 12-col; 4-7 offsets, mixed ratios; 8-10 masonry, `2fr 1fr 1fr`, big empty zones. 4+ collapses to one column < 768px.
-* **MOTION** 1-3 hover/active only; 4-7 CSS transitions + cascades; 8-10 scroll choreography via Motion hooks.
+* **MOTION** 1-3 hover/active only; 4-7 CSS transitions + cascades; 8-10 scroll choreography via scroll-driven animations or Motion hooks.
 * **DENSITY** 1-3 `py-32+`; 4-7 `py-16-24`; 8-10 tight, no cards, 1px rules, `font-mono` numbers.
 
 ## 14. Redesign Protocol
@@ -99,7 +99,7 @@ One theme per page, set at root; no inverted sections (except a deliberate singl
 
 ## 20. Out of Scope
 
-Dense dashboards/admin (Fluent, Carbon, Polaris), data tables (TanStack Table, AG Grid), wizards, code editors (Monaco), native mobile (HIG/Material), realtime collab. Say so and apply only marketing parts.
+Dense dashboards/admin (Fluent 2, Carbon, Polaris), data tables (TanStack Table, AG Grid), wizards, code editors (Monaco), native mobile (Apple HIG 2026 / Material 3 Expressive), realtime collab. Say so and apply only marketing parts.
 
 ## 23. Prototyping Variants
 

@@ -53,12 +53,8 @@ Give images a subtle inset outline so their edges do not blur into the surface:
 
 ```css
 img {
-  outline: 1px solid rgb(0 0 0 / 0.1);
+  outline: 1px solid light-dark(rgb(0 0 0 / 0.1), rgb(255 255 255 / 0.1));
   outline-offset: -1px;
-}
-
-@media (prefers-color-scheme: dark) {
-  img { outline-color: rgb(255 255 255 / 0.1); }
 }
 ```
 
@@ -67,7 +63,7 @@ Use neutral black or white alpha outlines. Do not tint image outlines with the b
 ### Motion
 
 - Use CSS transitions for interactive state changes, because they can retarget mid-motion. Use keyframes only for one-shot entrances or loading sequences.
-- Enter: opacity + small `translateY`, optionally a small blur.
+- Enter: `@starting-style` with opacity + small `translateY`, optionally a small blur.
 - Exit: shorter and quieter than enter, usually 150ms.
 - Press: use the parent press values (§4.5, §7). Let the user disable the movement where it distracts.
 - Icon swaps: cross-fade with opacity, scale, and blur. Do not toggle visibility instantly.
@@ -88,7 +84,7 @@ Use `will-change` only to fix first-frame stutter on `transform`, `opacity`, or 
 
 ### Hit areas
 
-Give each interactive control a hit area of 44x44px (parent §9). When the visible icon is smaller, expand the hit area with a pseudo-element. Expanded hit areas must not overlap.
+Give each interactive control a hit area of 24x24px minimum (WCAG 2.2) and 44x44px on touch (parent §9). When the visible icon is smaller, expand the hit area with a pseudo-element. Expanded hit areas must not overlap.
 
 ```css
 .icon-btn { position: relative; }

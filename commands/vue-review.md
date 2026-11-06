@@ -48,7 +48,7 @@ On a `.vue` / Vue-related PR, invoke both `vue-reviewer` and `typescript-reviewe
 - Secret in client bundle (`VITE_*`, Nuxt `public` runtimeConfig)
 - Server endpoint without input validation (Nuxt Nitro)
 - `localStorage`/`sessionStorage` for session tokens
-- Destructuring reactive props in Vue < 3.5 (breaks reactivity)
+- Destructuring `reactive()` objects (breaks reactivity; props destructure is safe since Vue 3.5)
 - `reactive()` object replacement (breaks watchers)
 - Watcher source tracking a ref object instead of `.value`
 
@@ -81,7 +81,7 @@ On a `.vue` / Vue-related PR, invoke both `vue-reviewer` and `typescript-reviewe
 
 ```bash
 # Lint (required)
-npx eslint . --ext .vue,.ts,.js
+npx eslint .
 
 # Vue-specific typecheck
 vue-tsc --noEmit

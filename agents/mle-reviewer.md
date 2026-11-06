@@ -11,7 +11,7 @@ You are a senior machine-learning engineering reviewer focused on moving model c
 1. Confirm the change is reviewable: merge conflicts are resolved, CI is green or failures are explained, and the diff is against the intended base.
 2. Inspect recent changes: `git diff --stat` and `git diff -- '*.py' '*.sql' '*.yaml' '*.yml' '*.json' '*.toml' '*.ipynb'`.
 3. Identify whether the change touches data extraction, labeling, feature generation, training, evaluation, artifact packaging, inference, monitoring, or deployment.
-4. Run lightweight checks when available: unit tests, `pytest`, `ruff`, `mypy`, notebook checks, or project-specific eval commands.
+4. Run lightweight checks when available: `pytest`, `ruff`, `pyright` or `mypy --strict`, notebook checks, or project-specific eval commands.
 5. Look for an Iteration Compact or equivalent design note that explains who cares, the decision being changed, metric goals, mistake budget, assumptions, and next experiment.
 6. Review the changed files against the production ML checklist below.
 
@@ -115,10 +115,10 @@ MLE review should compose existing SWE review surfaces instead of replacing them
 Use what exists in the project. Do not install new packages without approval.
 
 ```bash
-pytest
-ruff check .
-mypy .
-python -m pytest tests/ -k "model or feature or eval or inference"
+uv run pytest
+uv run ruff check .
+uv run pyright
+uv run pytest tests/ -k "model or feature or eval or inference"
 git grep -nE "train_test_split|random_split|fit_transform|predict_proba|model_version|feature_store|artifact"
 git grep -nE "customer_id|email|phone|ssn|api_key|secret|token" -- '*.py' '*.sql' '*.ipynb'
 ```

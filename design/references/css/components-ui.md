@@ -146,7 +146,7 @@ dialog[open] { opacity: 1; }
 ```css
 .scroller { scrollbar-width: thin; scrollbar-color: var(--thumb) transparent; scrollbar-gutter: stable; }
 ```
-- Use the standard `scrollbar-width` and `scrollbar-color` (Firefox, Chrome 121+). When a standard property is set, Chrome ignores `::-webkit-scrollbar` rules. Keep `::-webkit-scrollbar` only for Safari.
+- Use the standard `scrollbar-width` and `scrollbar-color` (Baseline Newly available). When a standard property is set, Chrome ignores `::-webkit-scrollbar` rules. Do not write `::-webkit-scrollbar` rules.
 - Hide scrollbars only on scrollers that have another visible scroll affordance: `scrollbar-width: none`.
 
 ## Loading states

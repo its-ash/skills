@@ -194,7 +194,6 @@ for _, tt := range tests {
 ### Parallel Tests
 ```go
 for _, tt := range tests {
-    tt := tt // Capture
     t.Run(tt.name, func(t *testing.T) {
         t.Parallel()
         // test body
@@ -253,7 +252,7 @@ go test -race -cover ./...
 - Write implementation before tests
 - Skip the RED phase
 - Test private functions directly
-- Use `time.Sleep` in tests
+- Use `time.Sleep` in tests (use `testing/synctest` for time-based code)
 - Ignore flaky tests
 
 ## Related Commands

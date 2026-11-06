@@ -25,6 +25,7 @@ You are a Kotlin and Gradle build error resolution specialist. You fix Kotlin bu
 Run these in order:
 
 ```bash
+./gradlew --version 2>&1   # Gradle 9, Kotlin 2.4 expected
 ./gradlew build 2>&1
 ./gradlew detekt 2>&1 || echo "detekt not configured"
 ./gradlew ktlintCheck 2>&1 || echo "ktlint not configured"
@@ -58,12 +59,6 @@ Run these in order:
 # Clear project-local Gradle build cache
 ./gradlew clean && rm -rf .gradle/build-cache/
 
-# Check Gradle version compatibility
-./gradlew --version
-
-# Run with debug output
-./gradlew build --debug 2>&1 | tail -50
-
 # Check for dependency conflicts
 ./gradlew dependencyInsight --dependency <name> --configuration runtimeClasspath
 ```
@@ -73,6 +68,7 @@ Run these in order:
 ```kotlin
 // build.gradle.kts - Common compiler options
 kotlin {
+    jvmToolchain(21)
     compilerOptions {
         freeCompilerArgs.add("-Xjsr305=strict") // Strict Java null safety
         allWarningsAsErrors = true

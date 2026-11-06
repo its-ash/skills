@@ -6,6 +6,9 @@ description: "Idiomatic C# and .NET patterns: immutability with records, depende
 Idiomatic C# and .NET for ASP.NET Core services, EF Core data access, and desktop apps.
 
 ## Core rules
+- Target .NET 10 LTS with C# 14. .NET 11 (C# 15, STS) reaches GA on 2026-11-10; .NET 8 and 9 leave support the same day.
+- Use SDK-style projects, `Nullable` and `ImplicitUsings` enabled, `TreatWarningsAsErrors`, central package management, and `.slnx`.
+- Use `System.Text.Json` and `Microsoft.AspNetCore.OpenApi`; do not add Newtonsoft.Json or Swashbuckle to new work.
 - Use `sealed record` for value objects and `required` + `init` for DTOs. Make mutability an explicit choice.
 - Expose `IReadOnlyList<T>`, not `List<T>`, from models and repositories.
 - Enable nullable reference types. Mark nullable returns with `?`.
@@ -39,7 +42,7 @@ Idiomatic C# and .NET for ASP.NET Core services, EF Core data access, and deskto
 | Need | Read |
 |---|---|
 | Code for records, DI, async, `WhenAll`, options, `Result<T>`, EF Core repository, middleware, minimal API, guard clauses | [references/csharp-patterns.md](references/csharp-patterns.md) |
-| C# tests: xUnit, FluentAssertions, NSubstitute, WebApplicationFactory, Testcontainers, test data builders | [references/csharp-testing.md](references/csharp-testing.md) |
+| C# tests: xUnit v3, assertions (Shouldly or AwesomeAssertions; FluentAssertions 8+ is commercial), NSubstitute, WebApplicationFactory, Testcontainers, test data builders | [references/csharp-testing.md](references/csharp-testing.md) |
 | F# tests: xUnit, FsUnit, Unquote, FsCheck, function stubs, ASP.NET Core integration | [references/fsharp-testing.md](references/fsharp-testing.md) |
 | E2E for WPF, WinForms, Win32/MFC, Qt with pywinauto and UI Automation; sandbox; CI on `windows-latest` | [references/windows-desktop-e2e.md](references/windows-desktop-e2e.md) |
 

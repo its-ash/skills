@@ -21,11 +21,11 @@ Execute a plan file step-by-step with continuous validation. Every change is ver
 
 | File Exists | Package Manager | Runner |
 |---|---|---|
-| `bun.lockb` | bun | `bun run` |
+| `bun.lock` | bun | `bun run` |
 | `pnpm-lock.yaml` | pnpm | `pnpm run` |
 | `yarn.lock` | yarn | `yarn` |
 | `package-lock.json` | npm | `npm run` |
-| `pyproject.toml` or `requirements.txt` | uv / pip | `uv run` or `python -m` |
+| `pyproject.toml` (`requirements.txt` is legacy) | uv | `uv run` |
 | `Cargo.toml` | cargo | `cargo` |
 | `go.mod` | go | `go` |
 
@@ -82,7 +82,7 @@ git status --porcelain
 | Current State | Action |
 |---|---|
 | On feature branch | Use current branch |
-| On main, clean working tree | Create feature branch: `git checkout -b feat/{plan-name}` |
+| On main, clean working tree | Create feature branch: `git switch -c feat/{plan-name}` |
 | On main, dirty working tree | **STOP** — Ask user to stash or commit first |
 | In a git worktree for this feature | Use the worktree |
 

@@ -15,14 +15,14 @@ Extract a design system from an existing codebase, or audit a UI for visual cons
 **Workflow:** principles -> tokens (palette 50-950, modular type, 8pt spacing, radius, shadows, breakpoints) -> theming -> atomic components -> a11y -> docs -> semver.
 
 * **Tokens:** one versioned source; UI uses semantic tokens (`color.semantic.brand.primary`) that reference primitives.
-* **Theming:** swap semantic tokens via `data-theme` on `<html>`, ThemeProvider, or Tailwind `dark:`.
+* **Theming:** set `color-scheme: light dark` and give semantic tokens `light-dark()` values; use `data-theme` on `<html>` only for a manual override. Tailwind 4: `@theme` tokens, not `dark:` on each class.
 * **Components:** atoms -> molecules -> organisms -> templates -> pages; props `variant`/`size`/`disabled`/`loading`; composition (`<Card.Header>`) over boolean props; polymorphic `as`.
-* **A11y (WCAG 2.1 AA):** keyboard reach, `:focus-visible`, modal focus traps, `aria-label` on icon buttons, `aria-expanded`, `role="alert"`; axe + manual tests; Storybook a11y addon.
+* **A11y (WCAG 2.2 AA):** keyboard reach, `:focus-visible` not obscured, targets 24px minimum, native `<dialog>` for modals, `aria-label` on icon buttons, `aria-expanded`, `role="alert"`; axe-core + manual tests; Storybook 10 a11y addon; Playwright accessibility snapshots.
 * **Pitfalls:** hard-coded values, inconsistent props, missing focus, unchecked dark contrast, unversioned tokens.
 
 ## Mode 1: Generate
 
-1. Scan CSS, Tailwind config, and styled-components for existing patterns.
+1. Scan CSS, Tailwind `@theme` blocks, and CSS-in-JS for existing patterns.
 2. Extract colors, typography, spacing, border radius, shadows, and breakpoints. Count each value and its uses. Merge near-duplicates (for example `#1a1a1a` and `#1b1b1b`).
 3. Optional: study 3 reference sites for direction (see [visual-design-direction.md](visual-design-direction.md)). Use a browser tool only when one is available and the user agrees.
 4. Propose a token set: primitives (palette 50-950, type scale, 8pt spacing, one radius scale, shadows) and semantic tokens that reference the primitives.
@@ -33,7 +33,7 @@ Output files:
 
 | File | Content |
 | --- | --- |
-| `design-tokens.json` | Primitive + semantic tokens (DTCG format when the project uses Style Dictionary) |
+| `design-tokens.json` | Primitive + semantic tokens in DTCG 2025 format (`$value`, `$type`); Style Dictionary 4/5 builds platform outputs |
 | `tokens.css` | The same tokens as CSS custom properties, themed with `data-theme` or `light-dark()` |
 | `DESIGN.md` | Decisions, rationale, usage rules |
 | `design-preview.html` | Interactive preview of tokens and components |
@@ -41,7 +41,7 @@ Output files:
 ```json
 {
   "color": {
-    "primitive": { "slate": { "50": { "$value": "oklch(98% 0.01 250)" } } },
+    "primitive": { "slate": { "50": { "$type": "color", "$value": "oklch(98% 0.01 250)" } } },
     "semantic": { "surface": { "default": { "$value": "{color.primitive.slate.50}" } } }
   }
 }

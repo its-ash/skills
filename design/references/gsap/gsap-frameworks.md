@@ -196,18 +196,16 @@ const { gsap, ScrollTrigger, lazyLoadPlugin } = useGSAP();
 
 ## Svelte
 
-Use **onMount** to run GSAP after the DOM is ready. Use the **returned cleanup function** from onMount (or track the context and clean up in a reactive block / component destroy) to revert. Svelte 5 uses a different lifecycle; the same principle applies: create in “mounted” and revert in “destroyed.”
+In Svelte 5, use **$effect** to run GSAP after the DOM is ready. Return a cleanup function from the effect to revert. In legacy Svelte 4 components, use **onMount** with the same returned cleanup.
 
 ```javascript
 <script>
-  import { onMount } from "svelte";
   import { gsap } from "gsap";
   import { ScrollTrigger } from "gsap/ScrollTrigger";
 
   let container;
 
-  onMount(() => {
-    if (!container) return;
+  $effect(() => {
     const ctx = gsap.context(() => {
       gsap.to(".box", { x: 100 });
       gsap.from(".item", { autoAlpha: 0, stagger: 0.1 });
@@ -223,7 +221,8 @@ Use **onMount** to run GSAP after the DOM is ready. Use the **returned cleanup f
 ```
 
 - ✅ **bind:this={container}** — get a reference to the root element so you can pass it to **gsap.context(scope)**.
-- ✅ **return () => ctx.revert()** — Svelte’s onMount can return a cleanup function; call **ctx.revert()** there so cleanup runs when the component is destroyed.
+- ✅ **return () => ctx.revert()** — `$effect` (and onMount) can return a cleanup function; call **ctx.revert()** there so cleanup runs when the component is destroyed.
+- ✅ **Angular 22**: create in **afterNextRender()** and revert in **DestroyRef.onDestroy()**; use **effect()** to react to signal changes.
 
 ## Scoping Selectors
 
@@ -252,7 +251,7 @@ Do not create GSAP animations in the component’s setup or in a synchronous top
 
 - ❌ Create tweens or ScrollTriggers before the component is mounted (e.g. in setup without onMounted); the DOM nodes may not exist yet.
 - ❌ Use selector strings without a **scope** (pass the container to gsap.context() as the second argument) so selectors don’t match elements outside the component.
-- ❌ Skip cleanup; always call **ctx.revert()** in onUnmounted / onMount’s return so animations and ScrollTriggers are killed when the component is destroyed.
+- ❌ Skip cleanup; always call **ctx.revert()** in onUnmounted or the `$effect` return so animations and ScrollTriggers are killed when the component is destroyed.
 - ❌ Register plugins inside a component body that runs every render (it doesn't hurt anything, it's just wasteful); register once at app level.
 
 ### Learn More

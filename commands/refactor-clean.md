@@ -14,10 +14,10 @@ Run analysis tools based on project type:
 |------|--------------|---------|
 | knip | Unused exports, files, dependencies | `npx knip` |
 | depcheck | Unused npm dependencies | `npx depcheck` |
-| ts-prune | Unused TypeScript exports | `npx ts-prune` |
+| ruff | Unused Python imports | `ruff check --select F401 .` |
 | vulture | Unused Python code | `vulture src/` |
 | deadcode | Unused Go code | `deadcode ./...` |
-| cargo-udeps | Unused Rust dependencies | `cargo +nightly udeps` |
+| cargo-machete | Unused Rust dependencies | `cargo machete` |
 
 If no tool is available, use Grep to find exports with zero imports:
 ```
@@ -41,7 +41,7 @@ For each SAFE item:
 1. **Run full test suite** — Establish baseline (all green)
 2. **Delete the dead code** — Use Edit tool for surgical removal
 3. **Re-run test suite** — Verify nothing broke
-4. **If tests fail** — Immediately revert with `git checkout -- <file>` and skip this item
+4. **If tests fail** — Immediately revert with `git restore <file>` and skip this item
 5. **If tests pass** — Move to next item
 
 ## Step 4: Handle CAUTION Items

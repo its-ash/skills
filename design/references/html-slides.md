@@ -9,7 +9,7 @@ Make zero-dependency, animated HTML presentations that run in the browser, from 
 - You improve the layout, motion, or typography of existing HTML slides.
 - The user does not know the style they want and must see examples.
 
-For decks in PowerPoint format, use the `pptx` skill instead.
+For decks in PowerPoint format, use the `pptx` skill instead. If the user accepts a dependency, reveal.js 5 or Slidev is an option.
 
 ## Mandatory rules
 
@@ -49,13 +49,13 @@ Use the mood-to-preset table in [style-presets.md](html-slides/style-presets.md)
 Output `presentation.html` or `<name>.html`. Follow [html-template.md](html-slides/html-template.md). Required structure:
 - semantic slide sections (`main`, `section`, `nav`)
 - the viewport-safe CSS base from [viewport-base.css](html-slides/viewport-base.css)
-- CSS custom properties for theme values
+- CSS custom properties for theme values, `color-scheme` + `light-dark()` for dark decks
 - a presentation controller class for keyboard, wheel, and touch navigation
-- `IntersectionObserver` for reveal animations
+- `animation-timeline: view()` or `IntersectionObserver` for reveal animations; `@starting-style` for slide entry
 - reduced-motion support
 
 ### 5. Enforce viewport fit
-- Each `.slide` has `height: 100vh; height: 100dvh; overflow: hidden;`.
+- Each `.slide` has `height: 100dvh; overflow: hidden;`.
 - All type and spacing scale with `clamp()`.
 - If content does not fit, split it into more slides.
 - Do not make text smaller than readable sizes to stop overflow.
@@ -117,7 +117,7 @@ Keep conversion cross-platform. Do not use macOS-only tools when Python can do t
 
 ### HTML / CSS
 - Inline CSS and JS, unless the user asks for a multi-file project.
-- Self-host fonts as WOFF2 in `assets/`. Use a font service link only when the user accepts a network dependency.
+- Self-host variable fonts as WOFF2 in `assets/` with `font-display: swap`. Use a font service link only when the user accepts a network dependency.
 - Use a strong type hierarchy and one clear visual direction. Use abstract shapes, grids, noise, and geometry, not illustrations.
 
 ### JavaScript

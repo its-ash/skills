@@ -18,7 +18,7 @@ You are a Dart and Flutter build error resolution specialist. You fix Dart analy
 2. Fix Dart type errors, null safety violations, and missing imports
 3. Resolve `pubspec.yaml` dependency conflicts and version constraints
 4. Fix `build_runner` code generation failures
-5. Handle Flutter-specific build errors (Android Gradle, iOS CocoaPods, web)
+5. Handle Flutter-specific build errors (Android Gradle, iOS Swift Package Manager or CocoaPods, web)
 
 ## Diagnostic Commands
 
@@ -154,8 +154,8 @@ cd ios && pod install --repo-update && cd ..
 # Clean iOS build
 flutter clean && cd ios && pod deintegrate && pod install && cd ..
 
-# Check for platform version mismatches in Podfile
-# Ensure ios platform version >= minimum required by all pods
+# Projects on Swift Package Manager: resolve packages with `flutter build ios` or in Xcode
+# Ensure the ios platform version >= the minimum required by all pods or packages
 ```
 
 ## Key Principles

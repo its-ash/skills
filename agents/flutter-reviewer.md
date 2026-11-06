@@ -99,6 +99,7 @@ Adapt to the project's chosen architecture (Clean Architecture, MVVM, feature-fi
 - **Concrete list constructors for large data** — Use `ListView.builder`/`GridView.builder` for lazy construction
 - **Missing image optimization** — No caching, no `cacheWidth`/`cacheHeight`, full-res thumbnails
 - **`Opacity` in animations** — Use `AnimatedOpacity` or `FadeTransition`
+- **Jank on Impeller** — Impeller is the default renderer; profile with DevTools, do not re-enable Skia
 - **Missing `const` propagation** — `const` widgets stop rebuild propagation; use wherever possible
 - **`IntrinsicHeight`/`IntrinsicWidth` overuse** — Cause extra layout passes; avoid in scrollable lists
 - **`RepaintBoundary` missing** — Complex independently-repainting subtrees should be wrapped
@@ -111,23 +112,21 @@ Adapt to the project's chosen architecture (Clean Architecture, MVVM, feature-fi
 - **Catching `Error` subtypes** — `Error` indicates bugs, not recoverable conditions
 - **`var` where `final` works** — Prefer `final` for locals, `const` for compile-time constants
 - **Relative imports** — Use `package:` imports for consistency
-- **Missing Dart 3 patterns** — Prefer switch expressions and `if-case` over verbose `is` checks
+- **Missing Dart 3 patterns** — Prefer switch expressions, records, sealed classes, `if-case`, and dot shorthands over verbose `is` checks and boilerplate
 - **`print()` in production** — Use `dart:developer` `log()` or the project's logging package
 - **`late` overuse** — Prefer nullable types or constructor initialization
 - **Ignoring `Future` return values** — Use `await` or mark with `unawaited()`
 - **Unused `async`** — Functions marked `async` that never `await` add unnecessary overhead
 - **Mutable collections exposed** — Public APIs should return unmodifiable views
-- **String concatenation in loops** — Use `StringBuffer` for iterative building
 - **Mutable fields in `const` classes** — Fields in `const` constructor classes must be final
 
 ### Resource Lifecycle (HIGH)
 
 - **Missing `dispose()`** — Every resource from `initState()` (controllers, subscriptions, timers) must be disposed
-- **`BuildContext` used after `await`** — Check `context.mounted` (Flutter 3.7+) before navigation/dialogs after async gaps
+- **`BuildContext` used after `await`** — Check `context.mounted` before navigation/dialogs after async gaps
 - **`setState` after `dispose`** — Async callbacks must check `mounted` before calling `setState`
 - **`BuildContext` stored in long-lived objects** — Never store context in singletons or static fields
 - **Unclosed `StreamController`** / **`Timer` not cancelled** — Must be cleaned up in `dispose()`
-- **Duplicated lifecycle logic** — Identical init/dispose blocks should be extracted to reusable patterns
 
 ### Error Handling (HIGH)
 

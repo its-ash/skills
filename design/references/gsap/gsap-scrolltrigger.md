@@ -127,17 +127,13 @@ See [ScrollTrigger.batch()](https://gsap.com/docs/v3/Plugins/ScrollTrigger/stati
 **Critical:** When the third-party scroller updates its position, ScrollTrigger must be notified. Register **ScrollTrigger.update** as a listener (e.g. `smoothScroller.addListener(ScrollTrigger.update)`). Without this, ScrollTrigger’s calculations will be out of date.
 
 ```javascript
-// Example: proxy body scroll to a third-party scroll instance
-ScrollTrigger.scrollerProxy(document.body, {
-  scrollTop(value) {
-    if (arguments.length) scrollbar.scrollTop = value;
-    return scrollbar.scrollTop;
-  },
-  getBoundingClientRect() {
-    return { top: 0, left: 0, width: window.innerWidth, height: window.innerHeight };
-  }
-});
-scrollbar.addListener(ScrollTrigger.update);
+// Example: Lenis 1.x keeps native scroll, so no proxy is needed
+import Lenis from "lenis";
+const lenis = new Lenis();
+lenis.on("scroll", ScrollTrigger.update);
+gsap.ticker.add((time) => lenis.raf(time * 1000));
+gsap.ticker.lagSmoothing(0);
+// A library that translates the content instead needs scrollerProxy() with scrollTop and getBoundingClientRect.
 ```
 
 See [ScrollTrigger.scrollerProxy()](https://gsap.com/docs/v3/Plugins/ScrollTrigger/static.scrollerProxy/) in the GSAP docs.

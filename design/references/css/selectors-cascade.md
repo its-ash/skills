@@ -72,8 +72,7 @@ html:has(dialog[open]) { overflow: hidden; }           /* scroll lock */
 li:has(+ li:hover), li:hover + li { scale: 1.05; }     /* neighbours of hovered item */
 .grid:has(> :nth-child(5)) { grid-template-columns: repeat(3, 1fr); } /* quantity query */
 ```
-- Baseline since Dec 2023 (Chrome 105, Safari 15.4, Firefox 121).
-- Feature-test: `@supports selector(:has(*)) { … }`.
+- Baseline Widely available. Do not wrap it in `@supports`.
 - `:has()` cannot nest inside `:has()` and does not accept pseudo-elements.
 - Anchor `:has()` to a close, specific subject (`.card:has(…)`). Selectors like `body:has(.x)` or `*:has(…)` force wide style invalidation.
 

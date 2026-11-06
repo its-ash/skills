@@ -50,13 +50,13 @@ Do not call resolve or query more than 3 times total per request. If results are
 
 ## Examples
 
-### Example: Middleware setup
+### Example: Proxy setup
 
-Input: "How do I configure Next.js middleware?"
+Input: "How do I configure the Next.js request proxy?"
 
-Action: Call the resolve-library-id tool (e.g. mcp__context7__resolve-library-id) with libraryName "Next.js", query as above; pick `/vercel/next.js` or versioned ID; call the query-docs tool (e.g. mcp__context7__query-docs) with that libraryId and same query; summarize and include middleware example from docs.
+Action: Call the resolve-library-id tool (e.g. mcp__context7__resolve-library-id) with libraryName "Next.js", query as above; pick `/vercel/next.js` or versioned ID; call the query-docs tool (e.g. mcp__context7__query-docs) with that libraryId and same query; summarize and include the `proxy.ts` example from docs.
 
-Output: Concise steps plus a code block for `middleware.ts` (or equivalent) from the docs.
+Output: Concise steps plus a code block for `proxy.ts` (`middleware.ts` before Next.js 16) from the docs.
 
 ### Example: API usage
 

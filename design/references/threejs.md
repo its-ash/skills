@@ -1,6 +1,6 @@
 # Three.js
 
-API references for Three.js r186 on WebGL and WebGPU/TSL, and for React Three Fiber.
+API references for Three.js r186+ on WebGL and WebGPU/TSL, and for React Three Fiber 9 with drei 10.
 
 ## When to use
 

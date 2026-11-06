@@ -105,6 +105,7 @@ Subagents in `agents/`. Each file has `name`, `description`, and optional `tools
 | [`build-error-resolver`](agents/build-error-resolver.md) | Build and TypeScript error resolution specialist: fixes build, type, import, dependency, and config errors with minimal diffs and no architecture changes. |
 | [`business-analyst`](agents/business-analyst.md) | Analyzes business processes, elicits and documents requirements, maps stakeholders, and recommends data-driven improvements. |
 | [`chief-of-staff`](agents/chief-of-staff.md) | Personal communication chief of staff: triages email, Slack, chat, and calendar, classifies messages into 4 tiers, drafts replies, and completes post-send follow-through. |
+| [`chrome-extension`](agents/chrome-extension.md) | Builds Manifest V3 Chrome extensions in Vue 3 that look and feel native to current Chrome, with `make build` output in `build/` and a zip in `dist/`. |
 | [`cli-developer`](agents/cli-developer.md) | CLI developer for command design, argument parsing, automation, validation, and testing. |
 | [`cloud-architect`](agents/cloud-architect.md) | Designs, evaluates, and optimizes cloud and hybrid network architectures across AWS, Azure, and GCP. |
 | [`code-architect`](agents/code-architect.md) | Designs feature architectures from existing codebase patterns and conventions, and gives implementation blueprints with concrete files, interfaces, data flow, and build order. |

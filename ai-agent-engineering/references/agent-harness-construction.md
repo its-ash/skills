@@ -1,12 +1,6 @@
 # Agent Harness Construction
 
-Design and optimize agent action spaces, tool definitions, and observation formats for higher completion rates.
-
-## When to use
-
-- You define or revise the tool set or action space of an agent.
-- You change how tool results (observations) are formatted.
-- You improve how an agent plans, calls tools, recovers from errors, and converges on completion.
+Design and optimize agent action spaces, tool definitions, observation formats, and run limits for higher completion rates.
 
 ## Core Model
 
@@ -19,9 +13,10 @@ Agent output quality is constrained by:
 ## Action Space Design
 
 1. Use stable, explicit tool names.
-2. Keep inputs schema-first and narrow.
+2. Keep inputs schema-first and narrow. Declare an output schema.
 3. Return deterministic output shapes.
 4. Avoid catch-all tools unless isolation is impossible.
+5. Mark each MCP tool with annotations (`readOnlyHint`, `destructiveHint`, `idempotentHint`, `openWorldHint`).
 
 ## Granularity Rules
 
@@ -50,6 +45,7 @@ For every error path, include:
 2. Move large guidance into skills loaded on demand.
 3. Prefer references to files over inlining long documents.
 4. Compact at phase boundaries, not arbitrary token thresholds.
+5. Set `maxTurns`, a tool-call budget, and explicit stop conditions. Checkpoint progress to a memory file or handoff artifact.
 
 ## Architecture Pattern Guidance
 
@@ -62,7 +58,7 @@ For every error path, include:
 Track:
 - completion rate
 - retries per task
-- pass@1 and pass@3
+- pass@k and pass^k (all k runs pass)
 - cost per successful task
 
 ## Anti-Patterns

@@ -2,16 +2,6 @@
 
 Patterns and architectures to run coding agents in continuous loops, from simple `claude -p` pipelines to RFC-driven multi-agent DAG systems, with quality gates, evals, and recovery controls.
 
-## When to use
-
-- Setting up autonomous development workflows that run without human intervention
-- Choosing the right loop architecture for your problem (simple vs complex)
-- Building CI/CD-style continuous development pipelines
-- Running parallel agents with merge coordination
-- Implementing context persistence across loop iterations
-- Adding quality gates, eval gates, and cleanup passes to autonomous workflows
-- Recovering a loop that churns, retries the same failure, or drifts in cost
-
 For goal definition and runaway checks, see [loop-design-check.md](loop-design-check.md). This file covers the loop mechanism.
 
 ## Loop Selection Flow
@@ -57,7 +47,7 @@ From simplest to most sophisticated:
 
 > If you can't figure out a loop like this, it means you can't even drive the LLM to fix your code in interactive mode.
 
-The `claude -p` flag runs Claude Code non-interactively with a prompt, exits when done. Chain calls to build a pipeline:
+The `claude -p` flag runs Claude Code headless with a prompt and exits when done. Add `--output-format json` (or `stream-json`) when a script must parse the result. Chain calls to build a pipeline:
 
 ```bash
 #!/bin/bash
@@ -89,14 +79,14 @@ claude -p "Create a conventional commit for all staged changes. Use 'feat: add O
 
 **With model routing:**
 ```bash
-# Research with Opus (deep reasoning)
+# Research with Opus 5.5 (deep reasoning)
 claude -p --model opus "Analyze the codebase architecture and write a plan for adding caching..."
 
-# Implement with Sonnet (fast, capable)
-claude -p "Implement the caching layer according to the plan in docs/caching-plan.md..."
+# Implement with Sonnet 5.5 (fast, capable)
+claude -p --model sonnet "Implement the caching layer according to the plan in docs/caching-plan.md..."
 
-# Review with Opus (thorough)
-claude -p --model opus "Review all changes for security issues, race conditions, and edge cases..."
+# Review with Fable 5.1 (fresh context, no author bias)
+claude -p --model fable "Review all changes for security issues, race conditions, and edge cases..."
 ```
 
 **With environment context:**
@@ -147,6 +137,8 @@ done
 2. Each user message is sent to `claude -p` with full history as context
 3. Responses are appended to the session file (Markdown-as-database)
 4. Sessions persist across restarts
+
+Native alternative: `claude -p --continue` or `--resume <session-id>` reuses Claude Code's own session store. Use the file approach only when you need a readable, portable transcript.
 
 ### When Persistent REPL vs Sequential Pipeline
 
@@ -201,7 +193,7 @@ Parse the following arguments from $ARGUMENTS:
 PHASE 1: Read and deeply understand the specification.
 PHASE 2: List output_dir, find highest iteration number. Start at N+1.
 PHASE 3: Plan creative directions — each agent gets a DIFFERENT theme/approach.
-PHASE 4: Deploy sub-agents in parallel (Task tool). Each receives:
+PHASE 4: Deploy sub-agents in parallel (Agent tool). Each receives:
   - Full spec text
   - Current directory snapshot
   - Their assigned iteration number
@@ -211,8 +203,8 @@ PHASE 5 (infinite mode): Loop in waves of 3-5 until context is low.
 
 **Invoke:**
 ```bash
-/project:infinite specs/component-spec.md src/ 5
-/project:infinite specs/component-spec.md src/ infinite
+/infinite specs/component-spec.md src/ 5
+/infinite specs/component-spec.md src/ infinite
 ```
 
 ### Batching Strategy
@@ -478,14 +470,14 @@ Each stage runs in its own agent process with its own context window:
 
 | Stage | Model | Purpose |
 |-------|-------|---------|
-| Research | Sonnet | Read codebase + RFC, produce context doc |
-| Plan | Opus | Design implementation steps |
-| Implement | Codex | Write code following the plan |
-| Test | Sonnet | Run build + test suite |
-| PRD Review | Sonnet | Spec compliance check |
-| Code Review | Opus | Quality + security check |
-| Review Fix | Codex | Address review issues |
-| Final Review | Opus | Quality gate (large tier only) |
+| Research | Sonnet 5.5 | Read codebase + RFC, produce context doc |
+| Plan | Opus 5.5 | Design implementation steps |
+| Implement | Sonnet 5.5 | Write code following the plan |
+| Test | Haiku 5.5 | Run build + test suite, summarize failures |
+| PRD Review | Sonnet 5.5 | Spec compliance check |
+| Code Review | Opus 5.5 | Quality + security check |
+| Review Fix | Sonnet 5.5 | Address review issues |
+| Final Review | Fable 5.1 | Quality gate (large tier only) |
 
 **Critical design:** The reviewer never wrote the code it reviews. This eliminates author bias — the most common source of missed issues in self-review.
 
@@ -550,6 +542,7 @@ Pipeline stages for the same unit **share** a worktree, preserving state (contex
 4. **Conflict recovery with context** — Full eviction context enables intelligent re-runs, not blind retries
 5. **Tier-driven depth** — Trivial changes skip research/review; large changes get maximum scrutiny
 6. **Resumable workflows** — Full state persisted to SQLite; resume from any point
+7. **Native option**: the Claude Code Workflow tool scripts the same stage graph with subagents in worktrees; use it before you write a custom orchestrator
 
 ### When to Use Ralphinho vs Simpler Patterns
 
@@ -591,7 +584,7 @@ These patterns compose well:
 
 3. **Any loop + Verification** — Run build, lint, type check, and tests as a gate before each commit. Stop the loop when the gate fails twice with the same root cause.
 
-4. **Ralphinho's tiered approach in simpler loops** — Even in a sequential pipeline, you can route simple tasks to Haiku and complex tasks to Opus:
+4. **Ralphinho's tiered approach in simpler loops** — Even in a sequential pipeline, you can route simple tasks to Haiku 5.5 and complex tasks to Opus 5.5 or Fable 5.1:
    ```bash
    # Simple formatting fix
    claude -p --model haiku "Fix the import ordering in src/utils.ts"

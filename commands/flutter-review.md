@@ -74,7 +74,7 @@ Architecture: feature-first
 [HIGH] BuildContext used after async gap without mounted check
 File: lib/features/auth/presentation/login_page.dart:67
 Issue: `context.go('/home')` called after `await auth.login(...)` with no `mounted` check.
-Fix: Add `if (!context.mounted) return;` before any navigation after awaits (Flutter 3.7+).
+Fix: Add `if (!context.mounted) return;` before any navigation after awaits.
 
 [HIGH] AsyncValue error state not handled
 File: lib/features/auth/presentation/login_page.dart:42

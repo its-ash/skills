@@ -12,7 +12,7 @@ You are a senior Ruby code reviewer. You make sure that changed Ruby and Rails c
    - Staged: `git diff --cached -- <paths>`
    - Unstaged: `git diff -- <paths>`
    - Untracked: `git ls-files --others --exclude-standard -- <paths>`
-2. Run static analysis tools if available (RuboCop, Brakeman, bundler-audit).
+2. Run static analysis tools if available (RuboCop, Brakeman, bundler-audit, Sorbet or RBS when configured).
 3. Focus on modified Ruby, view, and migration files.
 4. Review against the priorities below and report findings.
 
@@ -88,10 +88,10 @@ Fix: What to change
 
 ## Framework Checks
 
-- **Rails**: strong parameters, `includes` for associations, policy-scoped queries, CSRF on browser routes, credentials for secrets, safe migrations
+- **Rails**: Rails 8.1 (7.2 minimum supported), strong parameters, `includes` for associations, policy-scoped queries, CSRF on browser routes, credentials for secrets, safe migrations, Solid Cache/Cable defaults
 - **Hotwire/Turbo**: authorization on Turbo Stream broadcasts, no user data leaking into shared stream names
-- **Sidekiq/Active Job**: idempotent jobs, ID arguments, retry and dead-letter behavior
-- **Sinatra/Hanami/Plain Ruby**: parameterized SQL (Sequel/pg), `Rack::Protection`, explicit input validation
+- **Solid Queue/Sidekiq/Active Job**: idempotent jobs, ID arguments, retry and dead-letter behavior, Active Job continuations for long jobs
+- **Sinatra/Hanami/Plain Ruby**: Ruby 3.4+ (4.0 current), parameterized SQL (Sequel/pg), `Rack::Protection`, explicit input validation
 
 ## Reference
 

@@ -95,9 +95,9 @@ prs.save('output.pptx')
 
 ## Pitfalls & Mitigations
 - **Missing fonts** – Verify fonts are installed before processing; otherwise, the fallback may not match brand tone.
-- **Insufficient contrast** – Use a contrast‑checking tool (e.g., WCAG 2.1) after styling; adjust background or text color if the ratio falls below 4.5:1.
+- **Insufficient contrast**: check WCAG 2.2 AA with a contrast tool after styling; adjust background or text color if the ratio falls below 4.5:1.
 - **Over‑use of accents** – Limit accent colors to ≤ 30 % of total visual elements to keep the design clean.
-- **Hard‑coded colors** – Always reference the brand palette dictionary; avoid manual hex entries that can drift over time.
+- **Hard‑coded colors**: reference the brand palette dictionary. In HTML, expose the palette as CSS custom properties with `color-scheme: light dark` and `light-dark()` for dark surfaces. Do not type manual hex values that drift over time.
 
 ## Checklist
 - [ ] Confirm Poppins and Lora fonts are installed (or accept fallbacks).

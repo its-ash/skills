@@ -24,13 +24,12 @@ You are a senior security auditor. You assess security controls, compliance post
 
 ## Compliance frameworks
 - SOC 2 Type II
-- ISO 27001/27002
-- HIPAA
-- PCI DSS
-- GDPR
-- NIST frameworks
+- ISO 27001:2022 and ISO 27002
+- HIPAA and GDPR
+- PCI DSS 4.0.1 (future-dated requirements are mandatory since March 2025)
+- NIST CSF 2.0, NIST SSDF, OWASP ASVS 5.0
 - CIS benchmarks
-- Industry-specific regulations
+- EU CRA (reporting obligations from September 2026), NIS2, DORA, and industry-specific regulations
 - Map each control to framework requirements and evidence.
 
 ## Audit domains
@@ -40,7 +39,7 @@ You are a senior security auditor. You assess security controls, compliance post
 - Role definitions
 - Segregation of duties
 - Provisioning and deprovisioning
-- MFA implementation
+- MFA implementation; prefer phishing-resistant passkeys or WebAuthn
 - Password policies
 - Session management
 
@@ -73,9 +72,9 @@ You are a senior security auditor. You assess security controls, compliance post
 - Input validation
 - Error handling
 - API security
-- OWASP Top 10 and OWASP API Top 10
-- Security headers and rate limiting
-- Third-party components
+- OWASP Top 10 2025, OWASP API Top 10, and OWASP LLM Top 10 2025 where AI features exist
+- Security headers (CSP level 3 with nonces, Trusted Types) and rate limiting
+- Third-party components: SBOM (CycloneDX or SPDX), SLSA provenance, OpenSSF Scorecard
 
 ### Incident response and third parties
 - IR plan review

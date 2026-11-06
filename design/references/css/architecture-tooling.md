@@ -8,8 +8,8 @@ Read when organizing CSS at scale: methodologies, design tokens, design systems,
 - Store design decisions as tokens in custom properties. Use primitive tokens (`--blue-600`), semantic tokens (`--color-action`), and component tokens (`--btn-bg`). Components consume semantic or component tokens only.
 - Prefer native CSS over preprocessor features when targets allow: custom properties, nesting, `color-mix()`, `@layer`, `@scope`, math functions.
 - Use zero-runtime styling (CSS Modules, vanilla-extract, Tailwind, Panda, StyleX) for performance. Runtime CSS-in-JS (styled-components, Emotion) adds JS cost and conflicts with React Server Components.
-- Lint with Stylelint (`stylelint-config-standard`) and format with Prettier. Fail CI on errors.
-- Target browsers through one `browserslist` config shared by Lightning CSS / Autoprefixer / Babel.
+- Lint with Stylelint 16 (`stylelint-config-standard`) or Biome 2 CSS lint, and format with Biome 2 or Prettier. Fail CI on errors.
+- Target browsers through one `browserslist` config shared by Lightning CSS and the JS toolchain.
 
 ## Methodologies
 - **BEM**: `.block`, `.block__element`, `.block--modifier`. Flat single-class selectors, no nesting by DOM. Good with plain CSS and Sass (`&__element`). Native CSS nesting cannot build `&__element`.
@@ -32,16 +32,16 @@ Read when organizing CSS at scale: methodologies, design tokens, design systems,
 }
 .btn { --btn-bg: var(--color-action); background: var(--btn-bg); }
 ```
-- Keep the source of truth in a format like the W3C Design Tokens (DTCG) JSON, and generate CSS, iOS, and Android outputs with Style Dictionary or a similar tool.
+- Keep the source of truth in DTCG 2025 JSON (`$value`, `$type`), and generate CSS, iOS, and Android outputs with Style Dictionary 4 or 5.
 - Theming: swap semantic tokens under `[data-theme]` or with `light-dark()`. Never theme by overriding component internals.
 - Make tokens visible in docs (Storybook) and in DevTools-friendly names.
 
 ## Tailwind CSS
-- v4: CSS-first config. Import with `@import "tailwindcss";`, define tokens in `@theme { --color-brand: …; }`, add custom utilities with `@utility`, and variants with `@custom-variant`.
+- Tailwind 4 (4.3) is CSS-first. Import with `@import "tailwindcss";`, define tokens in `@theme { --color-brand: …; }`, add custom utilities with `@utility`, variants with `@variant` or `@custom-variant`, and extra content paths with `@source`. There is no `tailwind.config.js`.
 - Output uses native cascade layers (`theme, base, components, utilities`). Unlayered custom CSS beats all Tailwind utilities.
-- v3 (legacy): `@tailwind base; @tailwind components; @tailwind utilities;` + `tailwind.config.js`.
+- Tailwind 4 runs on Lightning CSS. Do not add PostCSS or Autoprefixer for it.
 - Class names must appear whole in source for detection. `bg-${color}-500` built at runtime is not generated. Map values to full class strings.
-- Use `!` (important modifier: `bg-red-500!` in v4, `!bg-red-500` in v3) only as a last resort.
+- Use the `!` important modifier (`bg-red-500!`) only as a last resort.
 - Merge conflicting classes in components with `tailwind-merge`, and organize variants with `cva` or `tailwind-variants`.
 - `@apply` is fine for third-party markup you cannot add classes to. Do not rebuild BEM with it.
 
@@ -53,8 +53,8 @@ Read when organizing CSS at scale: methodologies, design tokens, design systems,
 - Sass variables are compile-time. Use CSS custom properties for anything that changes at runtime (themes, states).
 
 ## PostCSS and Lightning CSS
-- Lightning CSS (Rust) handles prefixing, nesting lowering, color-function fallbacks, minification, and CSS Modules much faster than PostCSS chains. Vite supports it with `css.transformer: 'lightningcss'`.
-- Keep PostCSS for plugins you need (Tailwind v3, `postcss-preset-env` drafts, custom-media). Do not lower features the target browsers already support.
+- Lightning CSS (Rust) handles prefixing, nesting lowering, color-function fallbacks, minification, and CSS Modules much faster than PostCSS chains. Vite 8 and Tailwind 4 use it by default.
+- Add PostCSS only when you need a plugin (`postcss-preset-env` drafts, custom-media). Do not lower features the target browsers already support.
 
 ## CSS Modules and scoping
 - CSS Modules (`.module.css`) hash class names per file. Compose with `composes: base from "./base.module.css";`.

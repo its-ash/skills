@@ -65,7 +65,9 @@ Run these in order:
 | `Annotation processor threw uncaught exception` | Lombok/MapStruct misconfiguration | Check annotation processor setup |
 | `Could not resolve: group:artifact:version` | Missing repository or wrong version | Add repository or fix version in POM |
 | `The following artifacts could not be resolved` | Private repo or network issue | Check repository credentials or `settings.xml` |
-| `COMPILATION ERROR: Source option X is no longer supported` | Java version mismatch | Update `maven.compiler.source` / `targetCompatibility` |
+| `COMPILATION ERROR: Source option X is no longer supported` | Java version mismatch | Set `maven.compiler.release` / Gradle toolchain to 21 minimum (25 LTS current) |
+| `package javax.persistence does not exist` | Jakarta EE namespace change | Replace `javax.*` with `jakarta.*` imports |
+| `package com.fasterxml.jackson... does not exist` (Spring Boot 4) | Jackson 3 moved to `tools.jackson.*` | Update imports; keep `com.fasterxml.jackson.annotation` for annotations |
 
 ### [SPRING] Spring Boot Specific
 
@@ -74,10 +76,11 @@ Run these in order:
 | `No qualifying bean of type X` | Missing `@Component`/`@Service` or component scan | Add annotation or fix scan base package |
 | `Circular dependency involving X` | Constructor injection cycle | Refactor to break cycle or use `@Lazy` on one leg |
 | `BeanCreationException: Error creating bean` | Missing config, bad property, or missing dependency | Check `application.yml`, dependency tree |
-| `HttpMessageNotReadableException` | Malformed JSON or missing Jackson dependency | Check `spring-boot-starter-web` includes Jackson |
+| `HttpMessageNotReadableException` | Malformed JSON or missing Jackson dependency | Check `spring-boot-starter-web` (Boot 4: `spring-boot-starter-webmvc`) includes Jackson 3 |
 | `Could not autowire. No beans of type found` | Missing bean or wrong profile active | Check `@Profile`, `@ConditionalOn*`, component scan |
 | `Failed to configure a DataSource` | Missing DB driver or datasource properties | Add driver dependency or `spring.datasource.*` config |
-| `spring-boot-starter-* not found` | BOM version mismatch | Check `spring-boot-dependencies` BOM version in parent |
+| `spring-boot-starter-* not found` | BOM version mismatch or renamed Boot 4 starter | Check `spring-boot-dependencies` BOM version; Boot 4 split starters (`-webmvc`, `-data-jpa`, `-jackson`) |
+| `RestTemplate` / `WebClient` removed or deprecated warnings | Spring Framework 7 | Use `RestClient` or HTTP interface clients |
 
 ### [QUARKUS] Quarkus Specific
 
@@ -93,7 +96,7 @@ Run these in order:
 | `quarkus-extension-* not found` | Wrong BOM version or extension not in BOM | Check `quarkus-bom` version; use `quarkus ext add <name>` |
 | `DEV mode hot reload failure` | Incompatible change during dev mode | Run `./mvnw quarkus:dev` with clean: `./mvnw clean quarkus:dev` |
 | `Panache entity not enhanced` | Entity not detected at build time | Ensure entity is in scanned package; check for missing `quarkus-hibernate-orm-panache` or `quarkus-mongodb-panache` extension |
-| `RESTEASY* deployment failure` | Duplicate JAX-RS paths or missing provider | Check `@Path` uniqueness; ensure `quarkus-resteasy-reactive` vs `quarkus-resteasy` are not mixed |
+| `RESTEASY* deployment failure` | Duplicate JAX-RS paths or missing provider | Check `@Path` uniqueness; do not mix `quarkus-rest` (Quarkus 3) with classic `quarkus-resteasy` |
 
 ## Maven Troubleshooting
 
@@ -107,16 +110,7 @@ Run these in order:
 # Analyse dependency conflicts
 ./mvnw dependency:analyze
 
-# Check effective POM (resolved inheritance)
-./mvnw help:effective-pom
-
-# Debug annotation processors
-./mvnw compile -X 2>&1 | grep -i "processor\|lombok\|mapstruct"
-
-# Skip tests to isolate compile errors
-./mvnw compile -DskipTests
-
-# Check Java version in use
+# Check Java version in use (21+ required; 25 LTS current)
 ./mvnw --version
 java -version
 ```
@@ -182,8 +176,6 @@ grep -A5 "annotationProcessorPaths\|annotationProcessor" pom.xml build.gradle
 # Verify native build prerequisites (GraalVM)
 ./mvnw package -Pnative -DskipTests 2>&1 | head -50
 
-# Debug build-time augmentation failures
-./mvnw compile -X 2>&1 | grep -i "augment\|build step\|extension"
 ```
 
 ### Gradle
@@ -206,17 +198,6 @@ grep -A5 "annotationProcessorPaths\|annotationProcessor" pom.xml build.gradle
 
 # Verify native build prerequisites (GraalVM)
 ./gradlew build -Dquarkus.native.enabled=true -x test 2>&1 | head -50
-```
-
-### Common (both build tools)
-
-```bash
-# Check for reflection issues (native image)
-grep -rn "@RegisterForReflection" src/main/java --include="*.java"
-
-# Verify CDI bean discovery (run dev mode first, then check output)
-# Maven: ./mvnw quarkus:dev | Gradle: ./gradlew quarkusDev
-# Then grep logs for: bean|unsatisfied|ambiguous
 ```
 
 ## Key Principles

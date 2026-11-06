@@ -1,5 +1,5 @@
 ---
-description: Retrieve a Jira ticket, analyze requirements, update status, or add comments. Uses git-workflow/references/jira-integration.md and MCP or REST API.
+description: Retrieve a Jira ticket, analyze requirements, update status, or add comments. Uses git-workflow/references/jira-integration.md and the Atlassian MCP or Jira Cloud REST API v3.
 ---
 
 # Jira Command
@@ -26,7 +26,7 @@ Interact with Jira tickets directly from your workflow — fetch tickets, analyz
 
 ### `/jira get <TICKET-KEY>`
 
-1. Fetch the ticket from Jira (via MCP `jira_get_issue` or REST API)
+1. Fetch the ticket from Jira (via the Atlassian MCP issue tool or REST API v3)
 2. Extract all fields: summary, description, acceptance criteria, priority, labels, linked issues
 3. Optionally fetch comments for additional context
 4. Produce a structured analysis:
@@ -79,10 +79,10 @@ Recommended Next Steps:
 
 This command requires Jira credentials. Choose one:
 
-**Option A — MCP Server (recommended):**
-Add a `jira` server to your `mcpServers` config.
+**Option A, Atlassian MCP (recommended):**
+Add the Atlassian MCP server (Streamable HTTP) with `claude mcp add --transport http atlassian https://mcp.atlassian.com/v1/mcp`.
 
-**Option B — Environment variables:**
+**Option B, REST API v3 with environment variables:**
 ```bash
 export JIRA_URL="https://yourorg.atlassian.net"
 export JIRA_EMAIL="your.email@example.com"

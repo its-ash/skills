@@ -47,15 +47,15 @@ try { fetchData() } catch (e: CancellationException) { throw e } catch (e: Excep
 - **NavController passed deep** — Pass lambdas instead of `NavController` references
 - **Missing `key()` in LazyColumn** — Items without stable keys cause poor performance
 - **`remember` with missing keys** — Computation not recalculated when dependencies change
-- **Object allocation in parameters** — Creating objects inline causes recomposition
+- **Unstable objects in parameters** — Strong skipping (default since Kotlin 2.0) memoizes lambdas; flag only unstable class instances built inline
 
 ```kotlin
-// BAD — new lambda every recomposition
-Button(onClick = { viewModel.doThing(item.id) })
+// BAD — unstable list rebuilt each recomposition
+ItemRow(items = source.map { it.toUi() })
 
-// GOOD — stable reference
-val onClick = remember(item.id) { { viewModel.doThing(item.id) } }
-Button(onClick = onClick)
+// GOOD — stable, memoized input
+val items = remember(source) { source.map { it.toUi() }.toImmutableList() }
+ItemRow(items = items)
 ```
 
 ### Kotlin Idioms (MEDIUM)
@@ -63,8 +63,7 @@ Button(onClick = onClick)
 - **`!!` usage** — Non-null assertion; prefer `?.`, `?:`, `requireNotNull`, or `checkNotNull`
 - **`var` where `val` works** — Prefer immutability
 - **Java-style patterns** — Static utility classes (use top-level functions), getters/setters (use properties)
-- **String concatenation** — Use string templates `"Hello $name"` instead of `"Hello " + name`
-- **`when` without exhaustive branches** — Sealed classes/interfaces should use exhaustive `when`
+- **`when` without exhaustive branches** — Sealed classes/interfaces should use exhaustive `when`; use guard conditions (`is X if cond`) instead of nested `if`
 - **Mutable collections exposed** — Return `List` not `MutableList` from public APIs
 
 ### Android Specific (MEDIUM)
@@ -86,7 +85,6 @@ If any CRITICAL security issue is present, stop and escalate to `security-review
 ### Gradle & Build (LOW)
 
 - **Version catalog not used** — Hardcoded versions instead of `libs.versions.toml`
-- **Unnecessary dependencies** — Dependencies added but not used
 - **Missing KMP source sets** — Declaring `androidMain` code that could be `commonMain`
 
 ## Approval Criteria

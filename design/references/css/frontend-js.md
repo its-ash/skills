@@ -43,7 +43,7 @@ document.adoptedStyleSheets = [...document.adoptedStyleSheets, sheet];
 - Read computed values with `getComputedStyle(el).getPropertyValue('--token').trim()`.
 - `CSS.registerProperty({ name: '--x', syntax: '<length>', inherits: false, initialValue: '0px' })` is the JS form of `@property`.
 - `matchMedia('(prefers-reduced-motion: reduce)')` and its `change` event keep JS in sync with media queries.
-- `CSS.supports('selector(:has(*))')` for selector support.
+- `CSS.supports('selector(::scroll-marker)')` for selector support.
 - Custom Highlight API: `CSS.highlights.set('search', new Highlight(...ranges))` + `::highlight(search)` for search-hit highlighting without wrapping text in elements.
 
 ## Observers

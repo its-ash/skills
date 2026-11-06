@@ -1,12 +1,7 @@
-# Next.js App Router – Best Practices & Patterns
+# Next.js 16 App Router – Best Practices & Patterns
 
-This skill helps you create robust Next.js applications using the App Router. Follow the rules, workflows, and checklists to decide between Server and Client components, organise routes, fetch data efficiently, optimise performance, and integrate Supabase authentication securely.
-
-## When to use
-- Starting a new Next.js project with the App Router (app/ directory).
-- Migrating an existing Pages Router project to the App Router.
-- Building full‑stack features that need server‑side data fetching, streaming, or Server Actions.
-- Adding Supabase authentication (email/password, OAuth) to a Next.js app.
+Build Next.js 16+ apps with the App Router, React 19.3, Turbopack, Cache Components, Server Actions, and Supabase auth.
+Baseline: Next.js 16.4, Node 20.9+ (use Node 24 or 26 LTS), `next.config.ts`, ESLint 9 flat config via `eslint-config-next` or Biome 2. `next lint` is removed; run `eslint` or `biome` directly.
 
 ---
 
@@ -20,40 +15,18 @@ This skill helps you create robust Next.js applications using the App Router. Fo
 | Direct data fetching, static markup, layout, SEO‑critical content | **Server** – no directive needed |
 | Both interactivity and server‑side data | Split: create a Server parent that renders a Client child |
 
-**Example** (Server parent with Client child):
-```tsx
-// app/dashboard/page.tsx – Server Component
-import DashboardClient from './DashboardClient'
-
-export default async function Page() {
-  const stats = await fetchStats() // server‑side fetch
-  return <DashboardClient stats={stats} />
-}
-```
-```tsx
-// app/dashboard/DashboardClient.tsx – Client Component
-'use client'
-import { useState } from 'react'
-
-export default function DashboardClient({ stats }) {
-  const [count, setCount] = useState(0)
-  return (
-    <div>
-      <h1>Stats: {stats.total}</h1>
-      <button onClick={() => setCount(c => c + 1)}>Clicked {count}</button>
-    </div>
-  )
-}
-```
+**Example** (Server parent with Client child): `app/dashboard/page.tsx` awaits `fetchStats()` and renders `<DashboardClient stats={stats} />`; `DashboardClient.tsx` starts with `'use client'` and owns `useState`.
 ---
 
 ## 2. Data Fetching Patterns
 
+Since Next.js 15, `fetch` is not cached by default. Opt in to caching.
+
 | Pattern | Cache behaviour | Typical use |
 |---------|----------------|------------|
-| **Default** (`fetch` without options) | Cached at build time (static) | Public content that rarely changes |
-| **ISR** (`revalidate: <seconds>`) | Time‑based revalidation | Blog posts, product listings |
-| **No‑store** (`cache: 'no-store'`) | No caching, fetch on every request | User‑specific data, auth‑protected APIs |
+| **Default** (`fetch` without options) | No caching, fetch on every request | User‑specific data, auth‑protected APIs |
+| **ISR** (`next: { revalidate: <seconds> }`) | Time‑based revalidation | Blog posts, product listings |
+| **Cache Components** (`'use cache'` + `cacheLife` / `cacheTag`) | Cached function or component output; tag‑based invalidation | Shared public content, PPR static shells |
 
 **Server Component fetch example:**
 ```tsx
@@ -63,6 +36,26 @@ export const fetchPosts = async () => {
   })
   if (!res.ok) throw new Error('Failed to load')
   return res.json()
+}
+```
+**Cache Components example** (enable `cacheComponents: true` in `next.config.ts`):
+```tsx
+import { cacheLife, cacheTag } from 'next/cache'
+
+export async function getPosts() {
+  'use cache'
+  cacheLife('hours')
+  cacheTag('posts')
+  const res = await fetch('https://api.example.com/posts')
+  return res.json()
+}
+```
+**Async request APIs:** `params`, `searchParams`, `cookies()`, `headers()`, and `draftMode()` are promises. Always `await` them.
+```tsx
+export default async function Page({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  const post = await fetchPost(id)
+  return <h1>{post.title}</h1>
 }
 ```
 ---
@@ -82,20 +75,6 @@ export const fetchPosts = async () => {
 - **Parallel routes** – create a folder with `@slot` name (e.g., `@modal`) to render multiple UI slots at the same level.
 - **Intercepting routes** – prefix a folder with a dot `(.modal)` to display a modal overlay while keeping the underlying page.
 
-**Project layout example:**
-```
-app/
-├─ (marketing)/
-│  └─ page.tsx          # /marketing (group, no URL change)
-├─ (dashboard)/
-│  ├─ layout.tsx        # shared dashboard layout
-│  └─ page.tsx          # /dashboard
-├─ api/
-│  └─ users/
-│     └─ route.ts      # /api/users
-└─ components/
-   └─ ui/
-```
 ---
 
 ## 4. API Routes (Route Handlers)
@@ -109,7 +88,7 @@ import { db } from '@/lib/db'
 // Example: POST /api/users
 export async function POST(request: Request) {
   const body = await request.json()
-  const schema = z.object({ email: z.string().email(), name: z.string() })
+  const schema = z.object({ email: z.email(), name: z.string() })
   const result = schema.safeParse(body)
   if (!result.success) {
     return NextResponse.json({ error: 'Invalid input' }, { status: 400 })
@@ -119,16 +98,17 @@ export async function POST(request: Request) {
 }
 ```
 **Best practices**
-- Validate input with a schema library (Zod, Yup).
+- Validate input with Zod 4.
 - Return appropriate HTTP status codes.
 - Catch errors and return a JSON error object.
-- Use the Edge runtime (`export const runtime = 'edge'`) when the handler is lightweight and benefits from low latency.
+- Node runtime is the default. Set `export const runtime = 'edge'` only for a light handler that must run at the edge.
+- Use `after()` from `next/server` for work that runs after the response is sent (logs, analytics).
 ---
 
 ## 5. Performance Optimisations
 
 ### Image Optimization
-- Use `next/image` for automatic resizing, lazy loading, and WebP conversion.
+- Use `next/image` for automatic resizing, lazy loading, and AVIF/WebP conversion.
 - Set `priority` on above‑fold images.
 - Provide a `blurDataURL` placeholder for a smooth loading experience.
 
@@ -138,30 +118,36 @@ export async function POST(request: Request) {
 const HeavyChart = dynamic(() => import('@/components/HeavyChart'), { ssr: false })
 ```
 - Next.js automatically code‑splits per route; keep client bundles small.
+- Add large barrel-export libraries to `experimental.optimizePackageImports` in `next.config.ts`.
 
 ### Bundle Analysis
-```bash
-npm install --save-dev @next/bundle-analyzer
-# next.config.js
-module.exports = {
-  experimental: { bundleAnalyzer: { enabled: true } }
-}
+```ts
+// next.config.ts
+import type { NextConfig } from 'next'
+import bundleAnalyzer from '@next/bundle-analyzer'
+
+const withBundleAnalyzer = bundleAnalyzer({ enabled: process.env.ANALYZE === 'true' })
+const nextConfig: NextConfig = { cacheComponents: true }
+export default withBundleAnalyzer(nextConfig)
 ```
-Run `next build && next analyze` to view size breakdown.
+Run `ANALYZE=true next build` to view size breakdown. Use the Next.js DevTools MCP for agent-driven diagnostics.
 ---
 
 ## 6. Metadata Management
 
-- For static metadata, export a plain object in `metadata.ts`.
+- For static metadata, export a `metadata` object from `layout.tsx` or `page.tsx`.
 - For dynamic per‑route metadata, implement `generateMetadata` in `page.tsx`.
 ```tsx
-export async function generateMetadata({ params }) {
-  const post = await fetchPost(params.id)
+import type { Metadata } from 'next'
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await params
+  const post = await fetchPost(id)
   return {
     title: post.title,
     description: post.excerpt,
     openGraph: { images: [{ url: post.coverUrl }] },
-    alternates: { canonical: `https://example.com/posts/${params.id}` }
+    alternates: { canonical: `https://example.com/posts/${id}` }
   }
 }
 ```
@@ -172,16 +158,17 @@ export async function generateMetadata({ params }) {
 
 | Layer | Control method |
 |-------|----------------|
-| Request | `fetch` options (`next: { revalidate }`, `cache`) |
-| Data | ISR (`revalidate`), tag‑based (`revalidateTag`) |
-| Full route | `export const revalidate = <seconds>` in `page.tsx` |
+| Request | `fetch` options (`next: { revalidate, tags }`, `cache`) |
+| Function / component | `'use cache'` + `cacheLife()` + `cacheTag()` |
+| Invalidation | `revalidateTag()` (background), `updateTag()` (immediate, in Server Actions), `revalidatePath()` |
+| Full route | `export const revalidate = <seconds>` in `page.tsx`, or PPR with Cache Components |
 
 **On‑demand revalidation** (e.g., after a CMS update):
 ```ts
-import { revalidatePath } from 'next/cache'
+import { revalidateTag } from 'next/cache'
 export async function POST() {
   // ...update content
-  revalidatePath('/blog')
+  revalidateTag('posts')
   return new Response('OK')
 }
 ```
@@ -191,115 +178,124 @@ export async function POST() {
 
 - Declare a function with `'use server'` at the top of a file.
 - Use them for form submissions, data mutations, or to trigger revalidation.
+- Bind them to forms with `useActionState` and `useOptimistic` on the client.
 ```tsx
 // app/actions.ts
 'use server'
-import { revalidatePath } from 'next/cache'
+import { updateTag } from 'next/cache'
 import { z } from 'zod'
 
-export async function createPost(formData: FormData) {
-  const schema = z.object({ title: z.string(), content: z.string() })
-  const data = Object.fromEntries(formData)
-  const result = schema.safeParse(data)
-  if (!result.success) throw new Error('Invalid input')
+const schema = z.object({ title: z.string().min(1), content: z.string().min(1) })
+
+export async function createPost(prev: { error?: string }, formData: FormData) {
+  const result = schema.safeParse(Object.fromEntries(formData))
+  if (!result.success) return { error: 'Invalid input' }
   await db.post.create({ data: result.data })
-  revalidatePath('/posts')
+  updateTag('posts')
   return { success: true }
 }
 ```
 - Validate all inputs server‑side.
-- Return typed JSON or plain values; avoid sending raw errors to the client.
+- Return typed plain values; avoid sending raw errors to the client.
 ---
 
 ## 9. Supabase Authentication Integration
 
 ### Core Principles
-- Use `@supabase/ssr` to create a Supabase client that works in Server Components, API routes, and middleware.
-- Store the session in an HTTP‑only cookie; never expose the access token to the browser.
-- Protect routes with middleware that reads the cookie, verifies the session, and redirects unauthenticated users.
+- Use `@supabase/ssr` to create a Supabase client that works in Server Components, route handlers, Server Actions, and `proxy.ts`.
+- Store the session in cookies managed by `@supabase/ssr`; never expose the service-role key to the browser or to the SSR client.
+- Protect routes in `proxy.ts`: refresh the session and redirect unauthenticated users.
+- Use `supabase.auth.getUser()` for authorization. `getSession()` does not verify the JWT on the server.
 
 ### Supabase Client Setup
 ```ts
-// lib/supabaseServer.ts
+// lib/supabase/server.ts
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 
-export const supabase = createServerClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!, // server‑only key
-  {
-    cookies,
-    // optional: set auth persistence to cookie
-  }
-)
-```
-Use the same `supabase` instance in Server Components and API routes.
-
-### Auth Middleware (protects routes)
-```ts
-// middleware.ts
-import { NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabaseServer'
-
-export async function middleware(request) {
-  const { data: { session } } = await supabase.auth.getSession()
-  const protectedPaths = ['/dashboard', '/account']
-  const url = request.nextUrl.clone()
-
-  if (protectedPaths.some(p => url.pathname.startsWith(p))) {
-    if (!session) {
-      url.pathname = '/login'
-      return NextResponse.redirect(url)
-    }
-    // Refresh token if needed
-    const { error } = await supabase.auth.refreshSession()
-    if (error) {
-      url.pathname = '/login'
-      return NextResponse.redirect(url)
-    }
-  }
-  return NextResponse.next()
+export async function createClient() {
+  const cookieStore = await cookies()
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!, // anon/publishable key, never service-role
+    {
+      cookies: {
+        getAll: () => cookieStore.getAll(),
+        setAll: (list) => {
+          try {
+            list.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
+          } catch {
+            // called from a Server Component; proxy.ts refreshes the session
+          }
+        },
+      },
+    },
+  )
 }
 ```
-- Add `export const config = { matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'] }` if you need custom matching.
-- Next.js 16+ renames this file to `proxy.ts` (see section 10).
+Create a new client per request. Do not share one instance across requests.
+
+### Auth Proxy (protects routes)
+```ts
+// proxy.ts (project root)
+import { createServerClient } from '@supabase/ssr'
+import { NextResponse, type NextRequest } from 'next/server'
+
+export async function proxy(request: NextRequest) {
+  let response = NextResponse.next({ request })
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+    {
+      cookies: {
+        getAll: () => request.cookies.getAll(),
+        setAll: (list) => {
+          list.forEach(({ name, value }) => request.cookies.set(name, value))
+          response = NextResponse.next({ request })
+          list.forEach(({ name, value, options }) => response.cookies.set(name, value, options))
+        },
+      },
+    },
+  )
+  const { data: { user } } = await supabase.auth.getUser() // refreshes the session
+  const url = request.nextUrl.clone()
+  const isProtected = ['/dashboard', '/account'].some(p => url.pathname.startsWith(p))
+  if (isProtected && !user) {
+    url.pathname = '/login'
+    return NextResponse.redirect(url)
+  }
+  return response
+}
+
+export const config = { matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'] }
+```
+- `proxy.ts` runs on the Node runtime by default.
 
 ### Auth Callback Route (OAuth)
-```tsx
-// app/auth/callback/route.ts
-import { supabase } from '@/lib/supabaseServer'
-import { NextResponse } from 'next/server'
+`app/auth/callback/route.ts`: read `code` from `searchParams`, call `supabase.auth.exchangeCodeForSession(code)` on a server client, then redirect with `NextResponse.redirect(new URL('/', request.url))`. Redirect to `/login` on a missing code or an error.
 
-export async function GET(request: Request) {
-  const url = new URL(request.url)
-  const code = url.searchParams.get('code')
-  if (!code) return NextResponse.redirect('/login')
-
-  const { data, error } = await supabase.auth.exchangeCodeForSession(code)
-  if (error) return NextResponse.redirect('/login')
-
-  // Session is stored in the HTTP‑only cookie automatically by supabase/ssr
-  return NextResponse.redirect('/')
-}
-```
 ### Using Supabase in a Server Component
 ```tsx
 // app/profile/page.tsx – Server Component
-import { supabase } from '@/lib/supabaseServer'
+import { createClient } from '@/lib/supabase/server'
 
 export default async function Page() {
+  const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return <p>Not logged in</p>
   return <p>Welcome, {user.email}</p>
 }
 ```
-### Using Supabase in a Client Component (read‑only)
+### Using Supabase in a Client Component
 ```tsx
 'use client'
-import { createClientComponentClient } from '@supabase/ssr'
+import { createBrowserClient } from '@supabase/ssr'
 
 export default function LogoutButton() {
-  const supabase = createClientComponentClient()
+  const supabase = createBrowserClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+  )
   const handleLogout = async () => {
     await supabase.auth.signOut()
     window.location.href = '/login'
@@ -309,22 +305,11 @@ export default function LogoutButton() {
 ```
 ---
 
-## 10. Next.js 16+ and Turbopack
-- From Next.js 16, `next dev` uses Turbopack by default. Turbopack is an incremental bundler in Rust. It gives faster cold start and HMR, mostly in large apps.
-- Turbopack keeps a file-system cache (usually under `.next`). Restarts reuse earlier work (for example 5–14x faster on large projects). Basic use needs no configuration. Do not clear the cache without a reason.
-- Use webpack in dev only when you find a Turbopack bug or need a webpack-only plugin. Disable Turbopack with `--webpack` (or `--no-turbopack` in some versions). Check the docs for your release.
-- `next build` can use Turbopack or webpack, as a function of the Next.js version. Check the docs for your version.
-- Next.js 16.1+ has an experimental Bundle Analyzer to find heavy dependencies. Enable it in config or with the experimental flag.
-- Use a recent Next.js 16.x release for stable Turbopack and cache behavior.
-
-### Middleware file name: `proxy.ts`
-| Next.js version | File at project root |
-|---|---|
-| 16+ | `proxy.ts` |
-| Before 16 | `middleware.ts` |
-
-- The file name depends on the Next.js version, not on the bundler.
-- In Next.js 16 projects, `proxy.ts` is correct. Do not report it as a misnamed or missing middleware file. A rename to `middleware.ts` stops the middleware.
+## 10. Turbopack and `proxy.ts`
+- Next.js 16 uses Turbopack for `next dev` and `next build` by default. Turbopack is an incremental bundler in Rust with a file-system cache under `.next`. Do not clear the cache without a reason.
+- Use webpack only for a webpack-only plugin: run with `--webpack`. Treat webpack as legacy.
+- `proxy.ts` at the project root replaces `middleware.ts`. Export a `proxy` function. Node runtime is the default.
+- In Next.js 16 projects, `proxy.ts` is correct. Do not report it as a misnamed or missing middleware file. A rename to `middleware.ts` stops it.
 - Reference: [Next.js proxy docs](https://nextjs.org/docs/app/getting-started/proxy)
 
 ---
@@ -334,28 +319,30 @@ export default function LogoutButton() {
 |--------------|-----------------|
 | Adding `'use client'` to every file | Keep components Server by default; add `'use client'` only when interactivity is required |
 | Fetching data in Client Components | Fetch data in Server Components or Server Actions, then pass as props |
+| Reading `params` or `cookies()` without `await` | Await all request APIs; they are promises |
 | Skipping `loading.tsx` for slow streams | Provide a `loading.tsx` file to show a placeholder while the Server Component streams |
 | Large client bundles without code‑splitting | Use `dynamic()` imports and keep interactive parts minimal |
-| Storing Supabase tokens in localStorage | Store session in HTTP‑only cookies via `@supabase/ssr`; never expose raw tokens |
+| `getSession()` for authorization | Call `supabase.auth.getUser()`; it validates the token on the server |
+| Service-role key in the SSR client | Use the publishable key with cookies; keep the service-role key for trusted scripts only |
 ---
 
 ## Checklist
 - [ ] Decide component type using the decision tree. Add `'use client'` only when needed.
-- [ ] Choose a data‑fetching pattern (static, ISR, no‑store) and set `next: { revalidate }` accordingly.
+- [ ] Choose a data‑fetching pattern (dynamic, ISR, `'use cache'`) and set `revalidate` or `cacheLife` accordingly.
+- [ ] Await `params`, `searchParams`, `cookies()`, and `headers()`.
 - [ ] Follow file conventions (`page.tsx`, `layout.tsx`, `loading.tsx`, `error.tsx`).
 - [ ] Use route groups, parallel routes, or intercepting routes for UI composition.
-- [ ] Validate all API input with a schema library; return proper status codes.
+- [ ] Validate all API input with Zod; return proper status codes.
 - [ ] Optimize images with `next/image`; set `priority` for above‑fold assets.
 - [ ] Dynamically import heavy client‑only components.
 - [ ] Implement `generateMetadata` for dynamic SEO tags.
-- [ ] Configure caching: ISR for static pages, `revalidatePath` for on‑demand updates.
+- [ ] Configure caching: `cacheTag` + `revalidateTag` / `updateTag` for on‑demand updates.
 - [ ] Write Server Actions for mutations; validate inputs and trigger revalidation.
-- [ ] Set up Supabase client with `@supabase/ssr`; keep service‑role key server‑only.
-- [ ] Add middleware to protect private routes and refresh sessions.
+- [ ] Set up Supabase with `@supabase/ssr`, `createServerClient` + `getAll`/`setAll`, publishable key.
+- [ ] Add `proxy.ts` to protect private routes and refresh sessions with `getUser()`.
 - [ ] Implement OAuth callback route that exchanges the code for a session.
 - [ ] Test loading and error states (`loading.tsx`, `error.tsx`).
-- [ ] Run `next build && next analyze` to verify bundle size.
-- [ ] On Next.js 16+, use `proxy.ts` (not `middleware.ts`) and keep Turbopack as the dev bundler.
+- [ ] Run `ANALYZE=true next build` to verify bundle size.
 
 ## Related skills
 

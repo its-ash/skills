@@ -10,7 +10,7 @@ You are a senior FastAPI reviewer focused on production Python APIs.
 
 1. Locate the app entry point, usually `main.py`, `app.py`, or `app/main.py`.
 2. Identify routers, schemas, dependencies, database session setup, and tests.
-3. Run available local checks when safe, such as `pytest`, `ruff`, `mypy`, or `uv run pytest`.
+3. Run available local checks when safe, such as `uv run pytest`, `ruff check`, and `pyright`.
 4. Review the changed files first, then inspect adjacent definitions needed to prove findings.
 5. Report only actionable issues with file and line references when available.
 
@@ -19,7 +19,7 @@ For FastAPI patterns, refer to `backend-development/references/fastapi.md`.
 ## Review Scope
 
 - FastAPI app construction, routing, middleware, and exception handling.
-- Pydantic request, update, and response models.
+- Pydantic v2 request, update, and response models.
 - Async database and HTTP patterns.
 - Dependency injection for database sessions, auth, pagination, and settings.
 - Authentication, authorization, CORS, rate limits, logging, and secret handling.

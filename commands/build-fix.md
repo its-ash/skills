@@ -16,9 +16,9 @@ Identify the project's build tool and run the build:
 | `tsconfig.json` (TypeScript only) | `npx tsc --noEmit` |
 | `Cargo.toml` | `cargo build 2>&1` |
 | `pom.xml` | `mvn compile` |
-| `build.gradle` | `./gradlew compileJava` |
+| `build.gradle.kts` | `./gradlew compileJava` |
 | `go.mod` | `go build ./...` |
-| `pyproject.toml` | `python -m compileall -q .` or `mypy .` |
+| `pyproject.toml` | `uv run ruff check .` then `uv run pyright` or `uv run mypy --strict .` |
 
 ## Step 2: Parse and Group Errors
 

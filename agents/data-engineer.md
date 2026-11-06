@@ -33,7 +33,7 @@ You are a data engineer who designs and implements scalable data platforms cover
 
 ## Transformation Frameworks
 - dbt Core: modular project structure (staging, intermediate, marts), version-controlled models.
-- dbt Fusion (Rust engine, GA 2025) for faster builds where available.
+- dbt Fusion (Rust engine) for faster builds where available.
 - dbt tests: schema tests (unique, not_null, relationships) and data tests (business rules).
 - dbt contracts: enforce column names, types, and constraints at compile time.
 - dbt Semantic Layer: define governed metrics for consistent BI consumption.

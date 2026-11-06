@@ -9,9 +9,9 @@ This command invokes the **python-reviewer** agent for comprehensive Python-spec
 ## What This Command Does
 
 1. **Identify Python Changes**: Find modified `.py` files via `git diff`
-2. **Run Static Analysis**: Execute `ruff`, `mypy`, `pylint`, `black --check`
+2. **Run Static Analysis**: Execute `ruff check`, `ruff format --check`, `pyright` or `mypy --strict`
 3. **Security Scan**: Check for SQL injection, command injection, unsafe deserialization
-4. **Type Safety Review**: Analyze type hints and mypy errors
+4. **Type Safety Review**: Analyze type hints and type checker errors
 5. **Pythonic Code Check**: Verify code follows PEP 8 and Python best practices
 6. **Generate Report**: Categorize issues by severity
 
@@ -56,22 +56,21 @@ Use `/python-review` when:
 
 ```bash
 # Type checking
-mypy .
+uv run pyright  # or: uv run mypy --strict .
 
-# Linting and formatting
-ruff check .
-black --check .
-isort --check-only .
+# Linting and formatting (ruff replaces flake8, isort, black)
+uv run ruff check .
+uv run ruff format --check .
 
 # Security scanning
-bandit -r .
+uv run ruff check --select S .  # bandit rules
+semgrep --config auto .
 
 # Dependency audit
-pip-audit
-safety check
+uv run pip-audit
 
 # Testing
-pytest --cov=app --cov-report=term-missing
+uv run pytest --cov=app --cov-report=term-missing
 ```
 
 ## Example Usage
@@ -87,10 +86,10 @@ Agent:
 - app/services/auth.py (modified)
 
 ## Static Analysis Results
-✓ ruff: No issues
-✓ mypy: No errors
-WARNING: black: 2 files need reformatting
-✓ bandit: No security issues
+✓ ruff check: No issues
+✓ pyright: No errors
+WARNING: ruff format: 2 files need reformatting
+✓ ruff S rules: No security issues
 
 ## Issues Found
 
@@ -132,7 +131,7 @@ def get_user(user_id):  # Bad
 ```
 Fix: Add type hints
 ```python
-def get_user(user_id: str) -> Optional[User]:  # Good
+def get_user(user_id: str) -> User | None:  # Good
     return db.find(user_id)
 ```
 
@@ -158,7 +157,7 @@ with open("config.json") as f:  # Good
 Recommendation: FAIL: Block merge until CRITICAL issue is fixed
 
 ## Formatting Required
-Run: `black app/routes/user.py app/services/auth.py`
+Run: `uv run ruff format app/routes/user.py app/services/auth.py`
 ```
 
 ## Approval Criteria
@@ -214,9 +213,7 @@ def calculate(x, y):
     return x + y
 
 # After
-from typing import Union
-
-def calculate(x: Union[int, float], y: Union[int, float]) -> Union[int, float]:
+def calculate(x: int | float, y: int | float) -> int | float:
     return x + y
 ```
 
@@ -259,7 +256,7 @@ def append(value, items=None):
     return items
 ```
 
-### Use f-strings (Python 3.6+)
+### Use f-strings
 ```python
 # Before
 name = "Alice"
@@ -283,15 +280,13 @@ result = "".join(str(item) for item in items)
 
 ## Python Version Compatibility
 
-The reviewer notes when code uses features from newer Python versions:
+Baseline is Python 3.13+ (3.15 current). The reviewer flags legacy idioms that newer syntax replaces:
 
-| Feature | Minimum Python |
-|---------|----------------|
-| Type hints | 3.5+ |
-| f-strings | 3.6+ |
-| Walrus operator (`:=`) | 3.8+ |
-| Position-only parameters | 3.8+ |
-| Match statements | 3.10+ |
-| Type unions (&#96;x &#124; None&#96;) | 3.10+ |
+| Legacy | Use instead |
+|--------|-------------|
+| `Optional[X]`, `Union[X, Y]` | `X | None`, `X | Y` |
+| `List[X]`, `Dict[K, V]` | `list[X]`, `dict[K, V]` |
+| `TypeVar` boilerplate | PEP 695 `def fn[T](x: T) -> T` |
+| `if/elif` chains on structure | `match` statements |
 
-Ensure your project's `pyproject.toml` or `setup.py` specifies the correct minimum Python version.
+Ensure `requires-python` in `pyproject.toml` states the minimum version.

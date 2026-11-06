@@ -67,7 +67,7 @@ psql -c "SELECT indexrelname, idx_scan, idx_tup_read FROM pg_stat_user_indexes O
 - `SELECT *` in production code
 - `int` for IDs (use `bigint`), `varchar(255)` without reason (use `text`)
 - `timestamp` without timezone (use `timestamptz`)
-- Random UUIDs as PKs (use UUIDv7 or IDENTITY)
+- Random UUIDs as PKs (use `uuidv7()` or IDENTITY)
 - OFFSET pagination on large tables
 - Unparameterized queries (SQL injection risk)
 - `GRANT ALL` to application users

@@ -27,7 +27,7 @@ Run these in order:
 ```bash
 cmake --build build 2>&1 | head -100
 cmake -B build -S . 2>&1 | tail -30
-clang-tidy src/*.cpp -- -std=c++17 2>/dev/null || echo "clang-tidy not available"
+clang-tidy src/*.cpp -- -std=c++23 2>/dev/null || echo "clang-tidy not available"
 cppcheck --enable=all src/ 2>/dev/null || echo "cppcheck not available"
 ```
 

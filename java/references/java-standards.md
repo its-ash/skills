@@ -37,7 +37,7 @@ List<String> names = markets.stream().map(Market::name).filter(Objects::nonNull)
 ## Dependency injection
 
 ```java
-// [SPRING] constructor injection (single constructor, no @Autowired needed)
+// [SPRING] constructor injection (single constructor, no @Autowired needed); @NullMarked at package level (JSpecify)
 @Service public class MarketService {
   private final MarketRepository repo;
   public MarketService(MarketRepository repo) { this.repo = repo; }
@@ -81,7 +81,7 @@ public Uni<OrderConfirmation> placeOrder(OrderRequest req) {
     return Response.status(404).entity(ErrorResponse.from(ex)).build();
   }
 }
-// [QUARKUS] B: RESTEasy Reactive
+// [QUARKUS] B: Quarkus REST (quarkus-rest)
 @ServerExceptionMapper
 public RestResponse<ErrorResponse> handle(MarketNotFoundException ex) {
   return RestResponse.status(Status.NOT_FOUND, ErrorResponse.from(ex));
@@ -90,7 +90,7 @@ public RestResponse<ErrorResponse> handle(MarketNotFoundException ex) {
 
 ## Null handling
 
-- Prefer `@NonNull`; accept `@Nullable` only when unavoidable. Bean Validation (`@NotNull`, `@NotBlank`) on inputs.
+- Use JSpecify: `@NullMarked` on the package; `@Nullable` only when unavoidable. Bean Validation (`@NotNull`, `@NotBlank`) on inputs.
 - [QUARKUS] Put `@Valid` on `@BeanParam`, `@RestForm`, and request body parameters.
 
 ## Generics
@@ -140,7 +140,7 @@ public interface MarketConfig { int maxPageSize(); Duration cacheTtl(); }
 
 ```java
 @WebMvcTest(MarketController.class)                                 // [SPRING] slice
-class MarketControllerTest { @Autowired MockMvc mockMvc; @MockBean MarketService svc; }
+class MarketControllerTest { @Autowired MockMvc mockMvc; @MockitoBean MarketService svc; }
 
 @QuarkusTest                                                         // [QUARKUS] CDI integration
 class MarketResourceTest {

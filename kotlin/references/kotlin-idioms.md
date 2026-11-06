@@ -147,15 +147,15 @@ fun withdraw(acc: Account, amt: Money): Account {
 
 ## Gradle Kotlin DSL (`build.gradle.kts`)
 
-Check current versions at https://kotlinlang.org/docs/releases.html.
+Check current versions at https://kotlinlang.org/docs/releases.html. Prefer a version catalog (`gradle/libs.versions.toml`) in real projects.
 
 ```kotlin
 plugins {
-    kotlin("jvm") version "2.3.10"
-    kotlin("plugin.serialization") version "2.3.10"
+    kotlin("jvm") version "2.4.0"
+    kotlin("plugin.serialization") version "2.4.0"
     id("io.ktor.plugin") version "3.4.0"
     id("org.jetbrains.kotlinx.kover") version "0.9.7"
-    id("io.gitlab.arturbosch.detekt") version "1.23.8"
+    id("io.gitlab.arturbosch.detekt") version "2.0.0"
 }
 kotlin { jvmToolchain(21) }
 dependencies {

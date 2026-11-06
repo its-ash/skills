@@ -8,7 +8,7 @@ This command invokes the **go-build-resolver** agent to incrementally fix Go bui
 
 ## What This Command Does
 
-1. **Run Diagnostics**: Execute `go build`, `go vet`, `staticcheck`
+1. **Run Diagnostics**: Execute `go build`, `go vet`, `golangci-lint`
 2. **Parse Errors**: Group by file and sort by severity
 3. **Fix Incrementally**: One error at a time
 4. **Verify Each Fix**: Re-run build after each change
@@ -32,8 +32,7 @@ go build ./...
 # Static analysis
 go vet ./...
 
-# Extended linting (if available)
-staticcheck ./...
+# Extended linting (golangci-lint v2, includes staticcheck)
 golangci-lint run
 
 # Module issues

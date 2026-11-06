@@ -18,9 +18,9 @@ This command is the counterpart to `/save-session`.
 
 ```
 /resume-session                                                      # loads most recent file in ~/.claude/session-data/
-/resume-session 2024-01-15                                           # loads most recent session for that date
-/resume-session ~/.claude/session-data/2024-01-15-abc123de-session.tmp  # loads a current short-id session file
-/resume-session ~/.claude/sessions/2024-01-15-session.tmp               # loads a specific legacy-format file
+/resume-session 2026-01-15                                           # loads most recent session for that date
+/resume-session ~/.claude/session-data/2026-01-15-abc123de-session.tmp  # loads a current short-id session file
+/resume-session ~/.claude/sessions/2026-01-15-session.tmp               # loads a specific legacy-format file
 ```
 
 ## Process
@@ -115,7 +115,7 @@ If no next step is defined — ask the user where to start, and optionally sugge
 
 ## Edge Cases
 
-**Multiple sessions for the same date** (`2024-01-15-session.tmp`, `2024-01-15-abc123de-session.tmp`):
+**Multiple sessions for the same date** (`2026-01-15-session.tmp`, `2026-01-15-abc123de-session.tmp`):
 Apply the candidate ranking across every matching legacy and current-format file. A substantive
 session must win over a newer placeholder or one-message summarizer echo; modification time decides
 between eligible candidates.
@@ -140,7 +140,7 @@ empty or unreadable without loading a substitute.
 ## Example Output
 
 ```
-SESSION LOADED: /Users/you/.claude/session-data/2024-01-15-abc123de-session.tmp
+SESSION LOADED: /Users/you/.claude/session-data/2026-01-15-abc123de-session.tmp
 ════════════════════════════════════════════════
 
 PROJECT: my-app — JWT Authentication
@@ -153,19 +153,19 @@ via middleware hasn't been started yet.
 CURRENT STATE:
 PASS: Working: 3 items (register endpoint, JWT generation, password hashing)
  In Progress: app/api/auth/login/route.ts (token works, cookie not set yet)
- Not Started: middleware.ts, app/login/page.tsx
+ Not Started: proxy.ts, app/login/page.tsx
 
 WHAT NOT TO RETRY:
 FAIL: Next-Auth — conflicts with custom Prisma adapter, threw adapter error on every request
 FAIL: localStorage for JWT — causes SSR hydration mismatch, incompatible with Next.js
 
 OPEN QUESTIONS / BLOCKERS:
-- Does cookies().set() work inside a Route Handler or only Server Actions?
+- Does `(await cookies()).set()` work inside a Route Handler or only Server Actions?
 
 NEXT STEP:
 In app/api/auth/login/route.ts — set the JWT as an httpOnly cookie using
-cookies().set('token', jwt, { httpOnly: true, secure: true, sameSite: 'strict' })
-then test with Postman for a Set-Cookie header in the response.
+(await cookies()).set('token', jwt, { httpOnly: true, secure: true, sameSite: 'strict' })
+then test with curl -i for a Set-Cookie header in the response.
 
 ════════════════════════════════════════════════
 Ready to continue. What would you like to do?

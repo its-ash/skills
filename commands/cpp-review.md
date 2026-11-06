@@ -12,7 +12,7 @@ This command invokes the **cpp-reviewer** agent for comprehensive C++-specific c
 2. **Run Static Analysis**: Execute `clang-tidy` and `cppcheck`
 3. **Memory Safety Scan**: Check for raw new/delete, buffer overflows, use-after-free
 4. **Concurrency Review**: Analyze thread safety, mutex usage, data races
-5. **Modern C++ Check**: Verify code follows C++17/20 conventions and best practices
+5. **Modern C++ Check**: Verify code follows C++20/23 conventions and best practices
 6. **Generate Report**: Categorize issues by severity
 
 ## When to Use
@@ -52,13 +52,13 @@ Use `/cpp-review` when:
 
 ```bash
 # Static analysis
-clang-tidy --checks='*,-llvmlibc-*' src/*.cpp -- -std=c++17
+clang-tidy --checks='*,-llvmlibc-*' src/*.cpp -- -std=c++23
 
 # Additional analysis
 cppcheck --enable=all --suppress=missingIncludeSystem src/
 
-# Build with warnings
-cmake --build build -- -Wall -Wextra -Wpedantic
+# Build with warnings and sanitizers
+cmake -B build -DCMAKE_CXX_FLAGS="-Wall -Wextra -Wpedantic -fsanitize=address,undefined" && cmake --build build
 ```
 
 ## Example Usage

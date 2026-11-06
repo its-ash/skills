@@ -4,7 +4,7 @@ description: Analyze a project and generate PM2 service commands for detected fr
 
 # PM2 Init
 
-Auto-analyze project and generate PM2 service commands.
+Auto-analyze project and generate PM2 (v6) service commands. For production, consider systemd units or containers as alternatives.
 
 **Command**: `$ARGUMENTS`
 
@@ -25,9 +25,9 @@ Auto-analyze project and generate PM2 service commands.
 | Vite | vite.config.* | 5173 |
 | Next.js | next.config.* | 3000 |
 | Nuxt | nuxt.config.* | 3000 |
-| CRA | react-scripts in package.json | 3000 |
+| CRA (legacy, migrate to Vite) | react-scripts in package.json | 3000 |
 | Express/Node | server/backend/api directory + package.json | 3000 |
-| FastAPI/Flask | requirements.txt / pyproject.toml | 8000 |
+| FastAPI/Flask | pyproject.toml / requirements.txt | 8000 |
 | Go | go.mod / main.go | 8080 |
 
 **Port Detection Priority**: User specified > .env > config file > scripts args > default port
@@ -100,7 +100,7 @@ module.exports = {
 
 ```javascript
 const { spawn } = require('child_process');
-const proc = spawn('python', ['-m', 'uvicorn', 'app.main:app', '--host', '0.0.0.0', '--port', '8000', '--reload'], {
+const proc = spawn('uv', ['run', 'uvicorn', 'app.main:app', '--host', '0.0.0.0', '--port', '8000', '--reload'], {
   cwd: __dirname, stdio: 'inherit', windowsHide: true
 });
 proc.on('close', (code) => process.exit(code));

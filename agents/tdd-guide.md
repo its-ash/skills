@@ -29,7 +29,7 @@ Write a failing test that describes the expected behavior.
 
 ### 2. Run Test -- Verify it FAILS
 ```bash
-npm test
+npx vitest run        # or: pytest, cargo nextest run, swift test, go test ./...
 ```
 
 ### 3. Write Minimal Implementation (GREEN)
@@ -42,8 +42,8 @@ Remove duplication, improve names, optimize -- tests must stay green.
 
 ### 6. Verify Coverage
 ```bash
-npm run test:coverage
-# Required: 80%+ branches, functions, lines, statements
+npx vitest run --coverage
+# Required: 80%+ branches, functions, lines, statements; optional mutation score with Stryker, mutmut, or cargo-mutants
 ```
 
 ## Test Types Required
@@ -70,7 +70,7 @@ npm run test:coverage
 - Testing implementation details (internal state) instead of behavior
 - Tests depending on each other (shared state)
 - Asserting too little (passing tests that don't verify anything)
-- Not mocking external dependencies (Supabase, Redis, OpenAI, etc.)
+- Not mocking external dependencies (databases, Redis, LLM APIs); use MSW 2 for HTTP
 
 ## Quality Checklist
 

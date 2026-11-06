@@ -22,7 +22,7 @@ Write idiomatic Kotlin that uses the type system for safety.
 - Return `T?` or `Result<T>` for expected failures. Do not use exceptions for control flow.
 - Use `by` delegation (`lazy`, `observable`, interface `by`) to reuse behavior; avoid inheritance for it.
 - Mark DSL receivers with `@DslMarker`.
-- Configure builds in `build.gradle.kts` with `jvmToolchain`, detekt, and Kover.
+- Target Kotlin 2.4 (K2). Use Gradle 9 Kotlin DSL with a version catalog, `jvmToolchain`, detekt 2, and Kover. Use KSP, not kapt.
 
 ## Decisions
 | Situation | Do | Avoid |

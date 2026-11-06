@@ -1,15 +1,6 @@
 # JPA/Hibernate Patterns
 
-Use for data modeling, repositories, and performance tuning in Spring Boot.
-
-## When to use
-
-- Designing JPA entities and table mappings
-- Defining relationships (@OneToMany, @ManyToOne, @ManyToMany)
-- Optimizing queries (N+1 prevention, fetch strategies, projections)
-- Configuring transactions, auditing, or soft deletes
-- Setting up pagination, sorting, or custom repository methods
-- Tuning connection pooling (HikariCP) or second-level caching
+Data modeling, repositories, and performance tuning in Spring Boot 4: Spring Data JPA 4, Hibernate ORM 7, Jakarta Persistence 3.2 (`jakarta.persistence.*`).
 
 ## Entity Design
 
@@ -37,6 +28,8 @@ public class MarketEntity {
 }
 ```
 
+Soft delete and filters (Hibernate 7): `@SoftDelete` on the entity, `@SQLRestriction("status <> 'ARCHIVED'")` for fixed predicates.
+
 Enable auditing:
 ```java
 @Configuration
@@ -51,8 +44,9 @@ class JpaConfig {}
 private List<PositionEntity> positions = new ArrayList<>();
 ```
 
-- Default to lazy loading; use `JOIN FETCH` in queries when needed
+- Default to lazy loading; use `JOIN FETCH` or `@EntityGraph` when needed
 - Avoid `EAGER` on collections; use DTO projections for read paths
+- Use `StatelessSession` (Hibernate 7) for bulk reads and writes without a persistence context
 
 ```java
 @Query("select m from MarketEntity m left join fetch m.positions where m.id = :id")
@@ -72,13 +66,10 @@ public interface MarketRepository extends JpaRepository<MarketEntity, Long> {
 
 - Use projections for lightweight queries:
 ```java
-public interface MarketSummary {
-  Long getId();
-  String getName();
-  MarketStatus getStatus();
-}
+public record MarketSummary(Long id, String name, MarketStatus status) {}
 Page<MarketSummary> findAllBy(Pageable pageable);
 ```
+- Use `Specification` with the Criteria API for dynamic filters; use jOOQ 3.20 when SQL-first is the better fit
 
 ## Transactions
 
@@ -122,10 +113,7 @@ spring.datasource.hikari.connection-timeout=30000
 spring.datasource.hikari.validation-timeout=5000
 ```
 
-For PostgreSQL LOB handling, add:
-```
-spring.jpa.properties.hibernate.jdbc.lob.non_contextual_creation=true
-```
+With `spring.threads.virtual.enabled=true`, keep the pool size bound to DB capacity, not to thread count.
 
 ## Caching
 
@@ -134,13 +122,13 @@ spring.jpa.properties.hibernate.jdbc.lob.non_contextual_creation=true
 
 ## Migrations
 
-- Use Flyway or Liquibase; never rely on Hibernate auto DDL in production
+- Use Flyway 11 or Liquibase 4.3x; never rely on Hibernate auto DDL in production
 - Keep migrations idempotent and additive; avoid dropping columns without plan
 - For safe schema-change patterns, see `database-design/references/database-migration.md`
 
 ## Testing Data Access
 
-- Prefer `@DataJpaTest` with Testcontainers to mirror production
+- Prefer `@DataJpaTest` with Testcontainers `@ServiceConnection` to mirror production
 - Assert SQL efficiency using logs: set `logging.level.org.hibernate.SQL=DEBUG` and `logging.level.org.hibernate.orm.jdbc.bind=TRACE` for parameter values
 
 **Remember**: Keep entities lean, queries intentional, and transactions short. Prevent N+1 with fetch strategies and projections, and index for your read/write paths.

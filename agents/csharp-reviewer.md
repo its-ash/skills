@@ -57,7 +57,7 @@ You are a senior C# code reviewer. You make sure that changed code follows idiom
 - **Record vs class**: Value-like immutable models should be `record` or `record struct`
 - **Dependency injection**: `new`-ing services instead of injecting — use constructor injection
 - **`IEnumerable` multiple enumeration**: Materialize with `.ToList()` when enumerated more than once
-- **Missing `sealed`**: Non-inherited classes should be `sealed` for clarity and performance
+- **Modern syntax**: Use primary constructors, collection expressions `[..]`, and the C# 14 `field` keyword; mark non-inherited classes `sealed`
 
 ## Diagnostic Commands
 
@@ -85,7 +85,7 @@ Fix: What to change
 
 ## Framework Checks
 
-- **ASP.NET Core**: Model validation, auth policies, middleware order, `IOptions<T>` pattern
+- **ASP.NET Core (.NET 10 LTS)**: Model validation, auth policies, middleware order, `IOptions<T>` pattern
 - **EF Core**: Migration safety, `Include` for eager loading, `AsNoTracking` for reads
 - **Minimal APIs**: Route grouping, endpoint filters, proper `TypedResults`
 - **Blazor**: Component lifecycle, `StateHasChanged` usage, JS interop disposal

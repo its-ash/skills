@@ -9,7 +9,7 @@ This command invokes the **go-reviewer** agent for comprehensive Go-specific cod
 ## What This Command Does
 
 1. **Identify Go Changes**: Find modified `.go` files via `git diff`
-2. **Run Static Analysis**: Execute `go vet`, `staticcheck`, and `golangci-lint`
+2. **Run Static Analysis**: Execute `go vet` and `golangci-lint` (v2, includes staticcheck)
 3. **Security Scan**: Check for SQL injection, command injection, race conditions
 4. **Concurrency Review**: Analyze goroutine safety, channel usage, mutex patterns
 5. **Idiomatic Go Check**: Verify code follows Go conventions and best practices
@@ -56,7 +56,6 @@ Use `/go-review` when:
 go vet ./...
 
 # Advanced checks (if installed)
-staticcheck ./...
 golangci-lint run
 
 # Race detection
@@ -80,7 +79,7 @@ Agent:
 
 ## Static Analysis Results
 ✓ go vet: No issues
-✓ staticcheck: No issues
+✓ golangci-lint: No issues
 
 ## Issues Found
 

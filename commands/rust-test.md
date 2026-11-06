@@ -266,8 +266,8 @@ cargo test test_name
 # Run with output
 cargo test -- --nocapture
 
-# Run without stopping on first failure
-cargo test --no-fail-fast
+# Faster parallel runner (runs all tests, no fail-fast)
+cargo nextest run
 ```
 
 ## Coverage Targets

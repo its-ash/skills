@@ -122,7 +122,7 @@ For significant architectural decisions, create ADRs:
 Need to store and query 1536-dimensional embeddings for semantic market search.
 
 ## Decision
-Use Redis Stack with vector search capability.
+Use Redis 8 with its built-in vector search.
 
 ## Consequences
 
@@ -146,7 +146,7 @@ Use Redis Stack with vector search capability.
 Accepted
 
 ## Date
-2025-01-15
+2026-11-07
 ```
 
 ## System Design Checklist

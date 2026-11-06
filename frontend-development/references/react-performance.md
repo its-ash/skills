@@ -1,11 +1,6 @@
 # React Performance Optimization
 
-Provide a concise set of rules, patterns, and a profiling workflow to make React and Next.js applications fast and responsive.
-
-## When to Use
-- Writing a new component or Next.js page.
-- Refactoring existing UI for speed.
-- Reviewing code for performance regressions.
+Rules, patterns, and a profiling workflow for React 19.3 and Next.js 16 apps. React Compiler is on by default; do not add manual memoization for speed.
 - Adding data‑fetching logic (client or server).
 - Debugging slow renders, long load times, or large bundles.
 

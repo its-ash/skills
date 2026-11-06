@@ -1,10 +1,10 @@
 ---
-description: Enforce TDD workflow for React. Write React Testing Library tests first (behavior-focused, accessibility-first), then implement components. Detects Vitest or Jest and verifies coverage targets.
+description: Enforce TDD workflow for React. Write React Testing Library tests first (behavior-focused, accessibility-first), then implement components. Uses Vitest (Jest for legacy projects) and verifies coverage targets.
 ---
 
 # React TDD Command
 
-This command enforces test-driven development for React using React Testing Library plus Vitest or Jest, detected at runtime.
+This command enforces test-driven development for React using React Testing Library plus Vitest 4 (Jest for legacy projects), detected at runtime.
 
 ## What This Command Does
 
@@ -41,7 +41,7 @@ test -f vitest.config.ts -o -f vitest.config.js -o -f vite.config.ts   # Vitest
 grep -l '"jest"' package.json                                          # Jest
 ```
 
-Prefer Vitest for new Vite-based projects; respect Jest for existing setups.
+Vitest is the default for new projects; respect Jest only in existing legacy setups.
 
 ## Example Session
 
@@ -229,10 +229,10 @@ Configure in `vitest.config.ts` / `jest.config.js` to enforce thresholds in CI.
 
 - `container.querySelector(...)` — bypasses accessibility queries
 - Asserting on render count
-- Mocking `react` itself (`jest.mock("react", ...)`)
+- Mocking `react` itself (`vi.mock("react", ...)`)
 - Mocking child components by default (mock only when child has heavy side effects)
 - Ignoring `act()` warnings — they signal real bugs
-- Snapshot tests of rendered components (brittle, rubber-stamped) — use Playwright/Cypress visual diff instead
+- Snapshot tests of rendered components (brittle, rubber-stamped) — use Playwright visual diff instead
 
 ## Test Commands
 
@@ -243,7 +243,7 @@ vitest run                          # one-shot
 vitest run --coverage               # with coverage
 vitest run path/to/file.test.tsx    # single file
 
-# Jest
+# Jest (legacy)
 jest --watch
 jest --coverage
 jest path/to/file.test.tsx

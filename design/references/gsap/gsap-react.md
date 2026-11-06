@@ -17,7 +17,7 @@ npm install @gsap/react
 
 ## Prefer the useGSAP() Hook
 
-When **@gsap/react** is available, use the **useGSAP()** hook instead of `useEffect()` for GSAP setup. It handles cleanup automatically and provides a scope and **contextSafe** for callbacks.
+When **@gsap/react** is available, use the **useGSAP()** hook (React 18 and 19) instead of `useEffect()` for GSAP setup. It handles cleanup automatically and provides a scope and **contextSafe** for callbacks.
 
 ```javascript
 import { useGSAP } from "@gsap/react";
@@ -109,7 +109,8 @@ useGSAP((context, contextSafe) => {
 GSAP runs in the browser. Do not call gsap or ScrollTrigger during SSR.
 
 - Use **useGSAP** (or useEffect) so all GSAP code runs only on the client.
-- If GSAP is imported at top level, ensure the app does not execute gsap.* or ScrollTrigger.* during server render. Dynamic import inside useEffect is an option if tree-shaking or bundle size is a concern.
+- Next.js 16 App Router: put `'use client'` at the top of every component that imports GSAP or `@gsap/react`. Server Components cannot run GSAP.
+- Do not call gsap.* or ScrollTrigger.* at module top level. Use a dynamic import inside the effect when bundle size matters.
 
 ## Best practices
 
@@ -123,7 +124,6 @@ GSAP runs in the browser. Do not call gsap or ScrollTrigger during SSR.
 - ❌ Animate using selector strings that can match elements outside the current component unless a `scope` is defined in useGSAP or gsap.context() so only elements inside the component are affected.
 - ❌ Skip cleanup; always revert context or kill tweens/ScrollTriggers in the effect return to avoid leaks and updates on unmounted nodes.
 - ❌ Run GSAP or ScrollTrigger during SSR; keep all usage inside client-only lifecycle (e.g. useGSAP).
-
 
 ### Learn More
 
