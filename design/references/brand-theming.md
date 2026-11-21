@@ -1,116 +1,86 @@
 > **Parent skill:** [`design`](../SKILL.md). This is a sub-skill; follow `design` for the shared workflow and load this only when the task needs it.
 
-# Brand‑Theming Skill
+# Brand Theming
 
-Apply Anthropic’s brand identity consistently to any visual artifact (e.g., PowerPoint decks, PDFs, HTML pages). The skill enforces the official color palette, font pairings, and shape styling while handling missing fonts and ensuring contrast.
+Apply a brand's official visual identity consistently across web UI, HTML pages, slide decks, and documents. Translates brand guidelines into modern `oklch()` + `light-dark()` semantic tokens while enforcing WCAG 2.2 AA contrast and clean component craft.
 
 ## When to Use
-- The artifact will be shared externally or internally under the Anthropic brand.
-- Corporate style guidelines require specific colors, fonts, and visual hierarchy.
-- You need a quick, repeatable way to enforce brand consistency across many files.
+- An existing brand style guide must be applied consistently across web apps, landing pages, PDFs, or slide decks.
+- You need to map brand colors and fonts into modern semantic CSS tokens without breaking light/dark mode or accessibility.
+- You want a repeatable token dictionary shared between web code and presentation/document generators.
 
 ## Workflow
-1. **Select the artifact** – open the file you want to style (PowerPoint, PDF, HTML, etc.).
-2. **Load brand resources** – retrieve the color palette and font definitions from this skill.
-3. **Apply typography**
-   - Use **Poppins** for headings ≥ 24 pt. Fallback to **Arial** if Poppins is unavailable.
-   - Use **Lora** for body text. Fallback to **Georgia** if Lora is unavailable.
-4. **Apply colors**
-   - Set background and text colors using the main palette.
-   - Use accent colors (orange, blue, green) for non‑text shapes, charts, and call‑outs.
-5. **Validate contrast** – ensure a minimum 4.5:1 contrast ratio between text and background.
-6. **Save the artifact** – export or overwrite the original file.
+1. **Audit brand inputs:** Collect the brand's primary accent, neutral base, typography (display, body, mono), logo rules, and corner-radius personality.
+2. **Convert to semantic tokens:** Convert raw brand hex values into `oklch()` primitives and map them to semantic roles (`canvas`, `surface`, `surface-muted`, `border-subtle`, `foreground`, `muted-foreground`, `accent`, `accent-soft`). Never hard-code raw hex inside components.
+3. **Adapt for light & dark mode:** Use `color-scheme: light dark` and `light-dark()`. In dark mode, lift surface lightness slightly for elevation and slightly reduce accent chroma so text and buttons stay comfortable and legible.
+4. **Apply typography:** Load brand variable fonts via `next/font` or self-hosted WOFF2 with metric-matched fallbacks (`size-adjust`). Keep body line-height `1.5-1.6` (web) or `1.2-1.35` (decks).
+5. **Validate contrast (WCAG 2.2 AA):** Verify >= 4.5:1 for normal text and >= 3:1 for large text and UI controls in both light and dark modes. Adjust lightness in `oklch()` if a brand color fails contrast on text.
+6. **Preserve modern UI craft:** Follow parent [`design`](../SKILL.md) §7 rules even under brand theming (full-width square header, filled rounded tabs, tonal cards with full-perimeter hairlines and zero one-sided borders, filled checkboxes/radios).
 
-## Rules & Guidelines
-### Color Palette
-| Role | Hex | Use |
-|------|-----|-----|
-| **Dark** | `#141413` | Primary text, dark backgrounds |
-| **Light** | `#faf9f5` | Light backgrounds, text on dark |
-| **Mid Gray** | `#b0aea5` | Secondary UI elements |
-| **Light Gray** | `#e8e6dc` | Subtle backgrounds |
-| **Accent – Orange** | `#d97757` | Primary accent, call‑outs |
-| **Accent – Blue** | `#6a9bcc` | Secondary accent, charts |
-| **Accent – Green** | `#788c5d` | Tertiary accent, highlights |
+## Web Implementation Pattern (`oklch()` + `light-dark()`)
 
-- Use main colors for all text and large background areas.
-- Cycle accent colors for shapes, icons, and data visualizations to create visual interest while staying on‑brand.
-- Never combine two accent colors on the same element.
+```css
+:root {
+  color-scheme: light dark;
 
-### Typography
-- **Headings**: Poppins (fallback Arial) – 24 pt and larger.
-- **Body text**: Lora (fallback Georgia) – 12‑18 pt.
-- Keep line spacing at 1.2 × font size for readability.
-- Do not use bold or italics on body text unless required for emphasis; rely on hierarchy instead.
+  /* Brand primitives (example: warm editorial brand) */
+  --brand-ink: oklch(18% 0.008 85);
+  --brand-paper: oklch(98% 0.008 85);
+  --brand-accent-light: oklch(62% 0.14 38);
+  --brand-accent-dark: oklch(72% 0.13 38);
 
-### Shape Styling
-- Apply accent colors to non‑text shapes (rectangles, circles, arrows).
-- Maintain a minimum 2 pt stroke width for visibility.
-- Preserve rounded corners where the original design uses them.
+  /* Semantic tokens consumed by UI */
+  --color-canvas: light-dark(var(--brand-paper), oklch(14% 0.008 85));
+  --color-surface: light-dark(oklch(99.3% 0.004 85), oklch(18% 0.008 85));
+  --color-surface-muted: light-dark(oklch(94% 0.01 85), oklch(22% 0.01 85));
+  --color-foreground: light-dark(var(--brand-ink), oklch(94% 0.006 85));
+  --color-muted-foreground: light-dark(oklch(45% 0.01 85), oklch(68% 0.01 85));
+  --color-border-subtle: light-dark(oklch(18% 0.008 85 / 0.1), oklch(94% 0.006 85 / 0.12));
+  --color-accent: light-dark(var(--brand-accent-light), var(--brand-accent-dark));
+  --color-accent-soft: color-mix(in oklch, var(--color-accent) 12%, transparent);
+}
+```
 
-## Technical Details
-### Font Management
-- The skill checks the system for **Poppins** and **Lora**. If missing, it automatically selects the fallback fonts.
-- No automatic font installation is performed; pre‑install the fonts for optimal branding.
+## Slide Decks & Documents (`python-pptx`)
 
-### Color Application (Python‑pptx example)
+When styling decks or PDFs from the same brand token dictionary, keep a single source of truth for palette and font roles:
+
 ```python
 from pptx import Presentation
 from pptx.dml.color import RGBColor
 
-# Load presentation
-prs = Presentation('input.pptx')
-
-# Define brand colors
 BRAND = {
-    'dark': RGBColor(0x14, 0x14, 0x13),
-    'light': RGBColor(0xfa, 0xf9, 0xf5),
-    'mid_gray': RGBColor(0xb0, 0xae, 0xa5),
-    'accent_orange': RGBColor(0xd9, 0x77, 0x57),
-    'accent_blue': RGBColor(0x6a, 0x9b, 0xcc),
-    'accent_green': RGBColor(0x78, 0x8c, 0x5d),
+    "dark": RGBColor(0x14, 0x14, 0x13),
+    "light": RGBColor(0xFA, 0xF9, 0xF5),
+    "muted": RGBColor(0x6E, 0x6C, 0x65),
+    "accent": RGBColor(0xD9, 0x77, 0x57),
 }
 
+prs = Presentation("input.pptx")
 for slide in prs.slides:
     for shape in slide.shapes:
-        if not shape.has_text_frame:
-            # Apply accent colors cyclically
-            shape.fill.solid()
-            shape.fill.fore_color.rgb = BRAND['accent_orange']
-        else:
-            tf = shape.text_frame
-            for paragraph in tf.paragraphs:
-                # Simple rule: headings >= 24pt -> Poppins, else Lora
-                size = paragraph.font.size.pt if paragraph.font.size else 12
-                if size >= 24:
-                    paragraph.font.name = 'Poppins'
-                    paragraph.font.color.rgb = BRAND['dark']
-                else:
-                    paragraph.font.name = 'Lora'
-                    paragraph.font.color.rgb = BRAND['dark']
-
-prs.save('output.pptx')
+        if shape.has_text_frame:
+            for paragraph in shape.text_frame.paragraphs:
+                size = paragraph.font.size.pt if paragraph.font.size else 14
+                paragraph.font.name = "Brand Display" if size >= 24 else "Brand Body"
+                paragraph.font.color.rgb = BRAND["dark"]
+prs.save("output.pptx")
 ```
-- Replace the accent selection logic with a round‑robin iterator for varied accents.
 
-## Pitfalls & Mitigations
-- **Missing fonts** – Verify fonts are installed before processing; otherwise, the fallback may not match brand tone.
-- **Insufficient contrast**: check WCAG 2.2 AA with a contrast tool after styling; adjust background or text color if the ratio falls below 4.5:1.
-- **Over‑use of accents** – Limit accent colors to ≤ 30 % of total visual elements to keep the design clean.
-- **Hard‑coded colors**: reference the brand palette dictionary. In HTML, expose the palette as CSS custom properties with `color-scheme: light dark` and `light-dark()` for dark surfaces. Do not type manual hex values that drift over time.
+## Rules & Pitfalls
+- **Restraint with brand accents:** Keep accent fills to <= 20-30% of visual area; neutral tonal surfaces carry the layout. Never combine two saturated accents on the same element.
+- **No pure `#000` / `#fff`:** Even on monochrome brands, use soft off-white and deep charcoal for lower glare.
+- **Missing fonts:** Always specify metric-matched fallbacks on web and verify system font availability before exporting PPTX/PDF.
+- **Brand vs. readability:** If an official brand accent fails 4.5:1 contrast for text, keep the exact brand color for logos/large graphics and use an `oklch()` lightness-adjusted token for body/button text.
 
 ## Checklist
-- [ ] Confirm Poppins and Lora fonts are installed (or accept fallbacks).
-- [ ] Load the correct artifact type (PowerPoint, PDF, HTML).
-- [ ] Apply main colors to all text and large backgrounds.
-- [ ] Cycle accent colors for shapes and data visualizations.
-- [ ] Set heading fonts to Poppins ≥ 24 pt; body fonts to Lora.
-- [ ] Verify contrast ≥ 4.5:1 for every text/background pair.
-- [ ] Review the final artifact for visual consistency with Anthropic brand.
-- [ ] Save/export the styled file.
+- [ ] Brand palette converted to `oklch()` + `light-dark()` semantic tokens.
+- [ ] Single brand accent locked; neutral tonal surface hierarchy defined.
+- [ ] Fonts loaded with fallbacks and clear heading/body hierarchy.
+- [ ] WCAG 2.2 AA contrast verified (>= 4.5:1 text, >= 3:1 UI) in both light and dark modes.
+- [ ] Parent `design` modern component rules respected (filled tabs, zero one-sided card borders, full-width square header).
 
 ## Related skills
 
-Load these when the task spans more than this skill.
-
-- [`design`](../SKILL.md) — Unified parent design skill covering the full lifecycle from brief inference to production. Load first for the shared workflow, then return here for brand-specific rules.
+- [`design`](../SKILL.md) - Unified parent design skill covering brief inference, modern UI craft, and pre-flight checks.
+- [`design-system`](design-system.md) - Generate full DTCG tokens and interactive previews.

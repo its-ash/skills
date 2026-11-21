@@ -1,217 +1,190 @@
-# Tailwind CSS Design System (v4)
+# Tailwind CSS Design System (v4.3+)
 
-Create a production‑ready UI library using Tailwind CSS v4. The guide covers CSS‑first configuration, design tokens, container queries, dark mode, layout patterns, and performance rules.
+Build a modern, production-ready UI system using Tailwind CSS v4.3+. Uses CSS-first `@theme` tokens, `oklch()` + `light-dark()` theming (no `dark:` sprawl), native container queries, and modern component patterns aligned with [`design`](../SKILL.md).
 
 ---
 
 ## When to use
-- Building a component library or design system.
-- Defining reusable design tokens (colors, spacing, typography).
-- Implementing responsive components with container queries.
-- Adding dark‑mode support.
-- Standardising UI patterns across a codebase.
-- Migrating an existing Tailwind v3 project to v4.
+- Building a modern component library or design system in Tailwind v4.
+- Defining reusable semantic tokens (surfaces, borders, colors, spacing, typography, radii).
+- Implementing responsive components with native container queries.
+- Setting up zero-JS-duplication dark mode with `color-scheme` and `light-dark()`.
+- Migrating a legacy Tailwind v3 (`tailwind.config.js`) project to v4 CSS-first.
 
 ---
 
 ## Architecture Overview
 | Concept | What it means |
 |---|---|
-| **CSS‑first** | All configuration lives in CSS via the `@theme` directive. No `tailwind.config.js` is required. |
-| **Oxide engine** | Rust‑based compiler, default in v4, ~10× faster than the old PostCSS pipeline. |
-| **Native nesting** | Use standard CSS nesting (`&`) without a PostCSS plugin. |
-| **CSS variables** | Every token is exposed as a `--*` variable for easy reuse. |
+| **CSS-first (`@theme`)** | All design tokens live in CSS via `@theme`. No `tailwind.config.js`. |
+| **Oxide engine** | Rust-based compiler, default in v4, ~10x faster with automatic content detection. |
+| **Native `light-dark()`** | Semantic color tokens adapt to light/dark automatically without scattering `dark:` classes on every element. |
+| **Native nesting & `@container`** | Standard CSS nesting and built-in container queries with zero plugins. |
 
 ---
 
-## CSS‑Based Theme Definition
+## CSS-First Theme Definition (`@theme` + `light-dark()`)
+
+Define primitive and semantic tokens in your global CSS file. Tokens declared inside `@theme` automatically generate Tailwind utility classes (`bg-canvas`, `bg-surface`, `text-foreground`, `border-border-subtle`, `bg-accent`, `rounded-card`).
+
 ```css
+@import "tailwindcss";
+
+:root {
+  color-scheme: light dark;
+}
+
+:root[data-theme="light"] { color-scheme: light; }
+:root[data-theme="dark"]  { color-scheme: dark; }
+
 @theme {
-  /* Semantic colors */
-  --color-primary: oklch(0.7 0.15 250);
-  --color-surface: oklch(0.98 0 0);
-  --color-surface-dark: oklch(0.15 0 0);
+  /* Tonal surface elevation (never pure #000 or #fff) */
+  --color-canvas: light-dark(oklch(98.5% 0.004 250), oklch(13.5% 0.01 250));
+  --color-surface: light-dark(oklch(99.5% 0.002 250), oklch(17.5% 0.01 250));
+  --color-surface-muted: light-dark(oklch(95.5% 0.006 250), oklch(21.5% 0.012 250));
+  --color-surface-elevated: light-dark(oklch(100% 0 0 / 0.96), oklch(23.5% 0.012 250));
 
-  /* Spacing scale */
-  --spacing-xs: 0.25rem;
-  --spacing-sm: 0.5rem;
-  --spacing-md: 1rem;
-  --spacing-lg: 2rem;
+  /* Text */
+  --color-foreground: light-dark(oklch(18% 0.015 250), oklch(94% 0.006 250));
+  --color-muted-foreground: light-dark(oklch(46% 0.015 250), oklch(68% 0.01 250));
 
-  /* Typography */
-  --font-sans: 'Inter', system-ui, sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
+  /* Hairline borders */
+  --color-border-subtle: light-dark(oklch(18% 0.015 250 / 0.09), oklch(94% 0.006 250 / 0.1));
+  --color-border-strong: light-dark(oklch(18% 0.015 250 / 0.18), oklch(94% 0.006 250 / 0.2));
+
+  /* Single brand accent (saturation < 80%) */
+  --color-accent: light-dark(oklch(55% 0.18 250), oklch(68% 0.16 250));
+  --color-accent-foreground: oklch(98% 0.005 250);
+  --color-accent-soft: color-mix(in oklch, var(--color-accent) 12%, transparent);
+
+  /* Status */
+  --color-success: light-dark(oklch(54% 0.15 155), oklch(70% 0.14 155));
+  --color-danger: light-dark(oklch(56% 0.19 25), oklch(68% 0.17 25));
+
+  /* One coherent radius scale (concentric: card = inner + p-1/p-2) */
+  --radius-control: 0.5rem;   /* 8px: buttons, inputs, active tabs */
+  --radius-track: 0.75rem;    /* 12px: tab track (8px + 4px padding) */
+  --radius-card: 1rem;        /* 16px: cards, panels, dialogs */
+
+  /* Typography (distinctive sans + crisp mono, no default Inter) */
+  --font-sans: "Geist", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  /* Easing */
+  --ease-out-expo: cubic-bezier(0.23, 1, 0.32, 1);
 }
 ```
-*Place the `@theme` block in a global CSS file that loads before any component styles.*
+
+Use semantic utilities directly — never `bg-[var(--color-accent)]` when `@theme` already generates `bg-accent`.
 
 ---
 
-## Extending vs Overriding Tokens
-- **Extend** – Add new values while keeping the default scale. Use `--spacing-xl: 3rem;` to add a larger step.
-- **Override** – Replace the entire default set. Remove the original declaration and write a new one.
-- **Semantic tokens** – Prefer purpose‑based names (`--color-primary`) over raw palette names (`--blue-500`).
+## Dark Mode (Semantic Tokens First)
+
+- **Preferred (v4 modern):** Set `color-scheme: light dark` on `:root` and use `light-dark()` inside `@theme`. Every surface, border, and text token switches automatically. A manual theme toggle only updates `document.documentElement.dataset.theme = 'light' | 'dark'`.
+- **Avoid:** Repeating `bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 border-zinc-200 dark:border-zinc-800` on every element. Use `bg-surface text-foreground border-border-subtle` once.
+
+---
+
+## Modern Component Patterns in Tailwind v4
+
+### Filled Segmented Tabs (never underline-only)
+```html
+<div role="tablist" class="inline-flex items-center gap-1 rounded-track bg-surface-muted p-1 border border-border-subtle">
+  <button
+    role="tab"
+    aria-selected="true"
+    class="rounded-control bg-surface px-3.5 py-1.5 text-sm font-medium text-foreground shadow-xs transition-[background-color,color,box-shadow] duration-150"
+  >
+    Overview
+  </button>
+  <button
+    role="tab"
+    aria-selected="false"
+    class="rounded-control px-3.5 py-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors duration-150"
+  >
+    Activity
+  </button>
+</div>
+```
+
+### Tonal Card (no one-sided border, no nested cards)
+```html
+<article class="rounded-card bg-surface border border-border-subtle p-5 shadow-xs">
+  <div class="flex items-start justify-between gap-4">
+    <h3 class="text-base font-semibold tracking-tight text-foreground">Monthly revenue</h3>
+    <span class="rounded-full bg-accent-soft px-2.5 py-0.5 text-xs font-medium text-accent">
+      +12.4%
+    </span>
+  </div>
+  <p class="mt-2 text-2xl font-semibold tracking-tight tabular-nums text-foreground">$48,290</p>
+  <p class="mt-1 text-sm text-muted-foreground">Compared to previous 30 days</p>
+</article>
+```
+
+### Full-Width Square Header
+```html
+<header class="sticky top-0 z-50 w-full rounded-none border-b border-border-subtle bg-surface/85 backdrop-blur-md">
+  <div class="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
+    <!-- brand + nav items with filled hover/active states -->
+  </div>
+</header>
+```
 
 ---
 
 ## Container Queries (Native)
-1. Mark a parent as a container: `@container;` (or `@container/card;` for a named container).
-2. Apply breakpoint prefixes on children:
-   - `@sm:` – applies when the container width ≥ 640 px.
-   - `@md:`, `@lg:` … follow the same scale as viewport breakpoints.
-3. Example:
+1. Mark a parent as a container: `@container` (or `@container/card` for a named container).
+2. Apply container prefixes on children (`@sm:`, `@md:`, `@lg:`).
 ```html
-<div class="@container">
-  <img class="w-full @md:w-1/2" src="..." />
-  <p class="text-sm @lg:text-base">Responsive text</p>
+<div class="@container rounded-card bg-surface border border-border-subtle p-5">
+  <div class="flex flex-col gap-4 @md:flex-row @md:items-center">
+    <img class="aspect-video w-full rounded-control object-cover @md:w-48" src="..." alt="..." />
+    <div class="min-w-0 flex-1">
+      <h3 class="text-base font-semibold text-foreground text-balance">Adaptive card</h3>
+      <p class="mt-1 text-sm text-muted-foreground text-pretty">Layout adapts to the card slot, not the viewport.</p>
+    </div>
+  </div>
 </div>
 ```
-*Use container queries for component‑level responsiveness; use viewport prefixes (`sm:`, `md:`) for page‑level layouts.*
+*Use container queries for component-level responsiveness; use viewport prefixes (`sm:`, `md:`, `lg:`) for page-level layouts.*
 
 ---
 
-## Responsive Design (Viewport Prefixes)
-| Prefix | Min‑width | Typical device |
-|---|---|---|
-| (none) | 0 px | Mobile (base) |
-| `sm:` | 640 px | Large phone / small tablet |
-| `md:` | 768 px | Tablet |
-| `lg:` | 1024 px | Laptop |
-| `xl:` | 1280 px | Desktop |
-| `2xl:` | 1536 px | Large desktop |
-
-**Mobile‑first rule** – Write base styles without a prefix, then add larger‑screen overrides.
-```html
-<div class="w-full md:w-1/2 lg:w-1/3">...</div>
-```
+## Layout & Spacing Rules
+- **Mobile-first:** Base styles target mobile; layer `sm:` (640px), `md:` (768px), `lg:` (1024px), `xl:` (1280px), `2xl:` (1536px).
+- **Use `gap-*`, not `space-x-*` / `space-y-*`:** `flex flex-col gap-4` is cleaner and works with wrapping and RTL.
+- **Equal dimensions:** Use `size-10`, not `w-10 h-10`.
+- **Viewport height:** Use `min-h-dvh`, never `h-screen`.
+- **Intrinsic grids:** `grid grid-cols-[repeat(auto-fill,minmax(min(100%,18rem),1fr))] gap-4`.
+- **Dynamic numbers:** Always add `tabular-nums` to KPIs, prices, counters, and table figures.
 
 ---
 
-## Dark Mode
-| Method | How it works | When to choose |
-|---|---|---|
-| `class` | Add `.dark` to a root element. | Manual toggle UI. |
-| `media` | Uses `prefers-color-scheme`. | No user control needed. |
-| `selector` (v4) | Custom selector like `.theme-dark`. | Complex theming scenarios. |
-
-**Pattern example**
-```html
-<div class="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100">
-  Content
-</div>
-```
+## Transitions & Motion
+- **Never `transition-all`.** Name the exact properties: `transition-[transform,background-color,box-shadow] duration-150`.
+- **Press feedback:** `active:scale-[0.98]`.
+- **Reduced motion:** Pair non-essential movement with `motion-safe:` / `motion-reduce:transition-opacity motion-reduce:transform-none`.
+- **Avoid gratuitous animations:** Do not use `animate-bounce` or `animate-ping` on UI chrome or status dots. Use subtle skeletons for loading states.
 
 ---
 
-## Layout Patterns
-### Flexbox
-| Pattern | Classes |
-|---|---|
-| Center (both axes) | `flex items-center justify-center` |
-| Vertical stack | `flex flex-col gap-4` |
-| Horizontal row | `flex gap-4` |
-| Space between | `flex justify-between items-center` |
-| Wrap grid | `flex flex-wrap gap-4` |
-
-### Grid
-| Pattern | Classes |
-|---|---|
-| Auto‑fit responsive | `grid grid-cols-[repeat(auto-fit,minmax(250px,1fr))]` |
-| Asymmetric (Bento) | `grid grid-cols-3 grid-rows-2` + `col-span-2`, `row-span-2` as needed |
-| Sidebar layout | `grid grid-cols-[auto_1fr]` |
-
-*Prefer asymmetric/Bento layouts for richer visual hierarchy.*
-
----
-
-## Color System & Tokens
-- **OKLCH** is perceptually uniform; use it for base palette values.
-- Token layers:
-  1. **Primitive** – raw values (`--blue-500`).
-  2. **Semantic** – purpose (`--color-primary`).
-  3. **Component** – scoped (`--button-bg`).
-- Reference tokens in utilities: `bg-[var(--color-primary)]`.
-
----
-
-## Typography System
-| Type | Recommended stack |
-|---|---|
-| Sans | `'Inter', system-ui, sans-serif` |
-| Mono | `'JetBrains Mono', monospace` |
-| Display | `'Outfit', 'Poppins', sans-serif` |
-
-**Type scale**
-```html
-<p class="text-xs">Caption</p>
-<p class="text-sm">Secondary</p>
-<p class="text-base">Body</p>
-<p class="text-lg">Lead</p>
-<p class="text-xl">Heading</p>
-```
-
----
-
-## Animations & Transitions
-| Class | Effect |
-|---|---|
-| `animate-spin` | Continuous rotation |
-| `animate-ping` | Pulse that expands then fades |
-| `animate-pulse` | Subtle opacity pulse |
-| `animate-bounce` | Bouncing motion |
-
-**Transition pattern**
-```html
-<button class="bg-primary text-white hover:bg-primary-dark transition-colors duration-150">Click</button>
-```
-
----
-
-## Component Extraction
-| Signal | Extraction method |
-|---|---|
-| Same utility combo ≥ 3 times | Create a component (React/Vue) or a CSS class with `@apply`. |
-| Complex state variants | Build a component with conditional classes. |
-| Design‑system element | Document token usage and expose as a reusable component. |
-
-**Static extraction example**
-```css
-/* components/button.css */
-.btn-primary {
-  @apply bg-primary text-white font-medium py-2 px-4 rounded-md hover:bg-primary-dark transition-colors;
-}
-```
-Use `<button class="btn-primary">` in HTML.
-
----
-
-## Anti‑Patterns
-- **Avoid** arbitrary values; stick to the token scale.
-- **Avoid** `!important`; resolve specificity with proper utility ordering.
-- **Avoid** inline `style=` attributes; use Tailwind utilities.
-- **Avoid** long duplicated class lists; extract a component.
-- **Avoid** mixing v3 config with v4; fully migrate to CSS‑first.
-- **Avoid** heavy `@apply` usage; prefer components for complex UI.
-
----
-
-## Performance Principles
-- Unused‑class purge is automatic in v4.
-- Do **not** generate classes with template strings (e.g., `bg-${color}`) – they break purge.
-- Keep the Oxide engine enabled (default) for fast builds.
-- Cache the Tailwind build step in CI/CD pipelines.
+## Anti-Patterns
+- **Avoid** `dark:` class sprawl when `light-dark()` tokens solve theming cleanly at the root.
+- **Avoid** one-sided accent borders (`border-l-4`, `border-t-4`) on cards or callouts.
+- **Avoid** underline-only tabs (`border-b-2 border-primary`) — use filled rounded tabs.
+- **Avoid** raw hex/Tailwind palette classes (`bg-blue-500`, `text-gray-600`) in components; use semantic tokens (`bg-accent`, `text-muted-foreground`).
+- **Avoid** dynamic class string interpolation (`bg-${color}`) — it breaks static extraction.
+- **Avoid** heavy `@apply`; extract reusable UI into components instead.
+- **Avoid** `tailwind.config.js` in v4 projects; migrate fully to CSS-first `@theme`.
 
 ---
 
 ## Checklist
-- [ ] Define all design tokens in a single `@theme` block.
-- [ ] Use semantic token names (`--color-primary`).
-- [ ] Apply container queries for component‑level responsiveness.
-- [ ] Choose a dark‑mode strategy (`class`, `media`, or custom selector).
-- [ ] Build layout with Flexbox or Grid patterns, preferring asymmetric grids.
-- [ ] Reference colors with `bg-[var(--color-primary)]` or similar.
-- [ ] Use the type scale classes (`text-xs` … `text-xl`).
-- [ ] Add transitions to interactive elements.
-- [ ] Extract repeated utility combos into components or `@apply` classes.
-- [ ] Verify no dynamic class strings exist.
-- [ ] Test the final CSS bundle size and build time.
+- [ ] All semantic tokens defined in a single `@theme` block using `oklch()` and `light-dark()`.
+- [ ] Zero `dark:` color sprawl; theme toggle only switches `color-scheme` via `data-theme`.
+- [ ] Native Tailwind v4 semantic utilities used (`bg-surface`, `text-foreground`, `border-border-subtle`).
+- [ ] Filled rounded tabs, tonal cards (no one-sided borders, no nested cards), full-width square header.
+- [ ] Container queries (`@container`) used for component responsiveness; `gap-*` and `size-*` used consistently.
+- [ ] Named transition properties (`transition-[...]`), `active:scale-[0.98]`, and `motion-reduce:` handled.
+- [ ] No dynamic class string interpolation and no legacy `tailwind.config.js`.

@@ -1,6 +1,6 @@
-# Motion, Components, Performance, Accessibility
+# Motion, Modern Components, Performance, Accessibility
 
-Sections §5-§9, §12, §13, §15-§19, §22 of [`design`](../SKILL.md). Code patterns: [motion-react.md](motion-react.md). CSS animation: [css/animation-motion.md](css/animation-motion.md).
+Sections §5-§9, §12, §13, §15-§19, §22 of [`design`](../SKILL.md). Code patterns: [motion-react.md](motion-react.md). CSS animation: [css/animation-motion.md](css/animation-motion.md). CSS component patterns: [css/components-ui.md](css/components-ui.md).
 
 ## 5. Animation Decisions
 
@@ -16,7 +16,7 @@ Sections §5-§9, §12, §13, §15-§19, §22 of [`design`](../SKILL.md). Code p
 --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
 ```
 
-**5.D Duration (UI < 300ms):** press 100-160ms, tooltip 125-200ms, dropdown 150-250ms, modal/drawer 200-500ms.
+**5.D Duration (UI < 300ms):** press 100-160ms, tooltip 125-200ms, dropdown 150-250ms, modal/drawer 200-400ms.
 
 **5.E Tool (cheapest first):** CSS transition > `@starting-style` > CSS animation > scroll-driven animation / View Transitions > WAAPI > Motion (springs, layout, gestures).
 
@@ -48,17 +48,19 @@ animate(el, { y: 0 }, { type: 'spring', bounce: 0, duration: 0.4 });
 
 ### 6.H Materials
 
-Translucent chrome (`backdrop-filter`) with content scrolling under; never light-glass on light-glass; boost text contrast on blur; animate blur + scale together.
+Translucent chrome (`backdrop-filter`) with content scrolling under; never light-glass on light-glass; boost text contrast on blur; animate blur + scale together; provide a solid surface fallback for `prefers-reduced-transparency`.
 
-## 7. Component Principles
+## 7. Modern Component Principles
 
-* Press: `scale(0.97)` 160ms ease-out. Tooltips: `popover="hint"` + anchor positioning; delay first, instant after.
-* Transitions over keyframes (retarget mid-flight). Small `blur(2px)` hides rough crossfades.
-* Enter states via `@starting-style` + `transition-behavior: allow-discrete`. Modals: native `<dialog>` with `closedby`. Hold-to-act: `clip-path` 2s linear in, 200ms out.
-* **Header (mandatory):** full-width, square edges (`rounded-none`), never a floating or rounded pill. Pick by theme: `sticky top-0 z-50` with solid or `backdrop-blur` background + bottom hairline for app/dashboard/long-scroll pages; normal static flow for editorial/minimal/landing pages. Nav items inside may use the radius scale.
-* **Tabs filled + rounded (mandatory):** active tab = filled background on the page radius scale. No underline-only or bare-text tabs.
-* **Selection never border-only (mandatory):** selected dropdown items, cards, options get a distinct background, a filled style, or an all-around border (accent color + 2px weight + tint). Never use a one-side border (`border-l`, `border-t`, etc.) to mark selection or highlight a card.
-* **Checkbox & radio filled (mandatory):** checked = accent fill (`accent-color` or custom) + contrasting mark.
+* **Press & interaction:** `scale(0.98)` 150ms `--ease-out`. Transitions over keyframes so rapid triggers retarget mid-flight. Small `blur(2px)` hides rough icon/content crossfades.
+* **Enter/exit states:** Use `@starting-style` + `transition-behavior: allow-discrete`.
+* **Header (mandatory):** Full-width, square outer edges (`rounded-none`), never a floating or rounded pill navbar by default. Pick by surface: `sticky top-0 z-50` with solid or `backdrop-blur` background + 1px bottom hairline for app/dashboard/long-scroll pages; normal static flow for editorial/minimal/landing pages. Nav items inside may use filled pill/rounded hover and active states on the page radius scale.
+* **Tabs filled + rounded (mandatory):** Use a segmented/filled tab bar inside a subtle muted container track (`padding: 4px`, outer radius = inner radius + padding). Active tab = solid elevated surface fill + crisp hairline/shadow (or solid accent fill with high-contrast label). **Never** use underline-only tabs, bottom-border tabs, or bare-text tabs.
+* **Cards, callouts & alerts (mandatory):** Use tonal surface elevation + full-perimeter 1px hairline border (`border-subtle`). **Never** use a one-sided accent border (`border-l-4`, `border-t-4`, `border-l-2`, etc.) on cards, stat tiles, callouts, alerts, or list items. **Never** nest cards inside cards; use an inset muted surface or divider instead. Keep uniform padding on all sides (`p-4` min) and concentric radius.
+* **Selection never one-sided border (mandatory):** Selected sidebar links, dropdown items, cards, table rows, and options get a distinct tonal background fill, a filled pill style, or a full-perimeter accent ring (`1.5-2px` + subtle tint). **Never** use a one-sided border (`border-l`, `border-t`, `border-b`) to mark selection.
+* **Checkbox, radio & switch filled (mandatory):** Checked checkbox/radio = solid accent fill (`accent-color` or custom) + high-contrast check/dot mark. Switch = pill track with solid accent fill when checked and crisp sliding thumb (`role="switch"`).
+* **Badges & status pills:** Soft tonal fill (`color-mix(in oklch, var(--status) 12%, transparent)`) + high-contrast tinted text + optional subtle 1px hairline. Avoid loud fully-saturated badges for routine status; never use decorative pulsing status dots.
+* **Overlays & tooltips:** Modals = native `<dialog>` (`showModal()`, `closedby="any"`). Menus/popovers = `[popover]` + CSS anchor positioning + `position-try-fallbacks`. Tooltips = `popover="hint"` + anchor positioning; delay first, instant on subsequent hovers. Hold-to-act = `clip-path` 2s linear in, 200ms out.
 
 ## 8. Performance
 
@@ -70,7 +72,7 @@ Translucent chrome (`backdrop-filter`) with content scrolling under; never light
 
 * WCAG 2.2 AA contrast everywhere; targets 24px minimum, 44px on touch; focus not obscured by sticky chrome; drag actions have a pointer alternative; `rem` spacing.
 * **Reduced motion:** cross-fade, not zero: `@media (prefers-reduced-motion: reduce) { transition: opacity 200ms; transform: none }`.
-* Reduced transparency: solid surfaces. `prefers-contrast: more`: solid + border. `forced-colors: active`: keep borders and outlines. No full-screen moving backgrounds; soft theme switches.
+* Reduced transparency: solid surfaces. `prefers-contrast: more`: solid + stronger borders. `forced-colors: active`: keep borders and outlines. No full-screen moving backgrounds; soft theme switches.
 
 ## 12. Context-Aware Tools
 
@@ -103,7 +105,7 @@ Purpose, Agency (undo over confirms), Responsibility, Familiarity, Flexibility, 
 * **Hero:** Asymmetric Split, Editorial Manifesto, Video Mask, Kinetic Type, Curtain Reveal, Scroll-Pinned.
 * **Nav:** Sticky Header, Static Header, Dock Magnification, Magnetic Button, Gooey Menu, Dynamic Island, Radial Menu, Mega Menu.
 * **Layout:** Bento, Masonry, Split-Screen Scroll, Sticky-Stack.
-* **Cards:** Parallax Tilt, Spotlight Border, Glass Panel, Swipe Stack, Morphing Modal.
+* **Cards:** Tonal Surface, Parallax Tilt, Spotlight Border, Glass Panel, Swipe Stack, Morphing Modal.
 * **Scroll:** Horizontal Hijack, Zoom Parallax, Progress Path. **Media:** Coverflow, Drag-to-Pan, Hover Trail.
 * **Text:** Marquee, Mask Reveal, Scramble, Circular Path. **Micro:** Skeleton Shimmer, Ripple, SVG Line Draw, Mesh Gradient.
 * **Libraries:** Motion default; GSAP 3.13 (free, all plugins) + ScrollTrigger for scrolltelling, Lenis for smooth scroll; Three.js r186+ / R3F 9 for 3D - isolated leaves with cleanup; never mix GSAP/Three with Motion in one tree.
@@ -112,7 +114,7 @@ Purpose, Agency (undo over confirms), Responsibility, Familiarity, Flexibility, 
 
 | Issue | Fix |
 |---|---|
-| `transition: all` | Name properties |
+| `transition: all` | Name specific properties |
 | `scale(0)` entry | `scale(0.95)` + `opacity: 0` |
 | `ease-in` | `--ease-out` |
 | Popover origin `center` | Trigger origin |
@@ -123,4 +125,7 @@ Purpose, Agency (undo over confirms), Responsibility, Familiarity, Flexibility, 
 | Equal enter/exit speed | Faster exit |
 | Mass mount | 30-80ms stagger |
 | Layout-property animation | `transform` / `opacity` |
-| No reduced motion | Gentler variant |
+| No reduced motion | Gentler cross-fade variant |
+| Underline-only tabs | Filled rounded segmented tabs in a muted track |
+| One-sided border on card/callout | Full-perimeter 1px hairline + tonal surface fill |
+| Nested cards | Inset muted surface or hairline divider |

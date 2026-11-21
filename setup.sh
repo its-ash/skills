@@ -8,19 +8,23 @@
 #   ./setup.sh --unlink  remove symlinks, restore nothing
 #   ./setup.sh --status  show current link state
 #
-# Works for both GitHub Copilot (~/.copilot) and Claude Code (~/.claude).
+# Works for GitHub Copilot (~/.copilot), Claude Code (~/.claude), Gemini CLI (~/.gemini), and Zed (~/.config/zed).
 set -euo pipefail
 
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 COPILOT_DIR="$HOME/.copilot"
 CLAUDE_DIR="$HOME/.claude"
+GEMINI_DIR="$HOME/.gemini"
 COPILOT_INSTRUCTIONS_DIR="$COPILOT_DIR/instructions"
 COPILOT_INSTRUCTIONS_FILE="$COPILOT_DIR/instructions/copilot.instructions.md"
 COPILOT_SKILLS_DIR="$COPILOT_DIR/skills"
 CLAUDE_INSTRUCTIONS_FILE="$CLAUDE_DIR/CLAUDE.md"
 CLAUDE_SKILLS_DIR="$CLAUDE_DIR/skills"
+GEMINI_INSTRUCTIONS_FILE="$GEMINI_DIR/GEMINI.md"
+GEMINI_SKILLS_DIR="$GEMINI_DIR/skills"
 COPILOT_AGENTS_DIR="$COPILOT_DIR/agents"
 CLAUDE_AGENTS_DIR="$CLAUDE_DIR/agents"
+GEMINI_AGENTS_DIR="$GEMINI_DIR/agents"
 CLAUDE_COMMANDS_DIR="$CLAUDE_DIR/commands"
 ZED_DIR="$HOME/.config/zed"
 ZED_AGENTS_FILE="$ZED_DIR/AGENTS.md"
@@ -105,7 +109,7 @@ choose_mode() {
 
 purge_skills() {
   local d b
-  for d in "$COPILOT_SKILLS_DIR" "$CLAUDE_SKILLS_DIR" "$ZED_SKILLS_DIR"; do
+  for d in "$COPILOT_SKILLS_DIR" "$CLAUDE_SKILLS_DIR" "$GEMINI_SKILLS_DIR" "$ZED_SKILLS_DIR"; do
     if [[ -L "$d" ]]; then
       rm "${d:?}"
     elif [[ -d "$d" ]]; then
@@ -123,7 +127,7 @@ do_install() {
   info "Installing from $REPO_DIR ($MODE)"
   [[ "$MODE" == "clean" ]] && purge_skills
 
-  mkdir -p "$COPILOT_INSTRUCTIONS_DIR" "$COPILOT_SKILLS_DIR" "$CLAUDE_DIR" "$ZED_DIR"
+  mkdir -p "$COPILOT_INSTRUCTIONS_DIR" "$COPILOT_SKILLS_DIR" "$CLAUDE_DIR" "$GEMINI_DIR" "$ZED_DIR"
 
   # --- Instructions (copilot.instructions.md is the single source of truth) ---
   link "$REPO_DIR/copilot.instructions.md" "$COPILOT_INSTRUCTIONS_FILE"
@@ -194,13 +198,38 @@ do_install() {
     link "$REPO_DIR/$name" "$ZED_SKILLS_DIR/$name"
   done
 
-  ok "Done. Skills, agents, commands & instructions are now shared across Copilot, Claude and Zed."
+  # --- Gemini CLI (global GEMINI.md + per-skill links at ~/.gemini/skills + agents) ---
+  if [[ -L "$GEMINI_INSTRUCTIONS_FILE" && "$(readlink "$GEMINI_INSTRUCTIONS_FILE")" == *copilot.instructions.md* ]]; then
+    ok "Gemini GEMINI.md already linked → $(readlink "$GEMINI_INSTRUCTIONS_FILE")"
+  else
+    link "$COPILOT_INSTRUCTIONS_FILE" "$GEMINI_INSTRUCTIONS_FILE"
+  fi
+  mkdir -p "$GEMINI_SKILLS_DIR"
+  prune_dangling "$GEMINI_SKILLS_DIR"
+  link "$REPO_DIR/SKILLS.md" "$GEMINI_SKILLS_DIR/SKILLS.md"
+  for skill_dir in "$REPO_DIR"/*/; do
+    local name
+    name="$(basename "$skill_dir")"
+    [[ "$name" == ".git" || "$name" == ".github" ]] && continue
+    [[ -f "$skill_dir/SKILL.md" ]] || continue
+    link "$REPO_DIR/$name" "$GEMINI_SKILLS_DIR/$name"
+  done
+  if [[ -d "$REPO_DIR/agents" ]]; then
+    if [[ -L "$GEMINI_AGENTS_DIR" && "$(readlink "$GEMINI_AGENTS_DIR")" == "$COPILOT_AGENTS_DIR" ]]; then
+      ok "Gemini agents already linked → $COPILOT_AGENTS_DIR"
+    else
+      link "$COPILOT_AGENTS_DIR" "$GEMINI_AGENTS_DIR"
+    fi
+  fi
+
+  ok "Done. Skills, agents, commands & instructions are now shared across Copilot, Claude, Gemini and Zed."
 }
 
 do_unlink() {
   info "Unlinking all symlinks"
   unlink_path "$COPILOT_INSTRUCTIONS_FILE"
   unlink_path "$CLAUDE_INSTRUCTIONS_FILE"
+  unlink_path "$GEMINI_INSTRUCTIONS_FILE"
   unlink_path "$COPILOT_SKILLS_DIR/SKILLS.md"
   for skill_dir in "$REPO_DIR"/*/; do
     local name
@@ -209,7 +238,15 @@ do_unlink() {
     unlink_path "$COPILOT_SKILLS_DIR/$name"
   done
   unlink_path "$CLAUDE_SKILLS_DIR"
+  unlink_path "$GEMINI_SKILLS_DIR/SKILLS.md"
+  for skill_dir in "$REPO_DIR"/*/; do
+    local name
+    name="$(basename "$skill_dir")"
+    [[ "$name" == ".git" || "$name" == ".github" ]] && continue
+    unlink_path "$GEMINI_SKILLS_DIR/$name"
+  done
   unlink_path "$CLAUDE_AGENTS_DIR"
+  unlink_path "$GEMINI_AGENTS_DIR"
   unlink_path "$COPILOT_AGENTS_DIR"
   unlink_path "$CLAUDE_COMMANDS_DIR"
   unlink_path "$ZED_AGENTS_FILE"
@@ -226,6 +263,7 @@ do_status() {
   info "Current link state"
   status_path "$COPILOT_INSTRUCTIONS_FILE"
   status_path "$CLAUDE_INSTRUCTIONS_FILE"
+  status_path "$GEMINI_INSTRUCTIONS_FILE"
   status_path "$COPILOT_SKILLS_DIR/SKILLS.md"
   for skill_dir in "$REPO_DIR"/*/; do
     local name
@@ -234,8 +272,16 @@ do_status() {
     status_path "$COPILOT_SKILLS_DIR/$name"
   done
   status_path "$CLAUDE_SKILLS_DIR"
+  status_path "$GEMINI_SKILLS_DIR/SKILLS.md"
+  for skill_dir in "$REPO_DIR"/*/; do
+    local name
+    name="$(basename "$skill_dir")"
+    [[ "$name" == ".git" || "$name" == ".github" ]] && continue
+    status_path "$GEMINI_SKILLS_DIR/$name"
+  done
   status_path "$COPILOT_AGENTS_DIR"
   status_path "$CLAUDE_AGENTS_DIR"
+  status_path "$GEMINI_AGENTS_DIR"
   status_path "$CLAUDE_COMMANDS_DIR"
   status_path "$ZED_AGENTS_FILE"
   for skill_dir in "$REPO_DIR"/*/; do
