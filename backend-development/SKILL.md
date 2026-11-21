@@ -1,6 +1,6 @@
 ---
 name: backend-development
-description: "Backend services and APIs: REST, GraphQL, gRPC, OpenAPI, microservices, Kafka, RabbitMQ, JWT, OAuth, rate limits, circuit breakers, Redis caching, BullMQ jobs, tracing, Lambda, serverless, multi-tenant SaaS, Django, Laravel, Rails. Sub-skills: api-design, nodejs-patterns, saas-multi-tenant, serverless, contract-first, error-handling, api-connector-builder, mailtrap-email-integration, content-hash-cache-pattern, django-celery, django-security, django-testing, laravel-security, laravel-testing, laravel-plugin-discovery, rails, nestjs, fastapi, django, php-laravel, firebase-backend."
+description: "Backend services and APIs: REST, GraphQL, gRPC, OpenAPI, microservices, Kafka, RabbitMQ, JWT, OAuth, rate limits, Redis caching, BullMQ, Lambda, serverless, multi-tenant SaaS, PM2. Use when building APIs, servers, queues, or NestJS, FastAPI, Django, Laravel, Rails, Firebase backends. Sub-skills: api-design, nodejs-patterns, saas-multi-tenant, serverless, contract-first, error-handling, django-celery, django-security, django-testing, laravel-security, laravel-testing, rails, nestjs, fastapi, django, php-laravel, firebase-backend."
 ---
 # Backend Development
 Design and operate scalable, resilient backend services: contracts, boundaries, integration, security, observability, deployment.

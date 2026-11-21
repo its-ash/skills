@@ -1,6 +1,6 @@
 ---
 name: ai-agent-engineering
-description: "Operating model for agent-driven engineering: evals, pass@k, task decomposition, model routing, context, harnesses, autonomous loops, multi-agent, MCP servers and .mcp.json, prompt injection, LLM cost. Sub-skills: agent-harness-construction, autonomous-loops, loop-design-check, autonomous-agent-harness, agentic-os, gan-style-harness, dynamic-workflow-mode, eval-harness, agent-architecture-audit, agent-introspection-debugging, agent-security-hardening, enterprise-agent-ops, mcp-server-patterns, mcp-dependency-review, council, santa-method, parallel-execution-optimizer, team-agent-orchestration, blueprint, recursive-decision-ledger, counterparty-channel-discipline, operator-approval-loop, llm-cost-optimization, regex-vs-llm-structured-text, token-budget-advisor, iterative-retrieval, strategic-compact, search-first."
+description: "Agent engineering: evals, pass@k, task splitting, model routing, harnesses, autonomous loops, multi-agent, MCP servers (.mcp.json), prompt injection, LLM cost. Use when building AI agents, harnesses, MCP tools, evals, or agent loops. Sub-skills: agent-harness-construction, autonomous-loops, loop-design-check, autonomous-agent-harness, agentic-os, gan-style-harness, dynamic-workflow-mode, eval-harness, agent-architecture-audit, agent-security-hardening, enterprise-agent-ops, mcp-server-patterns, council, santa-method, llm-cost-optimization, team-agent-orchestration, search-first."
 ---
 
 # AI Agent Engineering

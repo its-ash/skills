@@ -1,6 +1,6 @@
 ---
 name: design
-description: "Modern frontend UI design and design systems: accessibility, typography, layout, motion, gestures, components (filled tabs, tonal cards, forms, overlays), design tokens, theming, dark mode, modern CSS (Grid, subgrid, container queries, cascade layers, :has(), oklch, light-dark, scroll-driven animations, view transitions, anchor positioning). Use for websites, landing pages, dashboards, product UIs, animations, CSS, responsive layouts, or hero sections. Sub-skills: immersive-web, figma, mobile-design, brand-theming, motion-canvas, visual-design-direction, design-system, make-interfaces-feel-better, motion-react, html-slides, shadcn-ui, tailwind-css, threejs, gsap."
+description: "Modern frontend UI design and design systems: a11y, typography, layout, motion, filled tabs, tonal cards, forms, tokens, oklch/light-dark theming, modern CSS (Grid, subgrid, @container, :has(), scroll-driven, view transitions, anchor positioning). Use for websites, landing pages, dashboards, product UIs, animations, CSS, or heroes. Sub-skills: immersive-web, figma, mobile-design, brand-theming, motion-canvas, visual-design-direction, design-system, make-interfaces-feel-better, motion-react, html-slides, shadcn-ui, tailwind-css, threejs, gsap."
 ---
 
 # Design

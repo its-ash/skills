@@ -1,6 +1,6 @@
 ---
 name: clean-code
-description: "Enforces pragmatic clean code standards for AI-assisted development covering naming, function design, structure, and anti-patterns via a mandatory deslop workflow that audits git diffs against main to strip AI-generated slop: excessive comments, defensive checks, type casts, inline imports, style inconsistencies. Use when writing, reviewing, refactoring, or linting code in any language, running git diff, git commit, or pull request reviews, fixing naming violations, simplifying functions, removing dead code, eliminating magic numbers, reducing cyclomatic complexity, or applying SOLID principles during code review, pre-commit hooks, CI pipelines, or pair programming. Sub-skills: coding-standards, inherit-legacy-style, codehealth-mcp."
+description: "Clean code standards for naming, function design, structure, SOLID, and a mandatory deslop pass on git diff to strip AI slop (excess comments, defensive checks, type casts, inline imports, style drift). Use when writing, reviewing, refactoring, or linting code in any language, running git diff or PR reviews, removing dead code, eliminating magic numbers, or reducing complexity. Sub-skills: coding-standards, inherit-legacy-style, codehealth-mcp."
 ---
 # Clean Code
 

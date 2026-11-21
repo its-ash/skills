@@ -1,6 +1,6 @@
 ---
 name: node
-description: "Defines Node.js project conventions covering version pinning with .nvmrc, package.json scripts, Makefile targets, dependency management, TypeScript configuration, error handling patterns, and environment file structure. Use when initializing a Node.js project, configuring npm pnpm yarn workspaces, writing package.json scripts for build test lint dev start, setting .nvmrc, creating Makefile targets, adding TypeScript with tsconfig.json, structuring .env files, scaffolding Express Fastify NestJS CLI apps, or using Bun (bun install, bun test, bun.lock, Bun.serve). Sub-skills: bun."
+description: "Node.js project conventions: .nvmrc, package.json scripts, Makefile (run/start/deploy), PM2 ecosystem.config.cjs, TypeScript, error handling, .env files. Use when initializing a Node.js project, configuring npm/pnpm/yarn workspaces, Express/Fastify/NestJS servers, PM2, Makefile targets, tsconfig.json, or Bun (bun install, bun test, bun.lock, Bun.serve). Sub-skills: bun."
 ---
 
 # Node.js
@@ -11,7 +11,8 @@ Conventions for new and existing Node.js projects.
 - Set `"type": "module"` unless the framework requires CommonJS.
 - Include scripts `dev`, `build`, `start` at minimum; add `lint` and `typecheck` when TS or ESLint exist.
 - Use TypeScript for new projects: `strict`, `esModuleInterop`, `skipLibCheck`; source in `src/`, output in `dist/`.
-- Makefile `run` → `npm run dev`, `build` → `npm run build`; `deploy` per root conventions.
+- Makefile `run` → `npm run dev`, `start` → build + `pm2 startOrReload ecosystem.config.cjs --env production && pm2 save` (for servers), `deploy` → push `main` via local LLM at `http://127.0.0.1:9694/v1`.
+- Auto-create `ecosystem.config.cjs` at project root for every Node server or web-server app.
 - `.gitignore` at minimum: `node_modules/`, `dist/`, `.env`, `.DS_Store`.
 - Validate env vars, request bodies, and CLI args with zod or similar.
 - Keep `.env` gitignored; commit `.env.example` with every required key and no real values.
@@ -30,7 +31,7 @@ Conventions for new and existing Node.js projects.
 ## Load on demand
 | Need | Read |
 |---|---|
-| Templates: `.nvmrc`, `package.json`, Makefile, Nuxt `build` target, `.gitignore` | [references/project-setup.md](references/project-setup.md) |
+| Templates: `.nvmrc`, `package.json`, `ecosystem.config.cjs` (PM2), Makefile (`run`/`start`/`deploy`), Nuxt static `start`, `.gitignore` | [references/project-setup.md](references/project-setup.md) |
 | Bun vs Node, migration, `bun install`/`bun test`, `bun audit`, workspaces, `Bun.serve`, `bun:sqlite`, `Bun.sql`, Bun Makefile, Vercel `bunVersion` | [references/bun.md](references/bun.md) |
 
 ## Related skills

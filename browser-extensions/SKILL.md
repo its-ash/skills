@@ -1,6 +1,6 @@
 ---
 name: browser-extensions
-description: "Guides building, testing, and publishing cross-browser WebExtensions for Chrome, Edge, and Firefox with Manifest V3: project structure, manifest, content scripts, service worker background, popup and options UI, permissions, storage, and cross-context messaging. Use when creating a chrome extension, firefox addon, edge extension, manifest v3 project, content script injection, background service worker, popup html, options page, chrome storage api, runtime messaging, host permissions, web store publishing, MV2 to MV3 migration, or debugging CSP violations or service worker lifecycle issues."
+description: "Build, test, and publish cross-browser WebExtensions (Chrome, Edge, Firefox) with Manifest V3: manifest, content scripts, service worker, popup, options UI, permissions, storage, messaging. Use when creating a Chrome/Firefox/Edge extension, Manifest V3 project, content script, service worker, popup, chrome.storage, MV2→MV3 migration, or fixing CSP issues. Sub-skills: extension-code, publishing."
 ---
 
 # Browser Extensions (Manifest V3)

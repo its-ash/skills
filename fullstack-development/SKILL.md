@@ -1,6 +1,6 @@
 ---
 name: fullstack-development
-description: "Fullstack Development skill guides planning, scaffolding, coding, testing, and deploying modern web applications with React, Next.js, Node.js, GraphQL, REST, and PostgreSQL. Use when creating a new project, selecting a tech stack, setting up architecture, enforcing code quality, or automating deployment with npm, pnpm, yarn, Docker, CI/CD, monorepo, API routes, Prisma, Drizzle, Jest, Vitest, Playwright, Vercel, Railway, environment variables, auth, and migrations."
+description: "Plan, scaffold, code, test, and deploy modern fullstack web apps with React, Next.js, Node.js, GraphQL, REST, and PostgreSQL. Use when creating a new project, picking a tech stack, scaffolding monorepos, API routes, Prisma, Drizzle, Jest, Vitest, Playwright, auth, migrations, PM2, Docker, Vercel, or Railway deploys. Sub-skills: scaffolding, deployment."
 ---
 # Fullstack Development
 Plan, scaffold, build, and ship a complete web app across UI, API, and database.
