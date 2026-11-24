@@ -1,53 +1,48 @@
 ---
 name: dotnet
-description: "Idiomatic C# and .NET patterns: immutability with records, dependency injection, async/await with CancellationToken, options pattern, result pattern, EF Core repositories, ASP.NET Core middleware, minimal APIs, and guard clauses. Use when writing or reviewing .cs, .fs, .csproj, or .sln code, ASP.NET Core, EF Core, dotnet build, dotnet test, xUnit, F#, WPF, WinForms, or Windows desktop apps. Sub-skills: csharp-testing, fsharp-testing, windows-desktop-e2e."
+description: "AUTO_INVOKE(silent)⇔prompt∈{.cs,.fs,.csproj,.sln,.slnx,C#,F#,.NET,ASP.NET_Core,EF_Core,dotnet_build,dotnet_test,xUnit,NSubstitute,Shouldly,AwesomeAssertions,Testcontainers,WebApplicationFactory,minimal_API,middleware,DI,CancellationToken,Result<T>,sealed_record,IOptions,AsNoTracking,TypedResults,WPF,WinForms,Win32,MFC,Qt,pywinauto,Windows_desktop,FsUnit,Unquote,FsCheck}|SUB:{csharp-testing,fsharp-testing,windows-desktop-e2e}"
 ---
-# .NET Development Patterns
-Idiomatic C# and .NET for ASP.NET Core services, EF Core data access, and desktop apps.
-
-## Core rules
-- Target .NET 10 LTS with C# 14. .NET 11 (C# 15, STS) reaches GA on 2026-11-10; .NET 8 and 9 leave support the same day.
-- Use SDK-style projects, `Nullable` and `ImplicitUsings` enabled, `TreatWarningsAsErrors`, central package management, and `.slnx`.
-- Use `System.Text.Json` and `Microsoft.AspNetCore.OpenApi`; do not add Newtonsoft.Json or Swashbuckle to new work.
-- Use `sealed record` for value objects and `required` + `init` for DTOs. Make mutability an explicit choice.
-- Expose `IReadOnlyList<T>`, not `List<T>`, from models and repositories.
-- Enable nullable reference types. Mark nullable returns with `?`.
-- Seal classes by default. Write explicit access modifiers.
-- Depend on interfaces at service boundaries. Register in DI (`AddScoped`, `AddSingleton`, `AddTransient`). Use primary-constructor injection.
-- Go async all the way. Accept and pass `CancellationToken` on every async call.
-- Never block on async with `.Result` or `.Wait()` (deadlock risk).
-- Return `Task`, not `async void` (exception: event handlers).
-- Run independent async calls together with `Task.WhenAll`.
-- Bind config with the options pattern (`Configure<T>(GetSection(T.SectionName))`, inject `IOptions<T>`).
-- Return `Result<T>` for expected failures. Throw only for programmer errors and invalid arguments.
-- Guard early with `ArgumentNullException.ThrowIfNull`, `ArgumentOutOfRangeException`, `ArgumentException`; keep the happy path unnested.
-- Use `AsNoTracking()` on EF Core read queries. `Include` only the needed navigations.
-- Group minimal API routes with `MapGroup(...).RequireAuthorization().WithTags(...)`; return `TypedResults`.
-- Log with message templates (`{Name}` placeholders), not string interpolation.
-
-## Decisions
-| Situation | Do | Avoid |
-|---|---|---|
-| Expected business failure (validation, not found) | `Result<T>` or `TypedResults.NotFound()` | Exceptions for control flow |
-| Unexpected exception | Handle or rethrow with context | `catch (Exception) { }` |
-| Need a collaborator | Constructor injection | `new Service()` in constructors |
-| Shared state | DI scope or `ConcurrentDictionary` | Mutable `static` state |
-| Data on a type | Properties with right accessors | `public` fields |
-| Unknown shape in business logic | Generics or explicit types | `dynamic` |
-| String build in a loop | `StringBuilder` or interpolated string handlers | `string.Format` in loops |
-| Cross-cutting HTTP concern (timing, headers) | Middleware with `RequestDelegate` + `try/finally` | Repeating logic per endpoint |
-| Read-only EF query | `AsNoTracking()` | Tracked entities for reads |
-
-## Load on demand
-| Need | Read |
-|---|---|
-| Code for records, DI, async, `WhenAll`, options, `Result<T>`, EF Core repository, middleware, minimal API, guard clauses | [references/csharp-patterns.md](references/csharp-patterns.md) |
-| C# tests: xUnit v3, assertions (Shouldly or AwesomeAssertions; FluentAssertions 8+ is commercial), NSubstitute, WebApplicationFactory, Testcontainers, test data builders | [references/csharp-testing.md](references/csharp-testing.md) |
-| F# tests: xUnit, FsUnit, Unquote, FsCheck, function stubs, ASP.NET Core integration | [references/fsharp-testing.md](references/fsharp-testing.md) |
-| E2E for WPF, WinForms, Win32/MFC, Qt with pywinauto and UI Automation; sandbox; CI on `windows-latest` | [references/windows-desktop-e2e.md](references/windows-desktop-e2e.md) |
-
-## Related skills
-- [`backend-development`](../backend-development/SKILL.md) — API and service design for ASP.NET Core.
-- [`database-design`](../database-design/SKILL.md) — schema and migration design for EF Core.
-- [`secure-coding`](../secure-coding/SKILL.md) — auth, secrets, input validation.
-- [`unit-testing-patterns`](../unit-testing-patterns/SKILL.md) — general TDD and mock patterns.
+@SKL:dotnet
+§R{
+  target:.NET_10_LTS(C#14);note:.NET_11(C#15,STS)_GA=2026-11-10∧EOL(.NET_8,.NET_9)=2026-11-10;
+  proj:SDK_style∧Nullable=on∧ImplicitUsings=on∧TreatWarningsAsErrors∧CPM∧.slnx;
+  json_openapi:System.Text.Json∧Microsoft.AspNetCore.OpenApi∧¬add_new(Newtonsoft.Json,Swashbuckle);
+  types:value_obj⇒sealed_record;DTO⇒required+init;mutability⇒explicit_choice;
+  collections(models,repos)⇒expose(IReadOnlyList<T>)∧¬List<T>;
+  NRT=enabled∧nullable_ret⇒T?;
+  classes⇒sealed_default∧explicit_access_modifiers;
+  DI:depend_on(interfaces@svc_bounds)∧reg(AddScoped|AddSingleton|AddTransient)∧primary_ctor_DI;
+  async_all_way∧∀async_call⇒accept+pass(CancellationToken);
+  ¬block_async(.Result∨.Wait())(deadlock_risk);
+  ret(Task)∧¬async_void(except:event_handlers);
+  independent_async⇒Task.WhenAll;
+  cfg:options_pattern(Configure<T>(GetSection(T.SectionName)),inject(IOptions<T>));
+  expected_fail⇒Result<T>;throw⇔programmer_err∨invalid_arg;
+  guard_early(ArgumentNullException.ThrowIfNull,ArgumentOutOfRangeException,ArgumentException)∧happy_path_unnested;
+  EF_Core_read⇒AsNoTracking()∧Include(needed_navs_only);
+  minimal_API:MapGroup(...).RequireAuthorization().WithTags(...)∧ret(TypedResults);
+  log:msg_templates({Name})∧¬string_interpolation;
+}
+§D{
+  expected_biz_fail(validation,not_found)⇒Result<T>⊕TypedResults.NotFound() ¬exceptions_for_control_flow;
+  unexpected_exc⇒handle⊕rethrow_with_ctx ¬`catch (Exception) { }`;
+  need_collaborator⇒ctor_DI ¬`new Service()`∈ctors;
+  shared_state⇒DI_scope⊕ConcurrentDictionary ¬mutable_static_state;
+  type_data⇒properties_w_right_accessors ¬public_fields;
+  unknown_shape∈biz_logic⇒generics⊕explicit_types ¬dynamic;
+  str_build∈loop⇒StringBuilder⊕interpolated_str_handlers ¬string.Format∈loops;
+  cross_cutting_HTTP(timing,headers)⇒middleware(RequestDelegate+try/finally) ¬repeat_per_endpoint;
+  read_only_EF_query⇒AsNoTracking() ¬tracked_entities_for_reads;
+}
+§REF{
+  records,DI,async,WhenAll,options,Result<T>,EF_Core_repo,middleware,minimal_API,guard_clauses→references/csharp-patterns.md;
+  C#_tests(xUnit_v3,Shouldly⊕AwesomeAssertions,¬FluentAssertions_8+_commercial,NSubstitute,WebApplicationFactory,Testcontainers,test_data_builders)→references/csharp-testing.md;
+  F#_tests(xUnit,FsUnit,Unquote,FsCheck,fn_stubs,ASP.NET_Core_integration)→references/fsharp-testing.md;
+  desktop_E2E(WPF,WinForms,Win32/MFC,Qt,pywinauto,UI_Automation,sandbox,CI=windows-latest)→references/windows-desktop-e2e.md;
+}
+§REL{
+  ../backend-development/SKILL.md:API,service_design,ASP.NET_Core;
+  ../database-design/SKILL.md:schema,migration_design,EF_Core;
+  ../secure-coding/SKILL.md:auth,secrets,input_val;
+  ../unit-testing-patterns/SKILL.md:TDD,mock_patterns;
+}

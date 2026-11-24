@@ -1,67 +1,58 @@
 ---
 name: frontend-development
-description: "Build React and Next.js apps with TypeScript, MUI v7, TanStack Query and Router, and performance patterns. Use when creating React components, Next.js pages, MUI theming, sx styling, useSuspenseQuery, useMutation, TanStack Router routes, server components, SSR hydration, bundle analysis, re-render reduction, async waterfalls, Core Web Vitals, React Native/Expo, Vue 3, Pinia, Nuxt 4, Angular signals, Vite, or Turbopack. Sub-skills: mui, react-patterns, react-performance, nextjs, astro, d3-visualization, progressive-web-app, react-native, vue, nuxt, ui-to-vue, angular, vite."
+description: "AUTO_INVOKE(silent)⇔prompt∈{React,Next.js,Next16,TSX,.tsx,.vue,.astro,TypeScript,MUIv7,sx,SxProps,TanStackQuery,TanStackRouter,useSuspenseQuery,useMutation,Suspense,ErrorBoundary,ServerComponents,SSR,hydration,bundle,re-render,waterfall,CWV,CLS,ReactCompiler,ReactNative,Expo,FlashList,NativeWind,Vue3,Pinia,Nuxt4,Angular,signals,Vite,Turbopack,Astro,D3,PWA,useEffect,form,Zod,a11y,ARIA,virtualization}|SUB:{mui,react-patterns,react-performance,nextjs,astro,d3-visualization,progressive-web-app,react-native,vue,nuxt,ui-to-vue,angular,vite}"
 ---
-
-# Frontend Development
-Build, organize, and tune React/Next.js apps with TypeScript, MUI v7, and TanStack Query/Router.
-
-## Core rules
-- Organize by feature: `src/features/<name>/{api,components,hooks,helpers,types}` + `index.ts` public API.
-- Use import aliases (`@/`, `~types`, `~components`, `~features`); no deep relative paths.
-- Type props with `interface`; type MUI style objects with `SxProps<Theme>`.
-- Fetch server data with `useSuspenseQuery` inside `<Suspense>`. No manual `isLoading` flags.
-- Do not early-return loading spinners. Keep layout stable (prevents CLS).
-- Lazy-load heavy components and route pages with `lazy()` + `<Suspense fallback={<SuspenseLoader/>}>`.
-- Style with `sx`. Move styles to `<Component>.styles.ts` when the component passes 100 lines.
-- MUI v7 Grid: `<Grid size={{ xs: 12, md: 6 }} />`.
-- Sort a copy: `items.toSorted(fn)`. `Array.prototype.sort` mutates. React Compiler memoizes it.
-- Virtualize long lists with `@tanstack/react-virtual`.
-- Wrap the app in an Error Boundary. Show user-visible errors with `useMuiSnackbar`.
-- Give interactive widgets keyboard support, focus management, and correct ARIA roles.
-- Add `*.test.tsx` for new features; lint must pass.
-
-## Decisions
-| Situation | Do | Avoid |
-|---|---|---|
-| Server state | TanStack Query | `useEffect` + `useState` fetch |
-| Shared mutable client state | Context + `useReducer` | Prop drilling across many levels |
-| Isolated reusable logic | Custom hook (`useDebounce`, `useToggle`) | Copy logic between components |
-| No data library allowed | Ref-based fallback hook (hooks-and-ui) | Inline fetcher in effect deps (infinite loop) |
-| Re-render cost | React Compiler (eslint-plugin-react-hooks v6 rules) | Manual `useMemo` / `useCallback` / `memo` |
-| Simple form | Validate on submit, `Record<field, string>` errors | Silent submit failure |
-| Complex form | React Hook Form or TanStack Form + Zod | Hand-rolled nested validation |
-| Large bundle | `@next/bundle-analyzer` or `rollup-plugin-visualizer`, split code | Barrel imports of heavy libs |
-
-| Stack | Read |
-|---|---|
-| Next.js 16 App Router, server actions, Turbopack | nextjs |
-| Content site, zero JS default | astro |
-| Mobile (Expo) | react-native |
-| Vue 3 / Nuxt 4 / Angular | vue / nuxt / angular |
-
-## Load on demand
-| Need | Read |
-|---|---|
-| Setup, aliases, file layout, feature and component checklists, component template, TanStack route, MUI styling basics | [references/project-conventions.md](references/project-conventions.md) |
-| useDebounce, fallback async hook, Error Boundary, Motion (`motion/react`), forms, accessibility | [references/hooks-and-ui.md](references/hooks-and-ui.md) |
-| MUI v7 components, sx, theme, responsive, MUI hooks | [references/mui.md](references/mui.md) |
-| Component design, hooks, state selection, React 19.3, composition, UI states, useEffect rules | [references/react-patterns.md](references/react-patterns.md) |
-| Waterfalls, bundle size, SSR, re-renders, Web Vitals | [references/react-performance.md](references/react-performance.md) |
-| Next.js 16+ App Router, Cache Components, route handlers, server actions, metadata, Supabase auth, `proxy.ts` | [references/nextjs.md](references/nextjs.md) |
-| Astro islands, content collections, SSG/SSR | [references/astro.md](references/astro.md) |
-| D3 charts: scales, axes, transitions, zoom, force, maps | [references/d3-visualization.md](references/d3-visualization.md) |
-| PWA manifest, service worker cache, install, offline, push | [references/progressive-web-app.md](references/progressive-web-app.md) |
-| React Native / Expo Router, FlashList, NativeWind, secure storage | [references/react-native.md](references/react-native.md) |
-| Vue 3 Composition API, Pinia, Vue Router | [references/vue.md](references/vue.md) |
-| Nuxt 4 hydration, `useFetch`/`useAsyncData`, route rules | [references/nuxt.md](references/nuxt.md) |
-| Screenshots to Vue 3 components (Vant, Element Plus, Ant Design Vue) | [references/ui-to-vue.md](references/ui-to-vue.md) |
-| Angular signals, forms, DI, routing, SSR, testing (detail in `references/angular/`) | [references/angular.md](references/angular.md) |
-| `vite.config.ts`, plugins, HMR, env, proxy, library mode | [references/vite.md](references/vite.md) |
-
-## Related skills
-- [`typescript`](../typescript/SKILL.md) — types, tsconfig, Zod schemas
-- [`design`](../design/SKILL.md) — visual design, layout, motion, CSS
-- [`web-performance`](../web-quality-audit/references/web-performance.md) — measure and fix Core Web Vitals
-- [`i18n-localization`](../i18n-localization/SKILL.md) — translations, locale formatting, RTL
-- [`swift-ios`](../swift-ios/SKILL.md) — native iOS with SwiftUI
+@SKL:frontend-development
+§R{
+  feature_layout⇒src/features/<name>/{api,components,hooks,helpers,types}+index.ts(public_API);
+  imports∈{@/,~types,~components,~features}∧¬deep_relative_paths;
+  types:{props⇒interface;MUI_style⇒SxProps<Theme>};
+  server_fetch⇒useSuspenseQuery∧<Suspense>∧¬manual(isLoading);
+  ¬early_return(loading_spinner)⇒stable_layout(prevent_CLS);
+  heavy_cmp∨route_page⇒lazy()+<Suspense fallback={<SuspenseLoader/>}>;
+  style⇒sx∧(cmp_lines>100⇒<Component>.styles.ts);
+  MUIv7_Grid⇒<Grid size={{xs:12,md:6}}/>;
+  sort⇒items.toSorted(fn)(ReactCompiler_memoized)∧¬Array.prototype.sort(mutates);
+  long_list⇒@tanstack/react-virtual;
+  app⇒ErrorBoundary∧user_err⇒useMuiSnackbar;
+  interactive_widget⇒keyboard_support∧focus_mgmt∧ARIA_roles;
+  new_feature⇒*.test.tsx∧lint_pass;
+}
+§D{
+  server_state⇒TanStack_Query¬(useEffect+useState_fetch);
+  shared_mutable_client_state⇒Context+useReducer¬deep_prop_drilling;
+  isolated_reusable_logic⇒custom_hook(useDebounce,useToggle)¬copy_logic_across_cmps;
+  no_data_lib_allowed⇒ref_fallback_hook(hooks-and-ui)¬inline_fetcher∈effect_deps(infinite_loop);
+  re-render_cost⇒ReactCompiler(eslint-plugin-react-hooks_v6)¬manual(useMemo∨useCallback∨memo);
+  simple_form⇒validate_on_submit∧Record<field,string>_errors¬silent_submit_fail;
+  complex_form⇒(ReactHookForm∨TanStackForm)+Zod¬hand_rolled_nested_validation;
+  large_bundle⇒(@next/bundle-analyzer∨rollup-plugin-visualizer)∧code_split¬barrel_imports(heavy_libs);
+  stack∈{Next.js16_AppRouter,server_actions,Turbopack}⇒read(nextjs)¬∅;
+  stack≡content_site∧zero_JS_default⇒read(astro)¬∅;
+  stack≡mobile(Expo)⇒read(react-native)¬∅;
+  stack∈{Vue3,Nuxt4,Angular}⇒read(vue∨nuxt∨angular)¬∅;
+}
+§REF{
+  setup,aliases,file_layout,feature_checklist,cmp_checklist,cmp_template,TanStack_route,MUI_styling_basics→references/project-conventions.md;
+  useDebounce,fallback_async_hook,ErrorBoundary,Motion(motion/react),forms,a11y→references/hooks-and-ui.md;
+  MUIv7_cmps,sx,theme,responsive,MUI_hooks→references/mui.md;
+  cmp_design,hooks,state_selection,React19.3,composition,UI_states,useEffect_rules→references/react-patterns.md;
+  waterfalls,bundle_size,SSR,re-renders,WebVitals→references/react-performance.md;
+  Next.js16+_AppRouter,CacheComponents,route_handlers,server_actions,metadata,Supabase_auth,proxy.ts→references/nextjs.md;
+  Astro_islands,content_collections,SSG,SSR→references/astro.md;
+  D3_charts,scales,axes,transitions,zoom,force,maps→references/d3-visualization.md;
+  PWA_manifest,service_worker_cache,install,offline,push→references/progressive-web-app.md;
+  ReactNative,ExpoRouter,FlashList,NativeWind,secure_storage→references/react-native.md;
+  Vue3_CompositionAPI,Pinia,VueRouter→references/vue.md;
+  Nuxt4_hydration,useFetch,useAsyncData,route_rules→references/nuxt.md;
+  screenshots_to_Vue3_cmps(Vant,ElementPlus,AntDesignVue)→references/ui-to-vue.md;
+  Angular_signals,forms,DI,routing,SSR,testing,detail∈references/angular/→references/angular.md;
+  vite.config.ts,plugins,HMR,env,proxy,library_mode→references/vite.md;
+}
+§REL{
+  ../typescript/SKILL.md:types,tsconfig,Zod_schemas;
+  ../design/SKILL.md:visual_design,layout,motion,CSS;
+  ../web-quality-audit/references/web-performance.md:measure∧fix_CoreWebVitals;
+  ../i18n-localization/SKILL.md:translations,locale_formatting,RTL;
+  ../swift-ios/SKILL.md:native_iOS∧SwiftUI;
+}

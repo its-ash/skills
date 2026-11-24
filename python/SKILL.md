@@ -1,55 +1,46 @@
 ---
 name: python
-description: "Guidance for modern Python 3.12+ development covering project layout, async versus sync decisions, framework selection, uv/ruff/mypy tooling, testing, profiling, and deployment. Use when writing .py code, scaffolding pyproject.toml, choosing FastAPI/Django/Flask, debugging asyncio or asyncio.gather, configuring uv/ruff/mypy/pytest, optimizing performance, or deploying Python services. Sub-skills: python-patterns, python-testing, windows-installer."
+description: "AUTO_INVOKE(silent)⇔prompt∈{Python,3.12+,.py,pyproject.toml,uv,uv.lock,ruff,mypy,pytest,pytest-asyncio,hypothesis,asyncio,asyncio.gather,Semaphore,ProcessPoolExecutor,FastAPI,Django,Flask,Celery,Pydantic,SQLAlchemy,httpx,asyncpg,cProfile,py-spy,pytest-benchmark,lru_cache,NumPy,Pandas,Nuitka,Dockerfile,async_vs_sync}|SUB:{python-patterns,python-testing,windows-installer}"
 ---
-# Python (3.12+)
-Build, test, and ship modern Python with uv, ruff, mypy, and pytest.
-
-## Core rules
-- Target Python ≥ 3.12. Manage env and deps with `uv`; commit the `uv lock` file.
-- Use one `pyproject.toml` for project, ruff, and mypy (strict) config; run them in pre-commit and CI.
-- Type-hint every public function, class, and API model.
-- Validate requests and settings with Pydantic models.
-- Keep business logic in `services/`, not in routes or views.
-- Inject DB sessions, auth, and config (FastAPI `Depends`, `yield` dependencies).
-- Define a base `AppError` with subclasses; register handlers that return a JSON error object.
-- Close async resources with `async with` or `yield` dependencies.
-- Never call blocking libs (`requests`, sync DB drivers) in `async def`; use `httpx`/`asyncpg` or `run_in_executor`.
-- Profile before optimizing: `cProfile` for hot spots, `py-spy` for low-overhead sampling, `pytest-benchmark` for micro-benchmarks.
-- Cache pure, repeated calls with `functools.lru_cache`.
-- Avoid ORM N+1: `select_related` / `prefetch_related` (Django), eager loading (SQLAlchemy).
-- Use vectorized NumPy/Pandas ops, not Python loops, on large data.
-- Test with pytest + `pytest-asyncio`; add `hypothesis` for edge cases; core coverage > 90%.
-- Containerize with a multi-stage Dockerfile.
-
-## Decisions
-| Building | Use | Avoid |
-|---|---|---|
-| API-first service, microservice, ML model serving | FastAPI (async, Pydantic) | Django for a thin API |
-| Full-stack web, CMS, needs admin | Django | Hand-rolled admin on FastAPI |
-| Small script or learning project | Flask or plain script | Heavy framework |
-| Distributed background jobs | Celery + any framework | Threads in the web process |
-
-Ask about admin needs, team async skill, and current infra before you pick.
-
-| Workload | Do | Avoid |
-|---|---|---|
-| I/O-bound (HTTP, DB, files, websockets) | `async` + `asyncio.gather`; cap with `asyncio.Semaphore` | Sequential awaits in a loop |
-| CPU-bound | `ProcessPoolExecutor` / `multiprocessing`, sync code | `async` for CPU loops |
-| Only blocking libs exist | Sync code, or `run_in_executor` | Blocking call inside `async def` |
-| Flask app | Sync, unless you add an async extension | Mixed sync/async without a plan |
-
-## Load on demand
-| Need | Read |
-|---|---|
-| uv commands, project layouts, `pyproject.toml`, pre-commit, toolbox, ship checklist | [references/project-setup.md](references/project-setup.md) |
-| Idioms: PEP 8, Protocols, EAFP, context managers, generators, dataclasses, decorators, concurrency, `__slots__`, anti-patterns | [references/python-patterns.md](references/python-patterns.md) |
-| pytest: TDD, fixtures, `conftest.py`, parametrize, markers, mocks/autospec, async tests with httpx, coverage | [references/python-testing.md](references/python-testing.md) |
-| Windows installer: Nuitka, 32/64-bit, dist slimming, DLLs, VC++ runtime, Inno Setup | [references/windows-installer.md](references/windows-installer.md) |
-
-## Related skills
-- [`fastapi`](../backend-development/references/fastapi.md) — FastAPI endpoints, Pydantic v2, SQLAlchemy 2.0
-- [`django`](../backend-development/references/django.md) — Django 5, DRF, Celery, Channels
-- [`backend-development`](../backend-development/SKILL.md) — API design, services, resilience
-- [`unit-testing-patterns`](../unit-testing-patterns/SKILL.md) — cross-language unit test patterns
-- [`machine-learning`](../machine-learning/SKILL.md) — ML pipelines, PyTorch, serving
+@SKL:python
+§R{
+  Python≥3.12;env+deps:uv∧commit(uv.lock);
+  single_pyproject.toml:{proj,ruff,mypy(strict)}∧run∈{pre-commit,CI};
+  type_hint(∀{public_fn,class,API_model});
+  validate({reqs,settings})via(Pydantic);
+  business_logic∈services/∧∉{routes,views};
+  DI({DB_sessions,auth,config})via(FastAPI_Depends,yield_deps);
+  err_model:base(AppError)+subclasses∧handlers→JSON_err_obj;
+  close_async_res via(async_with∨yield_deps);
+  ¬blocking_libs(requests,sync_DB_drivers)∈async_def⇒use(httpx/asyncpg∨run_in_executor);
+  profile_before_opt:{cProfile:hotspots,py-spy:low_overhead_sampling,pytest-benchmark:micro_bench};
+  cache(pure_repeated_calls)via(functools.lru_cache);
+  ¬ORM_N+1⇒Django(select_related/prefetch_related)∨SQLAlchemy(eager_load);
+  large_data⇒vectorized(NumPy/Pandas)∧¬Python_loops;
+  tests:pytest+pytest-asyncio+hypothesis(edge_cases)∧core_cov>90%;
+  containerize:multi_stage_Dockerfile;
+}
+§D{
+  pick_framework⇒ask({admin_needs,team_async_skill,curr_infra})_first¬guess;
+  API_first∨microservice∨ML_serving⇒FastAPI(async,Pydantic)¬Django_for_thin_API;
+  full_stack_web∨CMS∨admin_req⇒Django¬hand_rolled_admin_on_FastAPI;
+  small_script∨learning_proj⇒Flask∨plain_script¬heavy_fw;
+  dist_bg_jobs⇒Celery+any_fw¬threads_in_web_proc;
+  IO_bound(HTTP,DB,files,WS)⇒async+asyncio.gather+cap(asyncio.Semaphore)¬seq_awaits_in_loop;
+  CPU_bound⇒ProcessPoolExecutor/multiprocessing+sync¬async_for_CPU_loops;
+  only_blocking_libs⇒sync∨run_in_executor¬blocking_call_in_async_def;
+  Flask_app⇒sync(unless_async_ext_added)¬unplanned_mixed_sync_async;
+}
+§REF{
+  uv_cmds,layouts,pyproject.toml,pre-commit,toolbox,ship_checklist→references/project-setup.md;
+  PEP8,Protocols,EAFP,ctx_mgrs,generators,dataclasses,decorators,concurrency,__slots__,anti-patterns→references/python-patterns.md;
+  pytest,TDD,fixtures,conftest.py,parametrize,markers,mocks/autospec,async_httpx_tests,coverage→references/python-testing.md;
+  Nuitka,32/64-bit,dist_slim,DLLs,VC++_runtime,Inno_Setup→references/windows-installer.md;
+}
+§REL{
+  ../backend-development/references/fastapi.md:FastAPI_endpoints,Pydantic_v2,SQLAlchemy_2.0;
+  ../backend-development/references/django.md:Django_5,DRF,Celery,Channels;
+  ../backend-development/SKILL.md:API_design,services,resilience;
+  ../unit-testing-patterns/SKILL.md:cross_lang_unit_test_patterns;
+  ../machine-learning/SKILL.md:ML_pipelines,PyTorch,serving;
+}

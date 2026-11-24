@@ -1,50 +1,44 @@
 ---
 name: cpp
-description: "Modern C++ (C++17/20/23) coding standards from the C++ Core Guidelines: interfaces, functions, classes, Rule of Zero and Five, RAII and smart pointers, initialization, exceptions, const and constexpr, concurrency, concepts and templates, standard library, enums, headers, naming, and performance. Use when writing, reviewing, or refactoring .cpp, .h, or .hpp code, CMakeLists.txt, unique_ptr, shared_ptr, move semantics, lock_guard, scoped_lock, std::string_view, enum class, or fixing memory leaks, dangling pointers, and data races. Sub-skills: cpp-testing."
+description: "AUTO_INVOKE(silent)⇔prompt∈{C++,C++17,C++20,C++23,Core_Guidelines,.cpp,.h,.hpp,CMakeLists.txt,CMake,CTest,GoogleTest,GoogleMock,RAII,unique_ptr,shared_ptr,make_unique,make_shared,Rule_of_Zero,Rule_of_Five,move_semantics,const,constexpr,concepts,std::string_view,enum_class,lock_guard,scoped_lock,condition_variable,ASan,UBSan,TSan,libFuzzer,mem_leak,dangling_ptr,data_race}|SUB:{cpp-testing}"
 ---
-
-# C++ (Core Guidelines)
-Type-safe, resource-safe, immutable-by-default modern C++ (C++17/20/23). Rule IDs refer to the [C++ Core Guidelines](https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines).
-
-## Core rules
-- No naked `new`/`delete` or `malloc`/`free`; use RAII, `make_unique`, `make_shared` (R.10, R.11).
-- Raw `T*` and `T&` never own (R.3, I.11).
-- Initialize every object at declaration; prefer `{}` (ES.20, ES.23).
-- Make variables and member functions `const`/`constexpr` by default (Con.1-5, ES.25).
-- `enum class`, not plain `enum`; `constexpr`, not macros (Enum.1, Enum.3).
-- `nullptr`, not `0`/`NULL`; no C-style casts; no narrowing; no casting away `const` (ES.46-50).
-- Mark single-argument constructors `explicit` (C.46).
-- Apply Rule of Zero; else Rule of Five (C.20, C.21).
-- Base destructor public virtual or protected non-virtual; use exactly one of `virtual`/`override`/`final` (C.35, C.128).
-- Constrain every template with concepts (T.10).
-- Headers: include guards, self-contained, no global `using namespace` (SF.7, SF.8, SF.11).
-- RAII locks only (`scoped_lock`, named `lock_guard`); wait only with a condition (CP.20, CP.42, CP.44).
-- Custom exception types; throw by value, catch by `const&` (E.14, E.15).
-- `'\n'`, not `std::endl` (SL.io.50). Named constants, no magic numbers (ES.45).
-- Embedded/bare-metal or legacy C: adapt rules selectively.
-
-## Decisions
-| Situation | Do | Avoid |
-|---|---|---|
-| Ownership | `unique_ptr`; `shared_ptr` only for shared ownership (R.21) | `shared_ptr` by default |
-| Pass "in" param | Cheap types by value; others `const&`; sinks by value + move (F.16) | `const T` returns (F.49) |
-| Return several values | Return a struct (F.20, F.21) | Output parameters |
-| Text param | `std::string_view` to observe, `std::string` to own | `const char*` |
-| Container | `std::vector` default, `std::array` fixed size | C arrays |
-| Multiple mutexes | `std::scoped_lock lock(a, b)` (CP.21) | Nested `lock_guard`s |
-| Sync primitive | `std::mutex` + `condition_variable` | `volatile` (CP.8), lock-free (CP.100), detached threads (CP.26) |
-| Compile-time value | `constexpr` function or immediately invoked lambda (F.4, Per.11) | Template metaprogramming (T.120) |
-| Specialize behavior per type | Overload (T.144) | Function template specialization |
-| Performance change | Measure first (Per.1, Per.6); keep data contiguous (Per.19) | Pointer-chasing containers |
-| Error cannot be handled here | Let it propagate (E.17) | Empty catch blocks, `errno` (E.28) |
-
-## Load on demand
-| Need | Read |
-|---|---|
-| Full rule tables (P, I, F, C, R, ES, E, Con, CP, T, SL, Enum, SF, NL, Per), anti-patterns, and one example per area | [references/core-guidelines.md](references/core-guidelines.md) |
-| GoogleTest/GoogleMock, CMake/CTest, flaky tests, gcov/llvm-cov, ASan/UBSan/TSan, libFuzzer | [references/cpp-testing.md](references/cpp-testing.md) |
-
-## Related skills
-- [`systematic-debugging`](../systematic-debugging/SKILL.md) — root cause for crashes, segfaults, memory bugs
-- [`windows-desktop-e2e`](../dotnet/references/windows-desktop-e2e.md) — E2E tests for Win32/MFC and Qt apps
-- [`secure-coding`](../secure-coding/SKILL.md) — input validation and secure defaults
+@SKL:cpp
+§R{
+  ref:CppCoreGuidelines(isocpp.github.io)∧adapt_selectively⇔(embedded∨bare_metal∨legacy_C);
+  ¬naked(new∨delete∨malloc∨free)⇒RAII,make_unique,make_shared(R.10,R.11);
+  raw(T*∨T&)⇒¬own(R.3,I.11);
+  ∀obj⇒init@decl∧prefer{}(ES.20,ES.23);
+  default⇒const∨constexpr(vars∧member_fns)(Con.1-5,ES.25);
+  enum_class¬plain_enum;constexpr¬macros(Enum.1,Enum.3);
+  nullptr¬(0∨NULL);¬C_casts;¬narrowing;¬cast_away_const(ES.46-50);
+  1_arg_ctor⇒explicit(C.46);
+  Rule_of_Zero⊕Rule_of_Five(C.20,C.21);
+  base_dtor⇒(public_virtual⊕protected_non_virtual);use_exact_1∈{virtual,override,final}(C.35,C.128);
+  ∀template⇒constrain(concepts)(T.10);
+  headers⇒include_guards∧self_contained∧¬global_using_namespace(SF.7,SF.8,SF.11);
+  locks⇒RAII_only(scoped_lock,named_lock_guard);wait⇒w/_condition_only(CP.20,CP.42,CP.44);
+  exceptions⇒custom_types∧throw_by_val∧catch_by_const&(E.14,E.15);
+  '\n'¬std::endl(SL.io.50);named_constants¬magic_nums(ES.45);
+}
+§D{
+  ownership⇒unique_ptr;(shared_ptr⇔shared_ownership)(R.21)¬shared_ptr_default;
+  pass_in_param⇒(cheap_types⇒val;others⇒const&;sinks⇒val+move)(F.16)¬const_T_returns(F.49);
+  return_multi_vals⇒return_struct(F.20,F.21)¬out_params;
+  text_param⇒(observe⇒std::string_view;own⇒std::string)¬const_char*;
+  container⇒(default⇒std::vector;fixed_sz⇒std::array)¬C_arrays;
+  multi_mutexes⇒std::scoped_lock_lock(a,b)(CP.21)¬nested_lock_guards;
+  sync_primitive⇒std::mutex+condition_variable¬volatile(CP.8)∨lock_free(CP.100)∨detached_threads(CP.26);
+  compile_time_val⇒constexpr_fn∨IIFE_lambda(F.4,Per.11)¬TMP(T.120);
+  specialize_per_type⇒overload(T.144)¬fn_template_specialization;
+  perf_change⇒measure_first(Per.1,Per.6)∧contiguous_data(Per.19)¬ptr_chasing_containers;
+  unhandled_err_here⇒propagate(E.17)¬empty_catch∨errno(E.28);
+}
+§REF{
+  rule_tbls(P,I,F,C,R,ES,E,Con,CP,T,SL,Enum,SF,NL,Per),anti_patterns,1_ex/area→references/core-guidelines.md;
+  GoogleTest,GoogleMock,CMake,CTest,flaky_tests,gcov,llvm-cov,ASan,UBSan,TSan,libFuzzer→references/cpp-testing.md;
+}
+§REL{
+  ../systematic-debugging/SKILL.md:root_cause(crashes,segfaults,mem_bugs);
+  ../dotnet/references/windows-desktop-e2e.md:E2E_tests(Win32,MFC,Qt);
+  ../secure-coding/SKILL.md:in_val,secure_defaults;
+}

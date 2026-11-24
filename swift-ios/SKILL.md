@@ -1,50 +1,45 @@
 ---
 name: swift-ios
-description: "Native iOS and macOS with Swift and SwiftUI: @Observable state, composition, NavigationStack, render performance, Swift 6.2 concurrency, actor persistence, protocol DI with Swift Testing, FoundationModels on-device LLM, iOS 26 Liquid Glass. Use for SwiftUI views, .swift files, Xcode projects, @MainActor or @concurrent code, Sendable or data-race errors, actors, Swift Testing #expect, @Generable, glassEffect, UIKit or WidgetKit glass. Sub-skills: swift-concurrency, swift-actor-persistence, swift-protocol-di-testing, foundation-models-on-device, liquid-glass-design."
+description: "AUTO_INVOKE(silent)⇔prompt∈{Swift,SwiftUI,.swift,Xcode,iOS,macOS,@Observable,@State,@Binding,@Bindable,@Environment,NavigationStack,ViewModifier,LazyVStack,LazyHStack,ForEach,@ViewBuilder,#Preview,Equatable,.task,Swift-6.2,@MainActor,@concurrent,Sendable,data-race,actor,DI,Swift-Testing,@Test,#expect,FoundationModels,LanguageModelSession,@Generable,Liquid-Glass,glassEffect,GlassEffectContainer,UIGlassEffect,WidgetKit,UIKit}|SUB:{swift-concurrency,swift-actor-persistence,swift-protocol-di-testing,foundation-models-on-device,liquid-glass-design}"
 ---
-# Swift / iOS
-Modern SwiftUI on Apple platforms: Observation, composition, type-safe navigation, render performance.
-
-## Core rules
-- Use `@Observable` for models. Do not use `ObservableObject`, `@Published`, `@StateObject`, `@EnvironmentObject` in new code; migrate them.
-- Pick the simplest property wrapper that fits (see table).
-- Expose model state as `private(set) var`; mutate through methods.
-- Inject dependencies through `init` with production defaults (`any Repository = Default...()`), and shared ones with `.environment(obj)` + `@Environment(Type.self)`.
-- Own a view model with `@State` only in the view that owns the data. Pass it down to children.
-- Split views into small structs so state changes invalidate only the reader.
-- Put reusable styling in a `ViewModifier` + `View` extension.
-- Route with `NavigationStack(path:)`, a `Hashable` `Destination` enum, and an `@Observable` router in the environment.
-- Never do I/O, network, or heavy work in `body` or `init`. Use `.task {}` (auto-cancels on disappear).
-- Use `LazyVStack`/`LazyHStack` for large collections. Use stable IDs in `ForEach`, never indices.
-- Avoid `AnyView`. Use `@ViewBuilder` or `Group` for conditional views.
-- Respect `Sendable` when passing data across actors.
-- Add `#Preview` variants per state (empty, loaded) with mock repositories.
-
-## Decisions
-| Situation | Do | Avoid |
-|---|---|---|
-| View-local value (toggle, field, sheet flag) | `@State` | `@Observable` class |
-| Child edits parent's `@State` | `@Binding` | Copy and callback |
-| View owns a multi-property model | `@Observable` class held in `@State` | `@StateObject` |
-| Read-only model from parent | Plain `@Observable` reference, no wrapper | `@State` in child |
-| Two-way binding into `@Observable` property | `@Bindable` | Manual `Binding(get:set:)` |
-| App-wide dependency | `.environment(obj)` + `@Environment(Type.self)` | `@EnvironmentObject` |
-| Expensive `body` with stable inputs | Conform view to `Equatable` | Re-render on every parent change |
-| Effects in scrolling lists | Few `.shadow`/`.blur`/`.mask`; sparse `.geometryGroup`, `.sensoryFeedback` | Offscreen effects per row |
-
-## Load on demand
-| Need | Read |
-|---|---|
-| Code: `@Observable` VM + view, environment, composition, `ViewModifier`, router, lazy lists, `Equatable` view, previews | [references/swiftui-patterns.md](references/swiftui-patterns.md) |
-| Swift 6.2 concurrency: `@concurrent`, MainActor default, isolated conformances, migration, data-race errors | [references/swift-concurrency.md](references/swift-concurrency.md) |
-| Actor repository: in-memory cache + atomic file writes with `@Observable` VMs | [references/swift-actor-persistence.md](references/swift-actor-persistence.md) |
-| `Sendable` protocol DI for file system, network, APIs; mocks; Swift Testing `@Test`/`#expect` | [references/swift-protocol-di-testing.md](references/swift-protocol-di-testing.md) |
-| FoundationModels (iOS 26+): availability, `LanguageModelSession`, `@Generable`, tools, streaming, 4,096-token limit | [references/foundation-models-on-device.md](references/foundation-models-on-device.md) |
-| Liquid Glass: `.glassEffect()`, `GlassEffectContainer`, `glassEffectID`, UIKit `UIGlassEffect`, WidgetKit | [references/liquid-glass-design.md](references/liquid-glass-design.md) |
-
-## Related skills
-- [`mobile-design`](../design/references/mobile-design.md) — iOS/Android conventions, touch targets, layouts.
-- [`flutter`](../flutter/SKILL.md) — cross-platform alternative; platform channels into Swift.
-- [`react-native`](../frontend-development/references/react-native.md) — cross-platform alternative with Expo.
-- [`unit-testing-patterns`](../unit-testing-patterns/SKILL.md) — general TDD and test structure.
-- [`secure-coding`](../secure-coding/SKILL.md) — Keychain, secrets, input validation.
+@SKL:swift-ios
+§R{
+  models⇒@Observable∧¬(ObservableObject∨@Published∨@StateObject∨@EnvironmentObject)∧migrate_legacy;
+  property_wrapper⇒simplest_fit(§D);
+  model_state⇒`private(set) var`∧mutate_via_methods;
+  DI⇒init(dep:any_Repository=Default())∧shared⇒(.environment(obj)+@Environment(Type.self));
+  VM_ownership⇒@State_only_in(data_owning_view)∧pass_down→children;
+  views⇒split(small_structs)⇒Δstate_invalidates_only(reader);
+  reusable_styling⇒ViewModifier+View_ext;
+  routing⇒NavigationStack(path:)+Hashable_Destination_enum+@Observable_router_in_env;
+  (body∨init)⇒¬(IO∨network∨heavy_work);async_work⇒.task{}∧auto_cancels_on_disappear;
+  large_collections⇒(LazyVStack∨LazyHStack)∧ForEach_stable_IDs∧¬indices;
+  conditional_views⇒(@ViewBuilder∨Group)∧¬AnyView;
+  cross_actor_data⇒Sendable;
+  previews⇒#Preview_per_state(empty,loaded)+mock_repositories
+}
+§D{
+  view_local_val(toggle∨field∨sheet_flag)⇒@State¬@Observable_class;
+  child_edits_parent_@State⇒@Binding¬copy_callback;
+  view_owns_multi_prop_model⇒@Observable_class_in_@State¬@StateObject;
+  readonly_model_from_parent⇒plain_@Observable_ref(no_wrapper)¬@State_in_child;
+  two_way_bind_@Observable_prop⇒@Bindable¬manual_Binding(get:set:);
+  app_wide_dep⇒.environment(obj)+@Environment(Type.self)¬@EnvironmentObject;
+  expensive_body_stable_inputs⇒conform(Equatable)¬rerender_∀parent_Δ;
+  scrolling_list_effects⇒sparse(.shadow,.blur,.mask,.geometryGroup,.sensoryFeedback)¬offscreen_effects_per_row
+}
+§REF{
+  @Observable_VM_view,env,composition,ViewModifier,router,lazy_lists,Equatable_view,previews→references/swiftui-patterns.md;
+  Swift6.2_concurrency,@concurrent,MainActor_default,isolated_conformances,migration,data_race_errors→references/swift-concurrency.md;
+  actor_repo,in_mem_cache+atomic_file_writes,@Observable_VMs→references/swift-actor-persistence.md;
+  Sendable_protocol_DI(FS,network,APIs),mocks,Swift_Testing(@Test,#expect)→references/swift-protocol-di-testing.md;
+  FoundationModels(iOS26+),availability,LanguageModelSession,@Generable,tools,streaming,4096_tok_limit→references/foundation-models-on-device.md;
+  Liquid_Glass,.glassEffect(),GlassEffectContainer,glassEffectID,UIKit_UIGlassEffect,WidgetKit→references/liquid-glass-design.md
+}
+§REL{
+  ../design/references/mobile-design.md:iOS_Android_conventions,touch_targets,layouts;
+  ../flutter/SKILL.md:cross_platform_alt,platform_channels→Swift;
+  ../frontend-development/references/react-native.md:cross_platform_alt+Expo;
+  ../unit-testing-patterns/SKILL.md:general_TDD,test_structure;
+  ../secure-coding/SKILL.md:Keychain,secrets,input_validation
+}

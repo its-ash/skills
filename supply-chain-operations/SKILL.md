@@ -1,39 +1,34 @@
 ---
 name: supply-chain-operations
-description: "Supply chain and operations playbooks. Use for carrier onboarding, freight RFPs, HS codes, denied-party screening, electricity or gas buying, demand forecasts, safety stock, freight claims, production sequencing, NCRs, CAPAs, SPC, returns, and warranty claims. Sub-skills: carrier-relationship-management, customs-trade-compliance, energy-procurement, inventory-demand-planning, logistics-exception-management, production-scheduling, quality-nonconformance, returns-reverse-logistics."
+description: "AUTO_INVOKE(silent)⇔prompt∈{supply-chain,ops,carrier,FMCSA,freight-RFP,linehaul,fuel-surcharge,accessorials,routing-guide,HS,HTS,GRI,ISF,Incoterms-2020,USMCA,RCEP,denied-party,CBP,C&I-energy,tariff,PPA,REC,Scope-2,demand-forecast,ABC-XYZ,safety-stock,reorder-point,markdown,Carmack,detention,shortage,SMED,OEE,DBR,NCR,5-Why,Ishikawa,8D,CAPA,SPC,AQL,FDA,IATF,AS9100,RMA,refund,warranty}|SUB:{carrier-relationship-management,customs-trade-compliance,energy-procurement,inventory-demand-planning,logistics-exception-management,production-scheduling,quality-nonconformance,returns-reverse-logistics}"
 ---
-
-# Supply Chain Operations
-Senior-practitioner playbooks for planning, buying, moving, making, inspecting, and returning physical goods. Each reference gives knowledge, decision frameworks, edge cases, communication templates, escalation triggers, and KPIs.
-
-## Core rules
-- Decide with data. Quote the benchmark, metric, or threshold that supports the decision.
-- Priority order: safety and regulatory compliance, then customer commitments, then cost.
-- Document evidence, rationale, and approvals at each step. Audits and claims depend on it.
-- Escalate on the defined triggers. Do not wait for a problem to become critical.
-- Track KPI targets and red flags per function. Review trends, not single data points.
-- Adapt thresholds, templates, and escalation chains to the organization before production use.
-- Give operational guidance only, not legal, tax, or financial advice. Get counsel for filings, penalties, and contracts.
-
-## Decisions
-| Situation | Do | Avoid |
-|---|---|---|
-| Physical goods operations problem | Load the one matching reference below | Loading all references |
-| Software supply chain security | Use [`secure-coding`](../secure-coding/SKILL.md) | This skill |
-| Build TMS, WMS, ERP, or MES software | Use [`software-architecture`](../software-architecture/SKILL.md) | Encoding playbooks as ad hoc code |
-
-## Load on demand
-| Need | Read |
-|---|---|
-| Carrier vetting (FMCSA), freight RFPs, linehaul, fuel surcharge, accessorials, routing guides, scorecards | [references/carrier-relationship-management.md](references/carrier-relationship-management.md) |
-| HS/HTS classification (GRI), entry docs, ISF, Incoterms 2020, FTAs (USMCA, RCEP), denied-party screening, CBP audits | [references/customs-trade-compliance.md](references/customs-trade-compliance.md) |
-| C&I electricity or gas buying, tariffs, demand charges, fixed/index/block-and-index hedges, PPAs, RECs, Scope 2 | [references/energy-procurement.md](references/energy-procurement.md) |
-| Demand forecast method, ABC/XYZ, safety stock, reorder points, promotions, seasonal buys, markdowns | [references/inventory-demand-planning.md](references/inventory-demand-planning.md) |
-| Delays, damage, loss, shortages, refusals, detention disputes, Carmack claims, exception SOPs | [references/logistics-exception-management.md](references/logistics-exception-management.md) |
-| Job sequencing, bottleneck (drum-buffer-rope), SMED, OEE, re-plan after breakdown or shortage | [references/production-scheduling.md](references/production-scheduling.md) |
-| NCRs, 5-Why, Ishikawa, fault tree, 8D, CAPA, SPC, AQL, supplier quality (FDA, IATF, AS9100) | [references/quality-nonconformance.md](references/quality-nonconformance.md) |
-| RMAs, return grading and routing, refunds, fraud scoring, vendor recovery, warranty claims | [references/returns-reverse-logistics.md](references/returns-reverse-logistics.md) |
-
-## Related skills
-- [`software-architecture`](../software-architecture/SKILL.md) — TMS, WMS, ERP, MES integration design
-- [`database-design`](../database-design/SKILL.md) — model shipments, inventory, NCRs, returns
+@SKL:supply-chain-operations
+§R{
+  ∀decision⇒data_backed∧quote(benchmark∨metric∨threshold);
+  priority≡(safety∧regulatory_compliance)>(customer_commitments)>(cost);
+  ∀step⇒doc(evidence,rationale,approvals)∧audit_claim_ready;
+  trigger∈defined_escalation_triggers⇒escalate_immediately∧¬wait(critical);
+  ∀fn⇒track(KPI_targets∧red_flags)∧review(trends)∧¬single_data_point;
+  pre_prod⇒adapt(thresholds,templates,escalation_chains)→org;
+  scope≡ops_guidance∧¬(legal∨tax∨financial_advice);filings∨penalties∨contracts⇒require(counsel);
+  ref∈references/*.md⇒provides(knowledge,decision_frameworks,edge_cases,comm_templates,escalation_triggers,KPIs)
+}
+§D{
+  physical_goods_ops_problem⇒load(1_matching_ref)¬load(all_refs);
+  software_supply_chain_sec⇒use(../secure-coding/SKILL.md)¬this_skill;
+  build(TMS∨WMS∨ERP∨MES)⇒use(../software-architecture/SKILL.md)¬encode_playbooks_ad_hoc
+}
+§REF{
+  carrier_vetting(FMCSA),freight_RFPs,linehaul,fuel_surcharge,accessorials,routing_guides,scorecards→references/carrier-relationship-management.md;
+  HS_HTS(GRI),entry_docs,ISF,Incoterms_2020,FTAs(USMCA,RCEP),denied_party_screening,CBP_audits→references/customs-trade-compliance.md;
+  CI_electricity_gas_buying,tariffs,demand_charges,fixed_index_block_index_hedges,PPAs,RECs,Scope_2→references/energy-procurement.md;
+  demand_forecast,ABC_XYZ,safety_stock,reorder_points,promotions,seasonal_buys,markdowns→references/inventory-demand-planning.md;
+  delays,damage,loss,shortages,refusals,detention_disputes,Carmack_claims,exception_SOPs→references/logistics-exception-management.md;
+  job_sequencing,bottleneck(drum_buffer_rope),SMED,OEE,replan(breakdown∨shortage)→references/production-scheduling.md;
+  NCR,5_Why,Ishikawa,fault_tree,8D,CAPA,SPC,AQL,supplier_quality(FDA,IATF,AS9100)→references/quality-nonconformance.md;
+  RMA,return_grading_routing,refunds,fraud_scoring,vendor_recovery,warranty_claims→references/returns-reverse-logistics.md
+}
+§REL{
+  ../software-architecture/SKILL.md:TMS,WMS,ERP,MES_integration_design;
+  ../database-design/SKILL.md:model(shipments,inventory,NCRs,returns)
+}

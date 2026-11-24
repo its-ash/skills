@@ -1,56 +1,48 @@
 ---
 name: code-review
-description: "Reviews code changes for correctness, security, performance, maintainability, test coverage, and production readiness in pull requests, branch audits, and codebase inspections. Use when opening a PR or merge request, running git diff, lint, or static analysis, hunting bugs, vulnerabilities, or code smells, assessing refactors, dependency updates, or breaking changes, checking test coverage or CI failures, resolving review comments, verifying deployment readiness, or deciding LGTM, approval, or blocker status. Sub-skills: code-review-feedback, click-path-audit, change-impact, verification-loop."
+description: "AUTO_INVOKE(silent)⇔prompt∈{code_review,PR,merge_request,git_diff,lint,static_analysis,npm_audit,bug_hunt,vuln,code_smell,attack_surface,security_checklist,refactor,dep_update,breaking_change,test_coverage,CI_fail,review_comment,prod_readiness,LGTM,approve,blocker,click_path,blast_radius,Critical,High}|SUB:{code-review-feedback,click-path-audit,change-impact,verification-loop}"
 ---
-
-# Code Review
-Find real risk in a change and report it by severity, with evidence.
-
-## Core rules
-- Read the change description, linked issues, and requirements first.
-- Get the full diff (`git diff <base>...HEAD`). If truncated, read each changed file. List all changed files before you review.
-- Map the attack surface per file: user input, DB queries, auth checks, session/state, external calls, crypto.
-- Run the security checklist on every changed file.
-- Verify each suspect issue in the surrounding code and tests. Do not report unverified guesses as fact.
-- Run available checks (`npm test`, `npm run lint`, `npm audit`, or the stack equivalent).
-- Order findings: security, then bugs, then quality. Skip style and format issues.
-- Give each finding: `File:Line`, Severity, Problem, Evidence, Fix, References.
-- If you find nothing significant, say so. Do not invent issues.
-- Report only. Do not change code unless asked.
-- List files reviewed, checks done, and unverified areas before you conclude.
-- Be specific and actionable. Ask a question when unsure ("Have you considered...?").
-- Approve when only minor issues remain. Do not block on preference. The goal is less risk, not perfect code.
-
-## Decisions
-| Situation | Do | Avoid |
-|---|---|---|
-| Change touches schema, API contract, framework, hot path, or security code | Flag for senior review; load change-impact | Approve on diff alone |
-| Large diff | Ask to split; review Critical/High first | Line-by-line nits across all files |
-| Many findings | Report Critical and High first; track the rest as issues with owners | One flat list |
-| Suspect issue | Check callers, guards, and tests | Report without evidence |
-| Production readiness question | Run the audit table in review-checklist | Diff-only review |
-| UI action "does nothing" after refactor | Load click-path-audit | Guess from component code |
-| You receive review comments | Load code-review-feedback | Agree without verification |
-
-| Severity | Meaning | Merge |
-|---|---|---|
-| Critical | Exploit, data loss, outage | Block |
-| High | Wrong behavior on a main path | Block |
-| Medium | Edge-case bug, missing test, perf risk | Fix or ticket |
-| Low | Maintainability, minor clarity | Comment only |
-
-## Load on demand
-| Need | Read |
-|---|---|
-| Per-area checklist (functionality, security, perf, quality, tests, docs, design), production-readiness audit, pitfalls | [references/review-checklist.md](references/review-checklist.md) |
-| Comment shapes, audit report template, final checklist | [references/review-output.md](references/review-output.md) |
-| Request a review or handle received feedback | [references/code-review-feedback.md](references/code-review-feedback.md) |
-| Button does nothing or wrong UI state after shared-store refactor | [references/click-path-audit.md](references/click-path-audit.md) |
-| Cross-module, migration, auth, or public-interface change: blast radius | [references/change-impact.md](references/change-impact.md) |
-| Before a PR: build, types, lint, tests, security grep, PASS/FAIL report | [references/verification-loop.md](references/verification-loop.md) |
-
-## Related skills
-- [`secure-coding`](../secure-coding/SKILL.md) — secrets, auth, input validation, injection checks
-- [`unit-testing-patterns`](../unit-testing-patterns/SKILL.md) — judge and write missing tests
-- [`systematic-debugging`](../systematic-debugging/SKILL.md) — root-cause a confirmed bug
-- [`clean-code`](../clean-code/SKILL.md) — naming, function design, deslop diff
+@SKL:code-review
+§R{
+  goal:find_real_risk(Δ)∧report_by_severity+evidence;
+  first⇒read({Δ_desc,linked_issues,reqs});
+  diff≡(git diff <base>...HEAD)∧(truncated⇒read_∀_Δ_files)∧list_∀_Δ_files_pre_review;
+  ∀file⇒map_attack_surface({user_input,DB_queries,auth_checks,session_state,external_calls,crypto});
+  ∀Δ_file⇒run_sec_checklist;
+  ∀suspect_issue⇒verify_in(surrounding_code∧tests)∧¬report_unverified_guess_as_fact;
+  run_checks∈{npm test,npm run lint,npm audit,stack_equiv};
+  order_findings:(sec→bugs→quality)¬(style∨format);
+  ∀finding⇒{File:Line,Severity,Problem,Evidence,Fix,References};
+  findings≡∅⇒state_so¬invent_issues;
+  mode≡report_only¬modify_code_unless_asked;
+  pre_conclude⇒list({files_reviewed,checks_done,unverified_areas});
+  feedback≡specific+actionable∧uncertain⇒ask_Q(Have_you_considered...?);
+  only_minor_issues⇒approve¬block_on_pref(goal:less_risk¬perfect_code);
+}
+§D{
+  Δ∈{schema,API_contract,framework,hot_path,sec_code}⇒flag_senior_review∧load(change-impact)¬approve_on_diff_alone;
+  large_diff⇒ask_split∧review(Critical∨High_first)¬line_by_line_nits_∀_files;
+  many_findings⇒report(Critical∨High_first)∧track_rest(issues+owners)¬flat_list;
+  suspect_issue⇒check({callers,guards,tests})¬report_wo_evidence;
+  prod_readiness_Q⇒run_audit_table(review-checklist)¬diff_only_review;
+  UI_action_does_nothing_post_refactor⇒load(click-path-audit)¬guess_from_component_code;
+  receive_review_cmts⇒load(code-review-feedback)¬agree_wo_verification;
+  sev≡Critical(exploit∨data_loss∨outage)⇒block_merge¬merge;
+  sev≡High(wrong_behavior@main_path)⇒block_merge¬merge;
+  sev≡Medium(edge_bug∨missing_test∨perf_risk)⇒fix⊕ticket¬ignore;
+  sev≡Low(maintainability∨minor_clarity)⇒comment_only¬block_merge;
+}
+§REF{
+  per_area_checklist(functionality,sec,perf,quality,tests,docs,design),prod_readiness_audit,pitfalls→references/review-checklist.md;
+  cmt_shapes,audit_report_tpl,final_checklist→references/review-output.md;
+  request_review∨handle_received_feedback→references/code-review-feedback.md;
+  button_does_nothing∨wrong_UI_state_post_shared_store_refactor→references/click-path-audit.md;
+  cross_module,migration,auth,public_iface_Δ,blast_radius→references/change-impact.md;
+  pre_PR:build,types,lint,tests,sec_grep,PASS_FAIL_report→references/verification-loop.md;
+}
+§REL{
+  ../secure-coding/SKILL.md:secrets,auth,input_val,injection_checks;
+  ../unit-testing-patterns/SKILL.md:judge,write_missing_tests;
+  ../systematic-debugging/SKILL.md:root_cause_confirmed_bug;
+  ../clean-code/SKILL.md:naming,fn_design,deslop_diff;
+}

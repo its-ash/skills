@@ -1,51 +1,38 @@
 ---
 name: conversion-optimization
-description: "Conversion optimization skill audits and improves conversion rates for marketing pages, landing pages, pricing pages, forms, popups, signup flows, onboarding experiences, and in-app paywalls with CRO recommendations, A/B test ideas, and step-by-step audits. Use when you need CRO audit, conversion rate optimization, landing page optimization, form optimization, popup optimization, signup flow optimization, onboarding optimization, paywall optimization, funnel optimization, checkout optimization, or A/B test ideas. Sub-skills: ab-testing."
+description: "AUTO_INVOKE(silent)⇔prompt∈{CRO,conversion_rate,A/B_test,multivariate_test,landing_page,pricing_page,marketing_page,form_opt,multi_step_form,popup,exit_intent,modal,signup_flow,onboarding,paywall,upgrade_prompt,funnel,checkout,progressive_profiling,trust_signals,above_fold,CTA,drop_off,tap_target≥44px,inline_validation}|SUB:{ab-testing}"
 ---
-# Conversion Optimization
-
-Audit a conversion asset and give a ranked plan of fixes and tests.
-
-## Core rules
-- Before the audit, record: asset type, primary conversion goal, traffic context (source, device mix, new vs. returning), current metrics (rate, drop-off, time, errors), and constraints (required data, compliance, tech limits, brand tone).
-- Show value before the ask (CTA, form, upgrade).
-- Remove every field or step that is not essential now; collect the rest later (progressive profiling).
-- Reduce cognitive load: one question per field, clear labels, logical groups, smart defaults, inline validation.
-- Respect the user: easy dismiss, clear escape hatch, frequency caps, no dark patterns, accessible.
-- Put headline, value, and one primary CTA above the fold.
-- Put trust signals (logos, testimonials, security badges, privacy note) near the CTA.
-- Handle objections with FAQ, guarantees, risk reversal, and clear pricing.
-- Show progress and next steps (checklists, progress bars, celebration).
-- Trigger popups, paywalls, and upgrade prompts after the aha moment or at a friction point, never on arrival.
-- Design mobile first: tap targets ≥44 px, correct keyboards, single column, fast load.
-- Define the metric for every recommendation before you propose a test.
-
-## Decisions
-
-| Situation | Do | Avoid |
-|---|---|---|
-| Form has ≤3 fields | single step | splitting into steps |
-| Form has >3 fields (signup) or >5 (lead) or logical sections | multi-step, progress bar, easy questions first, save progress | one long page |
-| Popup timing | scroll 25–50 %, exit intent, 30–60 s delay, or behavior trigger | delay <10 s, on-load modals |
-| Popup repeat | once per session, honor dismiss 7–30 days | show on every page view |
-| Paywall | after value or at limit; 1–2 per session; "Continue with Free" link | price-first headline, guilt-trip copy |
-| Signup auth | social auth first, email/password second | required company/role/phone at signup |
-| Validation error | inline, specific, focus first error, keep data | clear the form, generic "invalid input" |
-
-## Output format
-1. **Quick wins**: changes you can ship today.
-2. **High-impact changes**: larger redesigns or new flows.
-3. **Test ideas**: 2–3 A/B hypotheses with expected lift and metric.
-4. **Copy alternatives**: 2–3 variants for headline, CTA, value prop, each with a short rationale.
-
-## Load on demand
-
-| Need | Read |
-|---|---|
-| Per-asset checks, field-cost rule, triggers, metrics for page, form, popup, signup, onboarding, paywall | [references/asset-frameworks.md](references/asset-frameworks.md) |
-| A/B and multivariate test design: hypothesis, sample size, power, allocation, significance | [references/ab-testing.md](references/ab-testing.md) |
-
-## Related skills
-- [`copywriting`](../content-writing/references/copywriting.md) — headlines, CTAs, and page copy.
-- [`ux-research`](../ux-research/SKILL.md) — personas, journeys, usability tests.
-- [`web-accessibility`](../web-quality-audit/references/web-accessibility.md) — accessible forms and modals.
+@SKL:conversion-optimization
+§R{
+  pre_audit⇒rec{asset_type,primary_conv_goal,traffic_ctx(source,device_mix,new_vs_ret),cur_metrics(rate,drop_off,time,errs),constraints(req_data,compliance,tech_limits,brand_tone)};
+  show(value)≺ask(CTA∨form∨upgrade);
+  rm(¬essential_now(field∨step))∧defer→progressive_profiling;
+  ↓cog_load⇒{1_Q/field,clear_labels,logical_groups,smart_defaults,inline_val};
+  respect_user⇒{easy_dismiss,clear_escape_hatch,freq_caps,¬dark_patterns,a11y};
+  above_fold⇒{headline,value,1_primary_CTA};
+  near(CTA)⇒trust_signals{logos,testimonials,sec_badges,privacy_note};
+  handle_objections⇒{FAQ,guarantees,risk_reversal,clear_pricing};
+  show(progress∧next_steps)⇒{checklists,progress_bars,celebration};
+  trigger(popup∨paywall∨upgrade)⇒after(aha_moment)∨at(friction_pt)∧¬on_arrival;
+  mobile_first⇒{tap_target≥44px,correct_kbd,1_col,fast_load};
+  ∀rec⇒def(metric)≺propose(AB_test);
+  out_fmt⇒[1:quick_wins(ship_today),2:high_impact(redesigns∨new_flows),3:test_ideas(2-3_AB_hypotheses+expected_lift+metric),4:copy_alts(2-3_variants(headline,CTA,val_prop)+short_rationale)];
+}
+§D{
+  form_fields≤3⇒1_step¬split_steps;
+  form_fields>3(signup)∨>5(lead)∨logical_sections⇒multi_step+progress_bar+easy_Qs_first+save_progress¬1_long_page;
+  popup_timing⇒scroll∈[25%,50%]∨exit_intent∨delay∈[30s,60s]∨behavior_trigger¬delay<10s∨on_load_modals;
+  popup_repeat⇒1/session∧honor_dismiss∈[7d,30d]¬every_page_view;
+  paywall⇒after_value∨at_limit∧cap∈[1,2]/session∧link(Continue_with_Free)¬price_first_headline∨guilt_trip_copy;
+  signup_auth⇒social_auth_first→email_pwd_second¬req(company∨role∨phone)@signup;
+  val_err⇒inline∧specific∧focus(first_err)∧keep_data¬clear_form∨generic(invalid_input);
+}
+§REF{
+  per_asset_checks,field_cost_rule,triggers,metrics(page,form,popup,signup,onboarding,paywall)→references/asset-frameworks.md;
+  AB+multivariate_test_design(hypothesis,sample_size,power,alloc,significance)→references/ab-testing.md;
+}
+§REL{
+  ../content-writing/references/copywriting.md:headlines,CTAs,page_copy;
+  ../ux-research/SKILL.md:personas,journeys,usability_tests;
+  ../web-quality-audit/references/web-accessibility.md:a11y_forms,modals;
+}

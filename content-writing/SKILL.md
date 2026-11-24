@@ -1,50 +1,45 @@
 ---
 name: content-writing
-description: "Guides brand-voice creation, SEO blog drafting, social-media posts, content calendars, and collaborative research-writing. Use when drafting blog posts, LinkedIn or X posts, Instagram captions, TikTok scripts, content calendars, keyword research, cited articles, repurposing, hooks, voice profiles, crossposting, X API or SocialClaw publishing, warm-intro outreach, pitch decks, investor emails, or launch campaigns. Sub-skills: copywriting, social-content, brand-voice, article-writing, social-publishing, lead-intelligence, investor-materials, marketing-campaign."
+description: "AUTO_INVOKE(silent)⇔prompt∈{blog,SEO_post,article,guide,tutorial,newsletter,copywriting,hero,pricing_page,landing_page,CTA,headline,brand_voice,voice_profile,content_calendar,repurpose,crosspost,hook,LinkedIn,X_post,X_API,SocialClaw,Instagram,TikTok,lead_scoring,warm_intro,outreach,pitch_deck,one_pager,investor_email,launch_campaign,keyword_research,cited_writing,co-writing}|SUB:{copywriting,social-content,brand-voice,article-writing,social-publishing,lead-intelligence,investor-materials,marketing-campaign}"
 ---
-# Content Writing
-Write on-voice, search-ready, platform-fit content, and co-write researched articles.
-
-## Core rules
-- Define the audience need before you write.
-- Research keywords, data, and sources before the draft.
-- Build or load a voice profile first for voice-sensitive work. Keep voice the same across pieces.
-- Write the first draft without editing. Apply SEO after the draft, then edit for voice.
-- Cite every fact, figure, and quote in one consistent style.
-- Fit each platform: length, format, hashtag count, media size.
-- End every piece with one clear CTA.
-- When co-writing, suggest edits; do not overwrite the author's voice.
-- Proofread facts, grammar, and citations before publish.
-- Schedule from the calendar. Review metrics monthly and adjust the plan.
-
-## Decisions
-| Situation | Do | Avoid |
-|---|---|---|
-| SEO blog post | Primary keyword in title (< 60 chars), URL, first 100 words, 2+ H2s; 1-3% density | Keyword stuffing |
-| Meta description | 150-160 chars, keyword, CTA | Auto excerpt |
-| Long-form length | 1,500-2,500 words; 2+ internal, 2+ external links | Thin post with no sources |
-| One idea, many channels | Repurpose core message per platform | Same text crossposted |
-| Calendar mix | 40% educational, 25% promotional, 25% community, 10% evergreen | All promotional |
-| Weekly production | Batch-write in one session | Piece-by-piece voice drift |
-| Weak hook | Analyze it; offer three alternatives with rationale | One rewrite, no reason |
-| Web page copy (hero, pricing, CTA) | Use copywriting reference | Blog structure on a landing page |
-
-## Load on demand
-| Need | Read |
-|---|---|
-| Quick voice guide, SEO element table, platform limits, calendar template, outline skeleton, co-writing loop, checklist, metrics | [references/seo-blog-and-calendar.md](references/seo-blog-and-calendar.md) |
-| Full `VOICE PROFILE` from real samples; shared hard-ban list | [references/brand-voice.md](references/brand-voice.md) |
-| Articles, guides, tutorials, newsletters with proof-first structure | [references/article-writing.md](references/article-writing.md) |
-| Social plans, platform strategy, hooks, templates, repurposing, crossposting | [references/social-content.md](references/social-content.md) |
-| Post, read, schedule via X API or SocialClaw; auth, rate limits, approval | [references/social-publishing.md](references/social-publishing.md) |
-| Website copy: home, landing, pricing, feature pages, headlines, CTAs | [references/copywriting.md](references/copywriting.md) |
-| Lead scoring, warm-intro paths, network cleanup, outreach drafts | [references/lead-intelligence.md](references/lead-intelligence.md) |
-| Pitch decks, one-pagers, memos, models, investor emails, updates | [references/investor-materials.md](references/investor-materials.md) |
-| Multi-channel launch: positioning, landing page, emails, social, video, ads, calendar | [references/marketing-campaign.md](references/marketing-campaign.md) |
-
-## Related skills
-- [`seo`](../seo/SKILL.md) — technical and on-page SEO audits, schema markup.
-- [`product-strategy`](../product-strategy/SKILL.md) — market research, positioning before campaigns.
-- [`research`](../research/SKILL.md) — cited research; Exa search for sources and leads.
-- [`video-production`](../video-production/SKILL.md) — short-form and launch videos from scripts.
-- [`conversion-optimization`](../conversion-optimization/SKILL.md) — CRO for pages the copy lands on.
+@SKL:content-writing
+§R{
+  def(audience_need)≺write;
+  research(keywords,data,sources)≺draft;
+  voice_sensitive⇒(build∨load(voice_profile))≺write∧keep_invariant(voice);
+  draft1(¬edit)→apply_SEO→edit_voice;
+  ∀(fact,figure,quote)⇒cite(1_consistent_style);
+  ∀platform⇒fit{length,format,hashtag_cnt,media_size};
+  ∀piece⇒end_w/(1_clear_CTA);
+  co_writing⇒suggest_edits∧¬overwrite(author_voice);
+  proofread(facts,grammar,citations)≺publish;
+  schedule(calendar)∧review(metrics,monthly)→Δplan;
+}
+§D{
+  seo_blog⇒primary_kw∈{title(<60c),URL,first_100w,≥2_H2}∧kw_density∈[1%,3%]¬kw_stuffing;
+  meta_desc⇒len∈[150,160]c∧kw∧CTA¬auto_excerpt;
+  long_form⇒words∈[1500,2500]∧links(internal≥2,external≥2)¬thin_post∨∅sources;
+  1_idea×N_channels⇒repurpose_core_msg_per_platform¬same_text_crossposted;
+  calendar_mix⇒{40%:educational,25%:promotional,25%:community,10%:evergreen}¬all_promotional;
+  weekly_prod⇒batch_write(1_session)¬piece_by_piece_voice_drift;
+  weak_hook⇒analyze+3_alts_w/_rationale¬1_rewrite_∅reason;
+  web_page_copy(hero,pricing,CTA)⇒use(references/copywriting.md)¬blog_struct_on_landing_page;
+}
+§REF{
+  quick_voice_guide,seo_elem_tbl,platform_limits,cal_tpl,outline_skel,cowrite_loop,checklist,metrics→references/seo-blog-and-calendar.md;
+  full_VOICE_PROFILE_from_real_samples,shared_hard_ban_list→references/brand-voice.md;
+  articles,guides,tutorials,newsletters(proof_first_struct)→references/article-writing.md;
+  social_plans,platform_strategy,hooks,tpls,repurposing,crossposting→references/social-content.md;
+  post/read/schedule(X_API∨SocialClaw),auth,rate_limits,approval→references/social-publishing.md;
+  website_copy(home,landing,pricing,feature_pages,headlines,CTAs)→references/copywriting.md;
+  lead_scoring,warm_intro_paths,network_cleanup,outreach_drafts→references/lead-intelligence.md;
+  pitch_decks,one_pagers,memos,models,investor_emails,updates→references/investor-materials.md;
+  multi_channel_launch(positioning,landing_page,emails,social,video,ads,calendar)→references/marketing-campaign.md;
+}
+§REL{
+  ../seo/SKILL.md:tech+onpage_SEO_audits,schema_markup;
+  ../product-strategy/SKILL.md:market_research,positioning_pre_campaigns;
+  ../research/SKILL.md:cited_research,Exa_search(sources,leads);
+  ../video-production/SKILL.md:short_form+launch_videos_from_scripts;
+  ../conversion-optimization/SKILL.md:CRO_landing_pages;
+}

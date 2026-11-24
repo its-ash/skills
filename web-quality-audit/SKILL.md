@@ -1,55 +1,48 @@
 ---
 name: web-quality-audit
-description: "Full web quality audit: Core Web Vitals (LCP, INP, CLS, TTFB), resource loading, accessibility (WCAG, ARIA, screen readers), SEO (meta tags, structured data, sitemaps, robots.txt), security headers (CSP, HSTS, X-Frame-Options), HTML validity, and code quality. Use to audit or optimize a site for speed, a11y, SEO, or security, run Lighthouse or PageSpeed, check launch readiness, or debug slow loads, broken markup, ranking drops, or regressions after deploy. Sub-skills: web-performance, performance, web-accessibility, benchmark, latency-critical-systems, production-audit, canary-watch."
+description: "AUTO_INVOKE(silent)⇔prompt∈{audit,Lighthouse,PageSpeed,CWV,LCP,INP,CLS,TTFB,FID,CrUX,Search_Console,a11y,WCAG,ARIA,screen_reader,contrast,SEO,meta_tags,structured_data,sitemap,robots.txt,CSP,HSTS,X-Frame-Options,HTML_validity,launch_readiness,slow_load,broken_markup,ranking_drop,post_deploy_regression,p95,p99,polyfill}|SUB:{web-performance,performance,web-accessibility,benchmark,latency-critical-systems,production-audit,canary-watch}"
 ---
-# Web Quality Audit
-Audit a site for Performance, Accessibility, SEO, and Best Practices; report findings by severity with exact fixes.
-
-## Core rules
-- Run Lighthouse (or equivalent) on each target page. Export JSON and parse it; do not guess scores.
-- Classify each finding by category and severity (Critical, High, Medium, Low).
-- Give each finding a file path and line, its impact, and an exact code or config fix.
-- Use the report format in the checklist reference.
-- Fix order: Critical security and CWV → High a11y barriers → Medium SEO/perf → Low code quality.
-- CWV targets: LCP < 2.5 s, INP < 200 ms, CLS < 0.1. INP replaces FID.
-- Prefer field data (Search Console, CrUX) over one lab run when they disagree.
-- Prefer native HTML to ARIA. Contrast ≥ 4.5:1 (large text ≥ 3:1).
-- Do not run audits or load tests against third-party sites without permission.
-
-## Decisions
-| Severity | Criteria | Fix by |
-|---|---|---|
-| Critical | Security flaw, total failure, CWV that breaks the page | Now |
-| High | CWV failure, major a11y barrier, broken function | Before launch |
-| Medium | Perf or SEO gain, non-blocking best-practice gap | This sprint |
-| Low | Minor tuning, lint warning, cosmetic | When convenient |
-
-| Situation | Do | Avoid |
-|---|---|---|
-| "Audit my site" / pre-launch | Full four-category audit + report | Perf-only Lighthouse score |
-| Slow page, CWV regression | Load `performance` (DevTools MCP trace) then `web-performance` fixes | Guessing from source alone |
-| Before/after a change | `benchmark` baseline and compare | Single unpaired run |
-| "Ready to ship?" | `production-audit` score + blockers | Generic checklist only |
-| Just deployed | `canary-watch` against baseline | Waiting for user reports |
-| p95/p99, feeds, streams | `latency-critical-systems` | Page-load tuning only |
-| HSTS | Enable only after HTTPS works on all subdomains | `preload` before rollback is clear |
-| Polyfills | Load on demand, self-host | `polyfill.io` (compromised 2024) |
-
-## Load on demand
-| Need | Read |
-|---|---|
-| Per-category checklists, report template, cadence, tools | [references/audit-checklist.md](references/audit-checklist.md) |
-| Fix CWV, bundles, caching, images, fonts | [references/web-performance.md](references/web-performance.md) |
-| Chrome DevTools MCP traces, LCP/INP/CLS diagnosis | [references/performance.md](references/performance.md) |
-| WCAG 2.1/2.2, ARIA, forms, modals, mobile a11y | [references/web-accessibility.md](references/web-accessibility.md) |
-| Baselines and before/after measurement loop | [references/benchmark.md](references/benchmark.md) |
-| Realtime p95/p99 latency, throughput, freshness | [references/latency-critical-systems.md](references/latency-critical-systems.md) |
-| Ship-readiness score and blockers | [references/production-audit.md](references/production-audit.md) |
-| Post-deploy URL monitoring | [references/canary-watch.md](references/canary-watch.md) |
-
-## Related skills
-- [`seo`](../seo/SKILL.md) — deep SEO audit and schema markup
-- [`secure-coding`](../secure-coding/SKILL.md) — CSP, headers, cookies in code
-- [`web-vulnerability-testing`](../secure-coding/references/web-vulnerability-testing.md) — OWASP pentest of the site
-- [`progressive-web-app`](../frontend-development/references/progressive-web-app.md) — manifest, service worker, offline
-- [`screenshot`](../screenshot/SKILL.md) — capture pages for the report
+@SKL:web-quality-audit
+§R{
+  scope:{Performance,Accessibility,SEO,Best_Practices}⇒report(by_severity,exact_fixes);
+  ∀target_page:run(Lighthouse∨equiv)→export_JSON∧parse¬guess_scores;
+  ∀finding:classify(category,severity∈{Critical,High,Medium,Low});
+  ∀finding:emit(file_path:line,impact,exact_code/config_fix);
+  report_fmt←references/audit-checklist.md;
+  fix_order:Critical(security,CWV)→High(a11y_barriers)→Medium(SEO,perf)→Low(code_quality);
+  CWV_targets:LCP<2.5s∧INP<200ms∧CLS<0.1(INP_replaces_FID);
+  field_data(Search_Console,CrUX)>single_lab_run_on_conflict;
+  native_HTML>ARIA;contrast≥4.5:1(large_text≥3:1);
+  ¬run(audits∨load_tests)@3rd_party_sites_without_permission
+}
+§D{
+  sev=Critical(security_flaw∨total_fail∨CWV_breaks_page)⇒fix(now)¬defer;
+  sev=High(CWV_fail∨major_a11y_barrier∨broken_fn)⇒fix(before_launch)¬ship;
+  sev=Medium(perf/SEO_gain∨non_blocking_best_practice_gap)⇒fix(this_sprint)¬ignore;
+  sev=Low(minor_tuning∨lint_warn∨cosmetic)⇒fix(when_convenient)¬block;
+  audit_site∨pre_launch⇒full_4_cat_audit+report¬perf_only_Lighthouse_score;
+  slow_page∨CWV_regression⇒load(performance:DevTools_MCP_trace)→web-performance_fixes¬guess_from_source_alone;
+  before_after_Δ⇒benchmark(baseline∧compare)¬single_unpaired_run;
+  ready_to_ship⇒production-audit(score+blockers)¬generic_checklist_only;
+  just_deployed⇒canary-watch(vs_baseline)¬wait_user_reports;
+  p95/p99∨feeds∨streams⇒latency-critical-systems¬page_load_tuning_only;
+  HSTS⇒enable_only_after_HTTPS_all_subdomains¬preload_before_rollback_clear;
+  polyfills⇒load_on_demand∧self_host¬polyfill.io(compromised_2024)
+}
+§REF{
+  per_cat_checklists,report_tpl,cadence,tools→references/audit-checklist.md;
+  fix_CWV,bundles,caching,images,fonts→references/web-performance.md;
+  Chrome_DevTools_MCP_traces,LCP/INP/CLS_diag→references/performance.md;
+  WCAG_2.1/2.2,ARIA,forms,modals,mobile_a11y→references/web-accessibility.md;
+  baselines,before/after_measurement_loop→references/benchmark.md;
+  realtime_p95/p99_latency,throughput,freshness→references/latency-critical-systems.md;
+  ship_readiness_score,blockers→references/production-audit.md;
+  post_deploy_URL_monitoring→references/canary-watch.md
+}
+§REL{
+  ../seo/SKILL.md:deep_SEO_audit,schema_markup;
+  ../secure-coding/SKILL.md:CSP,headers,cookies_in_code;
+  ../secure-coding/references/web-vulnerability-testing.md:OWASP_pentest;
+  ../frontend-development/references/progressive-web-app.md:manifest,SW,offline;
+  ../screenshot/SKILL.md:capture_pages_for_report
+}

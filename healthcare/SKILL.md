@@ -1,48 +1,37 @@
 ---
 name: healthcare
-description: "Healthcare software guidance for HIPAA, PHI and PII handling, EMR and EHR workflows, clinical decision support, and patient-safety deployment gates. Use when a task mentions HIPAA, PHI, covered entities, business associates, BAAs, breach posture, patient records, EMR, EHR, encounters, prescriptions, drug interactions, dose validation, NEWS2, qSOFA, HL7, FHIR, or US healthcare compliance. Sub-skills: phi-compliance, emr, cdss, eval-harness."
+description: "AUTO_INVOKE(silent)⇔prompt∈{HIPAA,PHI,PII,covered_entity,business_associate,BAA,breach,patient_record,EMR,EHR,encounter,addendum,prescription,drug_interaction,dose_validation,NEWS2,qSOFA,HL7,FHIR,DISHA,GDPR,healthcare,CDSS,MRN,audit_trail,row-level_security,vitals,labs,healthcare-reviewer}|SUB:{phi-compliance,emr,cdss,eval-harness}"
 ---
-
-# Healthcare
-Build software that stores, moves, or acts on patient data without PHI leaks or patient-safety risk.
-
-## Core rules
-- Treat HIPAA as an overlay on the PHI rules in [references/phi-compliance.md](references/phi-compliance.md).
-- Never put PHI in logs, analytics events, crash reports, prompts, or client-visible error strings.
-- Never put PHI in URLs, browser storage, screenshots, or copied example payloads.
-- Require authentication, scoped authorization, and an audit trail for each PHI read, write, and export.
-- Block third-party SaaS, observability, support tools, and LLM providers by default until BAA status and data boundaries are clear.
-- Apply minimum necessary access: each user sees only the smallest PHI slice the task needs.
-- Use opaque internal IDs, not names, MRNs, phone numbers, addresses, or other identifiers.
-- Assume free text (support transcripts, patient messages) contains PHI.
-- For patient-safety, clinical-workflow, or regulated production changes: get a second review from the `healthcare-reviewer` agent and gate release with [references/eval-harness.md](references/eval-harness.md).
-
-## Decisions
-HIPAA gates, in order:
-
-| Question | If yes | If no / unknown |
-|---|---|---|
-| Is this data PHI? | Apply all core rules | Confirm it cannot re-identify a patient |
-| Is the actor a covered entity or business associate? | HIPAA duties apply | Check contracts before you assume exemption |
-| Does a vendor or model provider touch the data? | Require a signed BAA first | Proceed |
-| Is access limited to minimum necessary scope? | Proceed | Narrow roles, fields, or rows |
-| Can you audit each read, write, and export? | Proceed | Add audit trail before release |
-
-| Situation | Do | Avoid |
-|---|---|---|
-| AI visit summaries for clinicians | Confirm BAA with the LLM provider; review prompt boundaries; apply [cdss](references/cdss.md) if summaries affect decisions | Sending PHI to a provider with no BAA |
-| Send patient messages to analytics | Use a non-PHI event model or redact; require HIPAA-approved vendor | Raw message text in events |
-| General auth, secrets, API hardening | Use [`secure-coding`](../secure-coding/SKILL.md) | Restating those rules here |
-
-## Load on demand
-| Need | Read |
-|---|---|
-| PHI/PII classification, row-level security, tamper-proof audit trails, schema tagging, leak vectors (logs, URLs, browser storage, service role keys); HIPAA, DISHA, GDPR | [references/phi-compliance.md](references/phi-compliance.md) |
-| EMR/EHR: encounter workflows, clinical templates, medication safety, locked encounters and addenda, prescription PDFs, labs and vitals, accessible data entry | [references/emr.md](references/emr.md) |
-| CDSS: drug interactions, dose validation, NEWS2, qSOFA, alert severity, zero-false-negative tests | [references/cdss.md](references/cdss.md) |
-| Deploy gate: CDSS accuracy, PHI exposure, data integrity, clinical workflows, HL7/FHIR integration tests in CI | [references/eval-harness.md](references/eval-harness.md) |
-
-## Related skills
-- [`secure-coding`](../secure-coding/SKILL.md) — auth, secrets, hardening; privacy in `references/data-privacy-compliance.md`
-- [`unit-testing-patterns`](../unit-testing-patterns/SKILL.md) — Jest and pytest for CDSS and PHI suites
-- [`database-design`](../database-design/SKILL.md) — patient-data schema and row-level security
+@SKL:healthcare
+§R{
+  HIPAA⇒overlay_on(PHI_rules@references/phi-compliance.md);
+  PHI∉{logs,analytics_events,crash_reports,prompts,client_visible_errors};
+  PHI∉{URLs,browser_storage,screenshots,copied_example_payloads};
+  ∀PHI∈{read,write,export}⇒require(auth∧scoped_authz∧audit_trail);
+  default_block({3p_SaaS,observability,support_tools,LLM_providers})_until(BAA_status∧data_boundaries_clear);
+  access⇒minimum_necessary(smallest_PHI_slice_for_task);
+  identifiers⇒opaque_internal_IDs∧¬{names,MRNs,phone_numbers,addresses,other_IDs};
+  free_text(support_transcripts,patient_messages)⇒assume_contains(PHI);
+  Δ∈{patient-safety,clinical-workflow,regulated_prod}⇒2nd_review(healthcare-reviewer_agent)∧release_gate(references/eval-harness.md);
+}
+§D{
+  HIPAA_gate1_in_order(data≡PHI?)⇒yes:all_core_rules|no_or_unk:confirm_cannot_reidentify_patient¬assume_non_PHI;
+  HIPAA_gate2_in_order(actor∈{covered_entity,business_associate}?)⇒yes:HIPAA_duties_apply|no_or_unk:check_contracts¬assume_exempt;
+  HIPAA_gate3_in_order(vendor∨model_provider_touches_data?)⇒yes:require_signed_BAA_first|no_or_unk:proceed¬send_without_BAA;
+  HIPAA_gate4_in_order(access≡minimum_necessary_scope?)⇒yes:proceed|no_or_unknown:narrow(roles,fields,rows)¬overexpose;
+  HIPAA_gate5_in_order(audit(read,write,export)?)⇒yes:proceed|no_or_unknown:add_audit_trail_before_release¬ship_unaudited;
+  AI_visit_summaries_for_clinicians⇒confirm_BAA(LLM_provider)∧review_prompt_boundaries∧(if_affects_decisions⇒references/cdss.md)¬send_PHI_no_BAA;
+  patient_messages→analytics⇒non-PHI_event_model∨redact∧HIPAA-approved_vendor¬raw_message_text_in_events;
+  general_auth,secrets,API_hardening⇒../secure-coding/SKILL.md¬restate_here;
+}
+§REF{
+  PHI/PII_classification,RLS,tamper-proof_audit_trails,schema_tagging,leak_vectors(logs,URLs,browser_storage,service_role_keys),HIPAA,DISHA,GDPR→references/phi-compliance.md;
+  EMR/EHR,encounter_workflows,clinical_templates,med_safety,locked_encounters,addenda,Rx_PDFs,labs,vitals,accessible_data_entry→references/emr.md;
+  CDSS,drug_interactions,dose_validation,NEWS2,qSOFA,alert_severity,zero-false-negative_tests→references/cdss.md;
+  deploy_gate,CDSS_accuracy,PHI_exposure,data_integrity,clinical_workflows,HL7/FHIR_integration_tests_CI→references/eval-harness.md;
+}
+§REL{
+  ../secure-coding/SKILL.md:auth,secrets,hardening;privacy∈../secure-coding/references/data-privacy-compliance.md;
+  ../unit-testing-patterns/SKILL.md:Jest,pytest_for_CDSS∧PHI_suites;
+  ../database-design/SKILL.md:patient-data_schema,row-level_security;
+}

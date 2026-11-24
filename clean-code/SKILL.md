@@ -1,49 +1,41 @@
 ---
 name: clean-code
-description: "Clean code standards for naming, function design, structure, SOLID, and a mandatory deslop pass on git diff to strip AI slop (excess comments, defensive checks, type casts, inline imports, style drift). Use when writing, reviewing, refactoring, or linting code in any language, running git diff or PR reviews, removing dead code, eliminating magic numbers, or reducing complexity. Sub-skills: coding-standards, inherit-legacy-style, codehealth-mcp."
+description: "AUTO_INVOKE(silent)⇔prompt∈{clean_code,refactor,lint,deslop,AI_slop,git_diff,PR_review,SRP,KISS,YAGNI,DRY,SOLID,dead_code,magic_number,complexity,nesting,guard_clause,naming,any_cast,inline_import,style_drift,legacy_style,CodeScene,Code_Health_MCP,unused_code,god_function}|SUB:{coding-standards,inherit-legacy-style,codehealth-mcp}"
 ---
-# Clean Code
-
-Keep code small, direct, and free of AI slop. Run the deslop pass after every change.
-
-## Core rules
-- Give each function or class one responsibility (SRP). Keep one level of abstraction per function.
-- Build the simplest thing that works (KISS). Do not build unused features (YAGNI).
-- Extract real duplication (DRY); do not abstract one-off code.
-- Leave touched code cleaner than you found it.
-- Keep functions ≤20 lines (ideally 5–10) with ≤3 args (prefer 0–2). Do not mutate inputs unexpectedly.
-- Use guard clauses and early returns. Keep nesting ≤2 levels.
-- Name functions verb + noun (`getUserById`), booleans as questions (`isActive`, `hasPermission`, `canEdit`), constants in `SCREAMING_SNAKE`. If a name needs a comment, rename it.
-- Replace magic numbers with named constants.
-- Colocate related code; compose small functions.
-- Before you edit a file, find what imports it, what it imports, which tests cover it, and whether it is shared. Update all dependents in the same task.
-- After every change, run the deslop pass on `git diff main...HEAD`: remove excess comments, abnormal defensive checks, `any` casts, inline imports, and style drift.
-- Run the project's lint, type, and test commands before you say done.
-
-## Decisions
-
-| Situation | Do | Avoid |
-|---|---|---|
-| Helper wraps a one-liner | inline it | new function |
-| Two object types to build | direct instantiation | factory |
-| `utils` file with one function | put code where it is used | catch-all utils module |
-| God function | split by responsibility | adding flags/params |
-| Deep `if` nesting | guard clauses | else-chains |
-| Obvious comment | delete it | comment every line |
-| Type error | fix the type | `as any`, `cast(Any, ...)` |
-| Requirement unclear | ask one question | assume and build |
-
-## Load on demand
-
-| Need | Read |
-|---|---|
-| Deslop steps, slop table, report format, completion self-check, verify commands | [references/deslop.md](references/deslop.md) |
-| TS/JS examples: naming, immutability, error handling, async, types, file layout, comments, smells | [references/coding-standards.md](references/coding-standards.md) |
-| Legacy codebase: extract unwritten conventions into `.ai-style-rules.md`, stop style drift | [references/inherit-legacy-style.md](references/inherit-legacy-style.md) |
-| CodeScene Code Health MCP: score before/after edits, gate commits and PRs | [references/codehealth-mcp.md](references/codehealth-mcp.md) |
-
-## Related skills
-- [`code-review`](../code-review/SKILL.md) — correctness, security, and readiness review of changes.
-- [`software-architecture`](../software-architecture/SKILL.md) — patterns and architecture decisions.
-- [`unit-testing-patterns`](../unit-testing-patterns/SKILL.md) — Jest and pytest unit test patterns.
-- [`systematic-debugging`](../systematic-debugging/SKILL.md) — root cause of bugs and test failures.
+@SKL:clean-code
+§R{
+  ∀fn∨cls⇒1_resp(SRP)∧1_abstraction_level_per_fn;
+  KISS(simplest_working)∧YAGNI(¬unused_features);
+  DRY(extract_real_dup)¬abstract_one_off;
+  touched_code⇒leave_cleaner_than_found;
+  fn_len≤20(ideal:5-10)∧args≤3(prefer:0-2)∧¬unexpected_input_mutation;
+  guard_clauses∧early_returns∧nesting≤2;
+  naming:{fn:verb+noun(getUserById),bool:question(isActive,hasPermission,canEdit),const:SCREAMING_SNAKE}∧needs_cmt⇒rename;
+  magic_numbers→named_consts;
+  colocate_related_code∧compose_small_fns;
+  pre_edit(file)⇒find({importers,imports,covering_tests,is_shared})∧update_∀_dependents_same_task;
+  post_Δ⇒deslop(git diff main...HEAD):strip({excess_cmts,abnormal_defensive_checks,any_casts,inline_imports,style_drift});
+  pre_done⇒run_project({lint,type,test});
+}
+§D{
+  helper_wraps_1_liner⇒inline¬new_fn;
+  2_obj_types_to_build⇒direct_instantiation¬factory;
+  utils_file_with_1_fn⇒colocate_where_used¬catch_all_utils_mod;
+  god_fn⇒split_by_resp¬add(flags∨params);
+  deep_if_nesting⇒guard_clauses¬else_chains;
+  obvious_cmt⇒delete¬cmt_every_line;
+  type_err⇒fix_type¬(as any∨cast(Any,...));
+  req_unclear⇒ask_1_Q¬(assume∧build);
+}
+§REF{
+  deslop_steps,slop_tbl,report_fmt,completion_self_check,verify_cmds→references/deslop.md;
+  TS_JS_examples,naming,immutability,err_handle,async,types,file_layout,cmts,smells→references/coding-standards.md;
+  legacy_codebase,extract_unwritten_conv(.ai-style-rules.md),stop_style_drift→references/inherit-legacy-style.md;
+  CodeScene_Code_Health_MCP,score_pre_post_edits,gate_commits_PRs→references/codehealth-mcp.md;
+}
+§REL{
+  ../code-review/SKILL.md:correctness,sec,readiness_review;
+  ../software-architecture/SKILL.md:patterns,arch_decisions;
+  ../unit-testing-patterns/SKILL.md:Jest,pytest_unit_tests;
+  ../systematic-debugging/SKILL.md:root_cause,bugs,test_failures;
+}

@@ -1,50 +1,43 @@
 ---
 name: rust
-description: "Idiomatic Rust patterns for ownership and borrowing, Result and ? error handling with thiserror and anyhow, enums and pattern matching, traits and generics, concurrency with Arc, Mutex, channels, and Tokio, unsafe rules, and crate layout. Use when writing, reviewing, or refactoring .rs code, Cargo.toml, cargo build, cargo clippy, cargo fmt, cargo test, borrow checker errors, lifetimes, Cow, newtypes, builders, async Rust, or crate and module structure. Sub-skills: rust-testing."
+description: "AUTO_INVOKE(silent)⇔prompt∈{.rs,Cargo.toml,lib.rs,cargo(build|clippy|fmt|test),rust,ownership,borrow_checker,lifetime,Result,?,thiserror,anyhow,enum,match,trait,impl_Trait,dyn_Trait,generic,Cow,newtype,builder,iterator,#[must_use],Arc,Mutex,RwLock,mpsc,sync_channel,tokio,async_rust,tokio::spawn,timeout,unsafe,FFI,crate,module,panic,race,write|review|refactor_rust}|SUB:{rust-testing}"
 ---
-# Rust
-
-Write safe, idiomatic Rust that lets the type system enforce correctness.
-
-## Core rules
-- Borrow (`&T`, `&[T]`, `&str`) when you only read. Take ownership only to store or consume. Do not `.clone()` to silence the borrow checker.
-- Use `Cow<'_, T>` when a function sometimes allocates and sometimes borrows.
-- Propagate errors with `Result` and `?`. Never `unwrap()` in library or production code; use `expect("reason")` only for real invariants.
-- Add context to errors at each boundary (`.with_context(|| ...)`).
-- Prefer `Option`/`Result` combinators (`map`, `and_then`, `ok_or`) over nested `match`.
-- Model states as enums so illegal states cannot exist. Match all variants; no `_` wildcard on business enums.
-- Parse, don't validate: convert raw input to typed structs at the boundary.
-- Wrap primitive IDs in newtypes (`struct UserId(u64)`) to prevent argument swaps.
-- Accept generics (`impl Trait`), return concrete types. Use a builder for structs with many optional fields.
-- Prefer iterator chains over manual push loops. Annotate the `collect()` target; collect into `Result<Vec<_>, _>` to stop at the first error.
-- Add `#[must_use]` to important returns. Never discard a `Result` with `let _ =`.
-- Never block in async code (`std::thread::sleep`, sync I/O); use Tokio equivalents. Wrap network calls in `tokio::time::timeout`.
-- Use bounded channels for backpressure; `drop` the last sender so receivers end.
-- Write `unsafe` only for FFI or proven hot paths. Document `# Safety` on the fn and a `// SAFETY:` comment on each block.
-- Organize modules by domain, not by type. Keep `pub` minimal; use `pub(crate)` and re-export the public API from `lib.rs`.
-
-## Decisions
-
-| Situation | Do | Avoid |
-|---|---|---|
-| Error type in a library | `thiserror` enum with `#[from]` | `Box<dyn Error>`, `anyhow` in public API |
-| Error type in a binary/app | `anyhow::Result` + `bail!` + `context` | custom enums with no caller that matches them |
-| Polymorphism, hot path | generics / `impl Trait` (monomorphized) | `dyn` without need |
-| Heterogeneous collection or plugins | `Vec<Box<dyn Trait + Send + Sync>>` | giant enum of unrelated types |
-| Shared mutable state across threads | `Arc<Mutex<T>>` (or `RwLock`) | `static mut`, unsafe sharing |
-| Producer/consumer threads | `mpsc::sync_channel(n)` | unbounded channel with no limit |
-| Concurrent async I/O | `tokio::spawn` per task, await handles | sequential awaits in a loop |
-| Bypass borrow checker, convenience, `transmute` across unrelated types | redesign ownership | `unsafe` |
-
-## Load on demand
-
-| Need | Read |
-|---|---|
-| Code examples, crate layout, cargo commands, anti-pattern table | [references/idioms.md](references/idioms.md) |
-| Unit/integration tests, `#[tokio::test]`, rstest, proptest, mockall, doc tests, Criterion, cargo-llvm-cov, CI | [references/rust-testing.md](references/rust-testing.md) |
-
-## Related skills
-- [`systematic-debugging`](../systematic-debugging/SKILL.md) — panics, test failures, race conditions.
-- [`secure-coding`](../secure-coding/SKILL.md) — input validation, secrets, dependency audit.
-- [`backend-development`](../backend-development/SKILL.md) — API and service design for Rust services.
-- [`docker`](../devops-iac/references/docker.md) — multi-stage builds for Rust binaries.
+@SKL:rust
+§R{
+  type_sys⇒enforce(correctness)∧safe∧idiomatic;
+  read_only⇒borrow(&T,&[T],&str);own⇔store∨consume;¬.clone()⇒silence(borrow_chk);
+  sometimes(alloc∨borrow)⇒Cow<'_,T>;
+  err⇒Result∧?;(lib∨prod)⇒¬unwrap();expect("reason")⇔true_invariant;
+  ∀boundary⇒err.with_context(||...);
+  (Option∨Result)⇒(map,and_then,ok_or)≻nested_match;
+  state∈enum⇒illegal_state≡∅;∀business_enum⇒exhaustive_match∧¬_wildcard;
+  boundary⇒parse(raw→typed_struct)¬validate_only;
+  prim_ID⇒newtype(struct UserId(u64))⇒¬arg_swap;
+  in⇒impl Trait;out⇒concrete_type;many_opt_fields⇒Builder;
+  iter_chain≻manual_push_loop;annotate(collect()_target);fail_fast⇒collect::<Result<Vec<_>,_>>();
+  important_ret⇒#[must_use];¬(let _ = Result);
+  async⇒¬block(std::thread::sleep,sync_IO)→tokio_equiv;net_call⇒tokio::time::timeout;
+  backpressure⇒bounded_channel;close_rx⇒drop(last_tx);
+  unsafe⇔(FFI∨proven_hot_path);unsafe⇒doc(# Safety on fn)∧cmt(// SAFETY: on ∀block);
+  mod_org⇒by_domain¬by_type;pub≡minimal→pub(crate)∧reexport(pub_API@lib.rs);
+}
+§D{
+  err∈lib⇒thiserror_enum+#[from]¬(Box<dyn Error>∨anyhow∈pub_API);
+  err∈(bin∨app)⇒anyhow::Result+bail!+context¬custom_unmatched_enum;
+  polymorph∧hot_path⇒generics∨impl Trait(monomorph)¬unneeded_dyn;
+  heterogeneous_coll∨plugins⇒Vec<Box<dyn Trait+Send+Sync>>¬giant_enum(unrelated);
+  shared_mut_state_across_threads⇒Arc<Mutex<T>>∨RwLock¬(static mut∨unsafe_share);
+  prod_cons_threads⇒mpsc::sync_channel(n)¬unbounded_channel;
+  concurrent_async_IO⇒tokio::spawn/task+await_handles¬seq_await_in_loop;
+  (bypass_borrow_chk∨convenience∨transmute_unrelated)⇒redesign_ownership¬unsafe;
+}
+§REF{
+  examples,crate_layout,cargo_cmds,anti_patterns→references/idioms.md;
+  unit_integ_tests,#[tokio::test],rstest,proptest,mockall,doc_tests,Criterion,cargo-llvm-cov,CI→references/rust-testing.md;
+}
+§REL{
+  ../systematic-debugging/SKILL.md:panics,test_fail,race_cond;
+  ../secure-coding/SKILL.md:in_val,secrets,dep_audit;
+  ../backend-development/SKILL.md:rust_svc_API_design;
+  ../devops-iac/references/docker.md:rust_multi_stage_build;
+}

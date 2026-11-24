@@ -1,53 +1,49 @@
 ---
 name: video-production
-description: "AI-assisted editing of real footage: transcript planning, FFmpeg cuts, Remotion composition, generated voice, music, and b-roll, Descript or CapCut polish, Manim explainers, Playwright UI demos, VideoDB, Blender checks, visual taste. Use to edit or cut video, make a vlog, tutorial, demo, launch video, or reel, reframe for TikTok, Reels, or YouTube, add subtitles, overlays, or voiceover, detect scenes or silence, write Remotion or Manim code, use fal.ai, or match a reference look. Sub-skills: remotion, manim-video, fal-ai-media, ui-demo, videodb, blender-motion-state-inspection, visual-taste."
+description: "AUTO_INVOKE(silent)⇔prompt∈{video,edit,cut,footage,transcript,EDL,FFmpeg,Remotion,Manim,fal.ai,Descript,CapCut,Screen_Studio,ElevenLabs,Playwright_demo,VideoDB,Blender,MIDI,DAW,vlog,tutorial,demo,launch_video,reel,TikTok,Reels,YouTube,9:16,1:1,16:9,subtitles,captions,overlays,voiceover,b-roll,scene_detect,silence_detect,reframe,visual_taste}|SUB:{remotion,manim-video,fal-ai-media,ui-demo,videodb,blender-motion-state-inspection,visual-taste}"
 ---
-# Video Production
-Edit real footage fast: compress, structure, and augment it. Do not generate the whole video.
-
-## Core rules
-- Run the pipeline in order; one job per layer, skip none: capture (Screen Studio, Playwright, camera) → plan (Claude/Codex) → cut (FFmpeg) → compose (Remotion) → generate (ElevenLabs/fal.ai) → polish (Descript/CapCut).
-- Fix structure before style: transcript → topics → dead sections (pauses, tangents, retakes) → edit decision list (EDL) with timestamps.
-- Reference-driven work: set the look first with [visual-taste](references/visual-taste.md), then edit.
-- Use FFmpeg for all deterministic work: split, trim, concat, proxy, audio extract, loudness.
-- `-c copy` cuts on keyframes only; re-encode for frame-exact cuts.
-- Turn any repeated overlay or scene into a Remotion component.
-- Generate only assets that do not exist. Get user approval first; generation costs money and uploads data.
-- Leave pacing, caption cleanup, color, final mix, and export to the human polish layer.
-- Before live editor or DAW changes, save a versioned checkpoint and verify the file exists; repeat after. An API readback proves memory state, not a save.
-- Track rendered media, editable project, and creative approval as separate states in the handoff.
-- MIDI audio: match pitches to the receiving instrument's note map and audition; a created clip can be silent.
-- Reconstructed projects: native load and save, sort events by time, verify sample links and mutes, audition export for silence.
-- Check an editor bridge's capability handshake before newer commands. Never enable upload or training telemetry as a side effect.
-
-## Decisions
-| Situation | Do | Avoid |
-|---|---|---|
-| Long recording to short clips | Transcript + scene/silence detect → EDL → FFmpeg batch cut | Scrubbing by hand |
-| Overlays, lower thirds, charts, templates | Remotion | Manual keyframes per video |
-| Precise technical or diagram animation | Manim | Remotion or real footage |
-| Scripted web app demo | Playwright recording ([ui-demo](references/ui-demo.md)) | Unscripted screen capture |
-| Polished ad-hoc screen recording | Screen Studio | Raw OS recorder |
-| Narration | ElevenLabs or VideoDB `generate_voice` | Synthetic voice for the whole video |
-| Music, SFX, b-roll, thumbnails | fal.ai | Generating footage you can shoot |
-| Server-side search, timeline, smart reframe | VideoDB (uploads media) | Local tools when upload is not allowed |
-| 9:16 or 1:1 from 16:9 | FFmpeg center crop; VideoDB smart reframe to track subject | Letterbox |
-| Blender rig or pose looks wrong | Inspect state ([blender](references/blender-motion-state-inspection.md)) | Trust the render |
-
-## Load on demand
-| Need | Read |
-|---|---|
-| FFmpeg commands, scene/silence detect, platform sizes and crops, planning prompts, ElevenLabs and fal.ai snippets | [references/ffmpeg-cookbook.md](references/ffmpeg-cookbook.md) |
-| Remotion: compositions, calculateMetadata, springs, sequencing, transitions, media, captions, fonts, charts, 3D | [references/remotion.md](references/remotion.md) |
-| Manim explainer: scene plan, render conventions, starter scene | [references/manim-video.md](references/manim-video.md) |
-| fal.ai MCP: Nano Banana, Seedance, Kling, Veo 3, CSM-1B, ThinkSound, cost checks | [references/fal-ai-media.md](references/fal-ai-media.md) |
-| Playwright demo: discover, rehearse, record, cursor overlay, pacing, subtitles | [references/ui-demo.md](references/ui-demo.md) |
-| VideoDB: ingest, spoken/scene search, timeline edits, transcode, reframe, generative audio, RTSP alerts | [references/videodb.md](references/videodb.md) |
-| Blender rig, pose, retarget, ground contact, facing checks | [references/blender-motion-state-inspection.md](references/blender-motion-state-inspection.md) |
-| Genre direction, mood, palette, beat-synced cuts, match a reference grade | [references/visual-taste.md](references/visual-taste.md) |
-
-## Related skills
-- [`content-writing`](../content-writing/SKILL.md) — scripts, captions, platform distribution
-- [`design`](../design/SKILL.md) — motion design, motion-canvas, visual direction
-- [`unit-testing-patterns`](../unit-testing-patterns/SKILL.md) — Playwright setup for UI demos
-- [`screenshot`](../screenshot/SKILL.md) — stills and thumbnails
+@SKL:video-production
+§R{
+  goal:edit_real_footage(compress,structure,augment)¬gen_whole_video;
+  pipeline(ordered,1_job/layer,skip=∅):capture(Screen_Studio,Playwright,camera)→plan(Claude/Codex)→cut(FFmpeg)→compose(Remotion)→generate(ElevenLabs/fal.ai)→polish(Descript/CapCut);
+  structure>style:transcript→topics→dead_sections(pauses,tangents,retakes)→EDL(timestamps);
+  ref_driven:set_look_first(references/visual-taste.md)→edit;
+  ∀deterministic_op(split,trim,concat,proxy,audio_extract,loudness)⇒FFmpeg;
+  FFmpeg(-c copy)⇒keyframe_cuts_only;frame_exact_cuts⇒re-encode;
+  repeated(overlay∨scene)⇒Remotion_component;
+  gen_only(asset∉existing)∧require(user_approval_first;cost∧uploads_data);
+  human_polish_layer←{pacing,caption_cleanup,color,final_mix,export};
+  pre/post(live_editor∨DAW Δ):save(versioned_checkpoint)∧verify(file_exists);API_readback⇒mem_state≠disk_save;
+  handoff:track_separate_states(rendered_media,editable_project,creative_approval);
+  MIDI_audio:match_pitches(target_instrument_note_map)∧audition(clip_may_be_silent);
+  reconstructed_proj:native_load∧save∧sort_events(time)∧verify(sample_links,mutes)∧audition_export(silence_check);
+  editor_bridge:capability_handshake_before_new_cmds∧¬enable(upload∨training_telemetry)_side_effect
+}
+§D{
+  long_rec→short_clips⇒transcript+scene/silence_detect→EDL→FFmpeg_batch_cut¬manual_scrub;
+  overlays∨lower_thirds∨charts∨templates⇒Remotion¬manual_keyframes_per_video;
+  precise_tech∨diagram_anim⇒Manim¬Remotion∨real_footage;
+  scripted_web_demo⇒Playwright_rec(references/ui-demo.md)¬unscripted_screen_capture;
+  polished_adhoc_screen_rec⇒Screen_Studio¬raw_OS_recorder;
+  narration⇒ElevenLabs∨VideoDB:generate_voice¬synthetic_voice_whole_video;
+  music∨SFX∨b-roll∨thumbnails⇒fal.ai¬gen_shootable_footage;
+  server_search∨timeline∨smart_reframe⇒VideoDB(uploads_media)¬local_tools_when_upload_disallowed;
+  aspect(9:16∨1:1)_from_16:9⇒FFmpeg_center_crop∨VideoDB_smart_reframe(track_subject)¬letterbox;
+  Blender_rig∨pose_wrong⇒inspect_state(references/blender-motion-state-inspection.md)¬trust_render
+}
+§REF{
+  FFmpeg_cmds,scene/silence_detect,platform_sizes/crops,plan_prompts,ElevenLabs/fal.ai_snippets→references/ffmpeg-cookbook.md;
+  Remotion:compositions,calculateMetadata,springs,seq,transitions,media,captions,fonts,charts,3D→references/remotion.md;
+  Manim:scene_plan,render_conventions,starter_scene→references/manim-video.md;
+  fal.ai_MCP:Nano_Banana,Seedance,Kling,Veo_3,CSM-1B,ThinkSound,cost_checks→references/fal-ai-media.md;
+  Playwright_demo:discover,rehearse,record,cursor_overlay,pacing,subtitles→references/ui-demo.md;
+  VideoDB:ingest,spoken/scene_search,timeline_edits,transcode,reframe,gen_audio,RTSP_alerts→references/videodb.md;
+  Blender:rig,pose,retarget,ground_contact,facing_checks→references/blender-motion-state-inspection.md;
+  visual_taste:genre_dir,mood,palette,beat_synced_cuts,match_ref_grade→references/visual-taste.md
+}
+§REL{
+  ../content-writing/SKILL.md:scripts,captions,platform_distribution;
+  ../design/SKILL.md:motion_design,motion-canvas,visual_direction;
+  ../unit-testing-patterns/SKILL.md:Playwright_setup_UI_demos;
+  ../screenshot/SKILL.md:stills,thumbnails
+}

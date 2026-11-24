@@ -1,49 +1,41 @@
 ---
 name: perl
-description: "Modern Perl 5.36+ idioms: use v5.36, subroutine signatures, context, postfix dereference, isa, error handling with Try::Tiny and try/catch, Moo OO and roles, class keyword, named-capture regex, three-argument open, Path::Tiny, module layout, perltidy, perlcritic, cpanfile, and carton. Use when writing, reviewing, or modernizing .pl, .pm, or .t code, CPAN modules, Mojolicious, Dancer2, Catalyst, DBI, taint mode, or Perl tests. Sub-skills: perl-security, perl-testing."
+description: "AUTO_INVOKE(silent)⇔prompt∈{Perl,.pl,.pm,.t,use_v5.36,signatures,postfix_deref,isa,Try::Tiny,try/catch,Moo,Moose,feature_class,named_regex,qr//,3arg_open,autodie,Path::Tiny,Exporter,Module::Runtime,perltidy,perlcritic,cpanfile,carton,CPAN,Mojolicious,Dancer2,Catalyst,DBI,DBIx::Class,taint_mode,Test2::V0,Test::More,prove,Devel::Cover}|SUB:{perl-security,perl-testing}"
 ---
-# Modern Perl
-
-Write idiomatic Perl 5.36+ with signatures, explicit modules, and safe I/O.
-
-## Core rules
-- Start each file with `use v5.36;` (strict, warnings, say, signatures). Do not write the legacy `use strict; use warnings; use feature` block.
-- Use subroutine signatures with defaults and slurpy params. Do not unpack `@_` by hand.
-- Know the context: `my $n = @a` gives the count; `scalar @a` forces scalar.
-- Use postfix dereference (`$r->@*`, `$r->%*`, `$r->@[0,1]`) in chains.
-- Use `$o isa 'Class'` (5.32+), not `blessed($o) && $o->isa(...)`.
-- Use Moo with `Types::Standard` and `namespace::autoclean` for OO. Use Moose only when you need its metaprotocol.
-- Use named captures (`(?<name>...)`, `$+{name}`) with `/x` for complex regex. Precompile with `qr//` when you reuse a pattern.
-- Use three-argument `open` with an encoding layer, plus `autodie`. Never use two-argument `open`.
-- Prefer `Path::Tiny` for file operations.
-- Export with `use Exporter 'import'` and `@EXPORT_OK`. Do not export by default.
-- Load modules at runtime with `Module::Runtime::require_module`. Never use string `eval "require $m"`.
-- Call constructors as `Class->new`. Never use indirect object syntax.
-- Do not use `no strict 'refs'` or symbolic references; use a hash.
-- Replace mutable `our` config globals with `use constant` or Moo attribute defaults.
-- Pin deps in `cpanfile`; install and run with `carton`. Lint with `perlcritic` and format with `perltidy`.
-
-## Decisions
-
-| Situation | Do | Avoid |
-|---|---|---|
-| Error handling, perl < 5.40 | `Try::Tiny` (`try {} catch { $_ }`) | bare `eval {}; if ($@)` for complex flows |
-| Error handling, perl ≥ 5.40 | native `try {} catch ($e) {}` | Try::Tiny in new code |
-| Simple one-off failure check | `eval { ... }; die "...: $@" if $@` | silent `eval` with no `$@` check |
-| New class, perl ≥ 5.38, no CPAN deps wanted | `use feature 'class'` (`field :param`, `method`; experimental) | blessed hashref |
-| New class, needs types/roles | Moo + `Moo::Role` with `requires` | Moose without need, blessed hashref |
-| Iterate key/value pairs | `for my ($k, $v) (%h)` (`for_list`; stable 5.40) | manual `each` loops on 5.40+ |
-| Booleans | `use builtin 'true', 'false';` (5.36+, experimental) | magic `1`/`''` in APIs |
-
-## Load on demand
-
-| Need | Read |
-|---|---|
-| Code examples, layout, perltidy/perlcritic/cpanfile config, anti-pattern table | [references/idioms.md](references/idioms.md) |
-| Input handling, taint mode, regex safety, file and process ops, DBI, XSS/CSRF, sessions, perlcritic security | [references/perl-security.md](references/perl-security.md) |
-| Test2::V0, Test::More, prove, Test::MockModule, Devel::Cover | [references/perl-testing.md](references/perl-testing.md) |
-
-## Related skills
-- [`secure-coding`](../secure-coding/SKILL.md) — general secure coding checklists.
-- [`database-design`](../database-design/SKILL.md) — schema design for DBI and DBIx::Class.
-- [`systematic-debugging`](../systematic-debugging/SKILL.md) — root cause of failing tests and runtime errors.
+@SKL:perl
+§R{
+  ∀file_start:'use v5.36;'({strict,warnings,say,signatures})∧¬legacy('use strict;use warnings;use feature');
+  sub_signatures(defaults,slurpy_params)∧¬manual_unpack(@_);
+  context:'my $n=@a'→count∧'scalar @a'→force_scalar;
+  chains⇒postfix_deref($r->@*,$r->%*,$r->@[0,1]);
+  type_chk(Perl≥5.32):'$o isa Class'∧¬(blessed($o)&&$o->isa(...));
+  OO⇒Moo+Types::Standard+namespace::autoclean;Moose⇔req_metaprotocol;
+  complex_regex⇒named_captures((?<name>...),$+{name})+/x;reused_pat⇒qr//;
+  I/O⇒3arg_open+encoding_layer+autodie∧¬2arg_open;
+  file_ops⇒prefer(Path::Tiny);
+  export⇒'use Exporter import'+@EXPORT_OK∧¬default_export;
+  runtime_load⇒Module::Runtime::require_module∧¬eval('require $m');
+  ctor⇒Class->new∧¬indirect_obj_syntax;
+  ¬no_strict_refs∧¬sym_refs⇒use_hash;
+  mutable_our_cfg_globals→use_constant∨Moo_attr_defaults;
+  deps:pin(cpanfile)∧run_install(carton);lint:perlcritic;fmt:perltidy;
+}
+§D{
+  err_handle∧perl<5.40⇒Try::Tiny(try{}catch{$_})¬bare_eval_if($@)_complex;
+  err_handle∧perl≥5.40⇒native_try{}catch($e){}¬Try::Tiny_new_code;
+  simple_1off_fail_chk⇒eval{...};die("...: $@")if($@)¬silent_eval_without_$@_chk;
+  new_class∧perl≥5.38∧¬CPAN_deps⇒use_feature_class(field:param,method,exp)¬blessed_hashref;
+  new_class∧req(types∨roles)⇒Moo+Moo::Role+requires¬unneeded_Moose∨blessed_hashref;
+  iter_kv⇒for_my($k,$v)(%h)(for_list,stable_5.40)¬manual_each(5.40+);
+  booleans⇒use_builtin(true,false)(5.36+,exp)¬magic_1_empty_in_APIs;
+}
+§REF{
+  code_examples,layout,perltidy/perlcritic/cpanfile_cfg,anti-patterns→references/idioms.md;
+  input_handling,taint_mode,regex_safety,file_proc_ops,DBI,XSS/CSRF,sessions,perlcritic_sec→references/perl-security.md;
+  Test2::V0,Test::More,prove,Test::MockModule,Devel::Cover→references/perl-testing.md;
+}
+§REL{
+  ../secure-coding/SKILL.md:general_sec_checklists;
+  ../database-design/SKILL.md:DBI,DBIx::Class_schema_design;
+  ../systematic-debugging/SKILL.md:failing_tests,runtime_errors_root_cause;
+}

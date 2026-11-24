@@ -1,73 +1,71 @@
 ---
 name: backend-development
-description: "Backend services and APIs: REST, GraphQL, gRPC, OpenAPI, microservices, Kafka, RabbitMQ, JWT, OAuth, rate limits, Redis caching, BullMQ, Lambda, serverless, multi-tenant SaaS, PM2. Use when building APIs, servers, queues, or NestJS, FastAPI, Django, Laravel, Rails, Firebase backends. Sub-skills: api-design, nodejs-patterns, saas-multi-tenant, serverless, contract-first, error-handling, django-celery, django-security, django-testing, laravel-security, laravel-testing, rails, nestjs, fastapi, django, php-laravel, firebase-backend."
+description: "AUTO_INVOKE(silent)⇔prompt∈{backend,API,REST,GraphQL,gRPC,OpenAPI,protobuf,microservice,Kafka,RabbitMQ,SQS,NATS,JWT,OAuth,mTLS,rate_limit,Redis,BullMQ,Lambda,serverless,multi-tenant,SaaS,PM2,NestJS,FastAPI,Django,Celery,Laravel,Rails,Firebase,Node.js,Zod,Pydantic,RFC9457,DLQ,idempotent,circuit_breaker,CQRS,Saga,OTel}|SUB:{api-design,nodejs-patterns,saas-multi-tenant,serverless,contract-first,error-handling,django-celery,django-security,django-testing,laravel-security,laravel-testing,rails,nestjs,fastapi,django,php-laravel,firebase-backend}"
 ---
-# Backend Development
-Design and operate scalable, resilient backend services: contracts, boundaries, integration, security, observability, deployment.
-
-## Core rules
-- Capture latency, throughput, consistency, and availability needs before design.
-- Start with coarse services. Split only at a clear bounded-context boundary. Record the trade-off in an ADR.
-- Keep services stateless. Give each service its own database schema.
-- Define the API contract first (OpenAPI, GraphQL SDL, proto). Return RFC 9457 Problem Details or one error envelope `{ error: { code, message, details } }` with the correct HTTP status.
-- Use cursor pagination for large sets. Version with `/v1` or `Accept` header; publish a deprecation timeline.
-- Keep controllers thin. Put logic in services and data access in repositories.
-- Validate all input with a schema (Zod 4, Valibot, JSON Schema 2020-12, Pydantic v2) at the edge.
-- Enforce TLS; use mTLS between services. Use short-lived JWTs and rotate signing keys.
-- Set a timeout on every outbound call. Retry only transient errors, with exponential backoff and a cap.
-- Make write handlers and message consumers idempotent (request IDs, dedup keys). Send failed messages to a DLQ.
-- Log structured JSON with `traceId`/`spanId`. Export RED metrics and OpenTelemetry traces.
-- Expose `/health/live` and `/health/ready`. Run migrations before new pods start.
-- Ship with canary or blue-green and a feature flag for risky changes.
-
-## Decisions
-| Situation | Do | Avoid |
-|---|---|---|
-| CRUD over HTTP | REST | GraphQL for simple CRUD |
-| Clients need flexible reads | GraphQL | Many bespoke REST endpoints |
-| High-performance internal RPC | gRPC | JSON REST between hot services |
-| Decouple producer and consumer | Queue (RabbitMQ, SQS) or stream (Kafka, NATS) | Sync chain of calls |
-| Distributed transaction | Saga (choreography or orchestration) | 2PC across services |
-| Read and write loads differ | CQRS; event sourcing if audit needed | One model for both under strain |
-| Legacy monolith migration | Strangler routes behind gateway | Big-bang rewrite |
-| UI needs aggregated data | BFF per client | Fat generic API |
-| Downstream flaky or slow | Circuit breaker + timeout + graceful fallback | Unbounded retries |
-| Hot read path | Cache-aside in Redis with TTL or versioned keys | Cache with no invalidation plan |
-| Long-running work | Job queue; return job ID + status endpoint | Hold the HTTP request open |
-| Hot query path | Raw SQL | ORM for performance-critical queries |
-| Two teams change one API in parallel | Contract-first with generated types | Hand-written client types |
-
-## Load on demand
-| Need | Read |
-|---|---|
-| Integration patterns, event-driven, security list, resilience table + circuit breaker, observability, caching code, jobs, test levels, Dockerfile, deploy steps, feature checklist | [references/service-architecture.md](references/service-architecture.md) |
-| REST/GraphQL/tRPC style, versioning, pagination, auth, rate limits, status codes | [references/api-design.md](references/api-design.md) |
-| Shared contract (OpenAPI, AsyncAPI, protobuf, JSON Schema), generated types, drift | [references/contract-first.md](references/contract-first.md) |
-| Error hierarchies, Result types, error envelopes, retries with jitter (TS, Python, Go) | [references/error-handling.md](references/error-handling.md) |
-| Node.js framework choice, layers, async, validation, pitfalls | [references/nodejs-patterns.md](references/nodejs-patterns.md) |
-| NestJS 11 modules, DI, guards, pipes, interceptors, TypeORM, Passport JWT | [references/nestjs.md](references/nestjs.md) |
-| FastAPI, Pydantic v2, SQLAlchemy 2.0, async tests | [references/fastapi.md](references/fastapi.md) |
-| Django 5.2 LTS and 6.1, DRF, Channels, async ORM, django.tasks, deploy | [references/django.md](references/django.md) |
-| Django Celery tasks, beat, chords, DLQ | [references/django-celery.md](references/django-celery.md) |
-| Django security settings, auth, CSRF, CSP | [references/django-security.md](references/django-security.md) |
-| Django tests, factory_boy, verification loop | [references/django-testing.md](references/django-testing.md) |
-| PHP 8.3+ and Laravel 12/13 patterns | [references/php-laravel.md](references/php-laravel.md) |
-| Laravel security, Sanctum, policies | [references/laravel-security.md](references/laravel-security.md) |
-| Laravel tests, Pest, fakes, verification loop | [references/laravel-testing.md](references/laravel-testing.md) |
-| Pick a Laravel package (LaraPlugins MCP) | [references/laravel-plugin-discovery.md](references/laravel-plugin-discovery.md) |
-| Rails 7.2+ and 8.1 services, Solid Queue, Hotwire | [references/rails.md](references/rails.md) |
-| Multi-tenant SaaS, Postgres RLS, tenant middleware | [references/saas-multi-tenant.md](references/saas-multi-tenant.md) |
-| AWS Lambda, API Gateway, DynamoDB, SQS, Azure Functions, Cloudflare Workers | [references/serverless.md](references/serverless.md) |
-| Firebase: Firestore, rules, Cloud Functions, Storage | [references/firebase-backend.md](references/firebase-backend.md) |
-| Add one more API connector in the repo pattern | [references/api-connector-builder.md](references/api-connector-builder.md) |
-| Transactional email via Mailtrap, SPF/DKIM/DMARC | [references/mailtrap-email-integration.md](references/mailtrap-email-integration.md) |
-| Cache file processing by SHA-256 content hash | [references/content-hash-cache-pattern.md](references/content-hash-cache-pattern.md) |
-
-## Related skills
-- [`database-design`](../database-design/SKILL.md) — schema, technology choice, [`database-migration`](../database-design/references/database-migration.md).
-- [`redis`](../database-design/references/redis.md) — caching, locks, rate limits, Streams.
-- [`secure-coding`](../secure-coding/SKILL.md) — auth, injection, secrets review.
-- [`java`](../java/SKILL.md) — Spring Boot, Quarkus backends.
-- [`kotlin`](../kotlin/SKILL.md) — Ktor and Exposed backends.
-- [`dotnet`](../dotnet/SKILL.md) — ASP.NET Core and EF Core.
-- [`devops-iac`](../devops-iac/SKILL.md) — containers, Kubernetes, CI/CD; [`observability`](../devops-iac/references/observability.md).
+@SKL:backend-development
+§R{
+  goal:scalable_resilient_backend({contracts,boundaries,integration,sec,obs,deploy});
+  pre_design⇒capture({latency,throughput,consistency,availability});
+  start(coarse_svcs)∧split⇔clear_bounded_context_boundary∧log(ADR,tradeoff);
+  ∀svc⇒stateless∧own_DB_schema;
+  contract_first(OpenAPI∨GraphQL_SDL∨proto)∧err_resp∈{RFC_9457_Problem_Details,{error:{code,message,details}}}+exact_HTTP_status;
+  large_sets⇒cursor_pagination;version∈{/v1,Accept_hdr}+pub_deprecation_timeline;
+  layer:(controller≡thin→svc≡logic→repo≡data_access);
+  ∀input@edge⇒schema_val(Zod_4∨Valibot∨JSON_Schema_2020-12∨Pydantic_v2);
+  enforce(TLS∧svc2svc_mTLS)∧JWT≡short_lived∧rotate(signing_keys);
+  ∀outbound_call⇒timeout∧retry(transient_err_only,exp_backoff,cap);
+  {write_handlers,msg_consumers}⇒idempotent(req_IDs,dedup_keys)∧failed_msg→DLQ;
+  log≡JSON({traceId,spanId})∧export({RED_metrics,OTel_traces});
+  expose({/health/live,/health/ready})∧migrations→new_pods_start;
+  ship∈{canary,blue-green}∧risky_Δ⇒feature_flag;
+}
+§D{
+  CRUD_HTTP⇒REST¬GraphQL_simple_CRUD;
+  clients_need_flexible_reads⇒GraphQL¬many_bespoke_REST;
+  high_perf_internal_RPC⇒gRPC¬JSON_REST_hot_svcs;
+  decouple_producer_consumer⇒queue(RabbitMQ∨SQS)∨stream(Kafka∨NATS)¬sync_call_chain;
+  distributed_tx⇒Saga(choreography∨orchestration)¬2PC_cross_svc;
+  read_write_loads_differ⇒CQRS∧(audit_needed⇒event_sourcing)¬single_model_under_strain;
+  legacy_monolith_migration⇒Strangler_routes@gateway¬big_bang_rewrite;
+  UI_needs_aggregated_data⇒BFF_per_client¬fat_generic_API;
+  downstream_flaky∨slow⇒circuit_breaker+timeout+graceful_fallback¬unbounded_retries;
+  hot_read_path⇒cache_aside(Redis,TTL∨versioned_keys)¬cache_wo_invalidation_plan;
+  long_running_work⇒job_queue+return(job_ID,status_endpoint)¬hold_HTTP_req_open;
+  hot_query_path⇒raw_SQL¬ORM_perf_critical_queries;
+  two_teams_parallel_API_Δ⇒contract_first+generated_types¬hand_written_client_types;
+}
+§REF{
+  integration,event_driven,sec_list,resilience_tbl,circuit_breaker,obs,caching_code,jobs,test_levels,Dockerfile,deploy_steps,feature_checklist→references/service-architecture.md;
+  REST,GraphQL,tRPC,versioning,pagination,auth,rate_limits,status_codes→references/api-design.md;
+  shared_contract,OpenAPI,AsyncAPI,protobuf,JSON_Schema,gen_types,drift→references/contract-first.md;
+  err_hierarchies,Result_types,err_envelopes,retries_jitter,TS_Python_Go→references/error-handling.md;
+  Node.js_fw_choice,layers,async,val,pitfalls→references/nodejs-patterns.md;
+  NestJS_11,modules,DI,guards,pipes,interceptors,TypeORM,Passport_JWT→references/nestjs.md;
+  FastAPI,Pydantic_v2,SQLAlchemy_2.0,async_tests→references/fastapi.md;
+  Django_5.2_LTS_6.1,DRF,Channels,async_ORM,django.tasks,deploy→references/django.md;
+  Django_Celery,beat,chords,DLQ→references/django-celery.md;
+  Django_sec,auth,CSRF,CSP→references/django-security.md;
+  Django_tests,factory_boy,verification_loop→references/django-testing.md;
+  PHP_8.3+,Laravel_12_13→references/php-laravel.md;
+  Laravel_sec,Sanctum,policies→references/laravel-security.md;
+  Laravel_tests,Pest,fakes,verification_loop→references/laravel-testing.md;
+  Laravel_pkg,LaraPlugins_MCP→references/laravel-plugin-discovery.md;
+  Rails_7.2+_8.1,services,Solid_Queue,Hotwire→references/rails.md;
+  multi_tenant_SaaS,Postgres_RLS,tenant_middleware→references/saas-multi-tenant.md;
+  AWS_Lambda,API_Gateway,DynamoDB,SQS,Azure_Functions,Cloudflare_Workers→references/serverless.md;
+  Firebase,Firestore,rules,Cloud_Functions,Storage→references/firebase-backend.md;
+  add_API_connector_in_repo_pattern→references/api-connector-builder.md;
+  transactional_email,Mailtrap,SPF_DKIM_DMARC→references/mailtrap-email-integration.md;
+  cache_file_processing_by_SHA-256_content_hash→references/content-hash-cache-pattern.md;
+}
+§REL{
+  ../database-design/SKILL.md:schema,tech_choice;
+  ../database-design/references/database-migration.md:DB_migrations;
+  ../database-design/references/redis.md:caching,locks,rate_limits,Streams;
+  ../secure-coding/SKILL.md:auth,injection,secrets_review;
+  ../java/SKILL.md:Spring_Boot,Quarkus_backends;
+  ../kotlin/SKILL.md:Ktor,Exposed_backends;
+  ../dotnet/SKILL.md:ASP.NET_Core,EF_Core;
+  ../devops-iac/SKILL.md:containers,Kubernetes,CI_CD;
+  ../devops-iac/references/observability.md:metrics,logs,traces;
+}

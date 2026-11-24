@@ -1,62 +1,51 @@
 ---
 name: networking
-description: "Home, homelab, and enterprise networks: gateways, switches, APs, IP plans, DHCP, DNS, VLANs, Pi-hole, WireGuard, Cisco IOS, Netmiko, BGP, config validation, interface health. Use when planning or fixing a home network, segmenting VLANs, setting up Pi-hole or WireGuard, reviewing Cisco config, automating device SSH, or diagnosing BGP, CRC errors, or duplex mismatch. Sub-skills: homelab-network-readiness, homelab-vlan-segmentation, homelab-pihole-dns, homelab-wireguard-vpn, cisco-ios-patterns, netmiko-ssh-automation, network-bgp-diagnostics, network-config-validation, network-interface-health."
+description: "AUTO_INVOKE(silent)⇔prompt∈{network,homelab,enterprise,gateway,switch,AP,IP_plan,DHCP,DNS,home.arpa,VLAN,trunk,SSID,firewall,Pi-hole,DoH,cloudflared,WireGuard,DDNS,UniFi,OPNsense,pfSense,MikroTik,Cisco_IOS,IOS-XE,ACL,Netmiko,TextFSM,SSH,BGP,prefix-list,route-map,AS_path,CRC,drops,runts,giants,flaps,duplex_mismatch,double_NAT,UPS,PoE}|SUB:{homelab-network-readiness,homelab-vlan-segmentation,homelab-pihole-dns,homelab-wireguard-vpn,cisco-ios-patterns,netmiko-ssh-automation,network-bgp-diagnostics,network-config-validation,network-interface-health}"
 ---
-# Networking
-
-Plan, change, and troubleshoot home, homelab, and enterprise networks so they grow without a rebuild.
-
-## Core rules
-- Separate roles: modem/ONT → gateway (NAT, firewall, DHCP, DNS, inter-VLAN) → switch → APs, servers, clients.
-- Do not use `192.168.1.0/24` when VPN access is planned; it collides with hotels, offices, and ISP routers.
-- Use non-overlapping /24s per zone. Convention: `.1` gateway, `.2-.49` infrastructure, `.50-.240` DHCP, `.241-.254` spare.
-- Use `home.arpa` for local names, not ad hoc names like `home.lan`.
-- Give a DHCP reservation to every host you SSH into, bookmark, monitor, or expose (NAS, Pi-hole, Home Assistant).
-- Run exactly one DHCP server per subnet. Disable DHCP on routers reused as APs.
-- Hand out the gateway as DNS until you deploy a local resolver on purpose. For Pi-hole: reserve its address first, then point DHCP DNS at it.
-- Avoid double NAT unless it has a documented reason.
-- Do not keep cameras, IoT, laptops, and servers in one flat trust zone.
-- Collect read-only evidence (`show`, logs, counters) before any config change.
-- Stage every change with a written rollback path and an out-of-band way back in.
-
-## Decisions
-
-| Situation | Do | Avoid |
-|---|---|---|
-| Basic internet only | ISP router | Extra gear with no need |
-| Managed home network, wants a UI | UniFi gateway | Hand-built Linux router |
-| Flexible homelab (VLAN, VPN, DNS) | OPNsense / pfSense | ISP router with weak VLAN support |
-| Advanced user, wants power | MikroTik, reviewed config | Untested changes on the primary gateway |
-| Can run Ethernet to APs | Wired backhaul, PoE switch | Wireless mesh backhaul |
-| Frequent power cuts | UPS on gateway, switch, DNS, NAS | Unprotected core devices |
-| Need isolation now | VLANs + inter-VLAN firewall rules | Flat network |
-| Isolation later | VLAN-ready IP plan and hardware now | Re-addressing everything later |
-| Remote access | WireGuard on the gateway + DDNS | Port-forwarding admin UIs |
-
-| Symptom | Read first |
-|---|---|
-| CRC errors, drops, runts, giants, flaps, duplex mismatch | `network-interface-health` |
-| BGP neighbor down, missing routes | `network-bgp-diagnostics` |
-| DNS fails or ads not blocked | `homelab-pihole-dns` |
-| VPN handshake fails | `homelab-wireguard-vpn` |
-| Config about to be pushed | `network-config-validation` |
-
-## Load on demand
-
-| Need | Read |
-|---|---|
-| Device-role diagram, gateway table, IP plan example, cabling, worked upgrade examples | [references/home-network-plan.md](references/home-network-plan.md) |
-| Pre-change plan: inventory, trust zones, staged sequence, rollback | [references/homelab-network-readiness.md](references/homelab-network-readiness.md) |
-| VLANs on UniFi, pfSense, OPNsense, MikroTik: trunks, SSIDs, firewall rules | [references/homelab-vlan-segmentation.md](references/homelab-vlan-segmentation.md) |
-| Pi-hole install, blocklists, DoH with cloudflared, DHCP, local DNS | [references/homelab-pihole-dns.md](references/homelab-pihole-dns.md) |
-| WireGuard server and peers, keys, split/full tunnel, DDNS, handshake fixes | [references/homelab-wireguard-vpn.md](references/homelab-wireguard-vpn.md) |
-| Cisco IOS/IOS-XE: modes, show commands, wildcard masks, ACLs, change windows | [references/cisco-ios-patterns.md](references/cisco-ios-patterns.md) |
-| Python Netmiko SSH: read-only collection, batches, TextFSM, guarded pushes | [references/netmiko-ssh-automation.md](references/netmiko-ssh-automation.md) |
-| BGP states, prefix-lists, route-maps, AS path regex | [references/network-bgp-diagnostics.md](references/network-bgp-diagnostics.md) |
-| Pre-deploy config check: dangerous commands, duplicate IPs, overlaps, VTY risk | [references/network-config-validation.md](references/network-config-validation.md) |
-| Interface errors on routers, switches, Linux hosts | [references/network-interface-health.md](references/network-interface-health.md) |
-
-## Related skills
-- [`devops-iac`](../devops-iac/SKILL.md) — cloud networks, Kubernetes networking, IaC
-- [`secure-coding`](../secure-coding/SKILL.md) — cloud network isolation and firewall checklists
-- [`python`](../python/SKILL.md) — tooling for Netmiko and parser scripts
+@SKL:networking
+§R{
+  role_sep⇒modem/ONT→gateway(NAT,fw,DHCP,DNS,inter-VLAN)→switch→(APs,servers,clients)
+  VPN_planned⇒¬192.168.1.0/24(collides:hotels,offices,ISP_routers)
+  IP_plan⇒non_overlap_/24/zone∧.1=gw∧.2-.49=infra∧.50-.240=DHCP∧.241-.254=spare
+  local_DNS⇒home.arpa∧¬ad_hoc(home.lan)
+  DHCP_res⇒∀host∈(SSH,bookmark,monitor,expose:NAS,Pi-hole,HomeAssistant)
+  DHCP_srv⇒exact_1/subnet∧disable_DHCP(routers_reused_as_AP)
+  DNS_assign⇒gw_until_local_resolver∧Pi-hole:(reserve_IP_first→point_DHCP_DNS)
+  NAT⇒¬double_NAT∨documented_reason
+  trust_zones⇒¬flat_zone(cameras,IoT,laptops,servers)
+  pre_change⇒collect_ro_evidence(show,logs,counters)
+  change_safety⇒staged∧written_rollback∧out_of_band_access
+}
+§D{
+  basic_inet_only⇒ISP_router¬extra_gear_unneeded;
+  managed_home+UI⇒UniFi_gw¬handbuilt_Linux_router;
+  flex_homelab(VLAN,VPN,DNS)⇒OPNsense∨pfSense¬ISP_router(weak_VLAN);
+  adv_power_user⇒MikroTik+reviewed_cfg¬untested_Δ@primary_gw;
+  can_run_Ethernet_AP⇒wired_backhaul+PoE_switch¬wireless_mesh_backhaul;
+  freq_power_cuts⇒UPS(gw,switch,DNS,NAS)¬unprotected_core;
+  need_iso_now⇒VLANs+inter_VLAN_fw_rules¬flat_net;
+  need_iso_later⇒VLAN_ready(IP_plan,hw)_now¬re_address_all_later;
+  remote_access⇒WireGuard@gw+DDNS¬port_fwd_admin_UIs;
+  symptom∈{CRC,drops,runts,giants,flaps,duplex_mismatch}⇒read_first:network-interface-health;
+  symptom∈{BGP_down,missing_routes}⇒read_first:network-bgp-diagnostics;
+  symptom∈{DNS_fail,ads_not_blocked}⇒read_first:homelab-pihole-dns;
+  symptom=VPN_handshake_fail⇒read_first:homelab-wireguard-vpn;
+  symptom=pre_push_cfg⇒read_first:network-config-validation;
+}
+§REF{
+  dev_role_diag,gw_tbl,IP_plan_ex,cabling,upgrade_ex→references/home-network-plan.md;
+  pre_change:inventory,trust_zones,staged_seq,rollback→references/homelab-network-readiness.md;
+  VLANs(UniFi,pfSense,OPNsense,MikroTik):trunks,SSIDs,fw_rules→references/homelab-vlan-segmentation.md;
+  Pi-hole:install,blocklists,DoH(cloudflared),DHCP,local_DNS→references/homelab-pihole-dns.md;
+  WireGuard:srv/peers,keys,split/full_tunnel,DDNS,handshake_fix→references/homelab-wireguard-vpn.md;
+  Cisco_IOS/IOS-XE:modes,show_cmds,wildcard_masks,ACLs,chg_win→references/cisco-ios-patterns.md;
+  Netmiko_SSH:ro_collect,batches,TextFSM,guarded_push→references/netmiko-ssh-automation.md;
+  BGP:states,prefix-lists,route-maps,AS_path_regex→references/network-bgp-diagnostics.md;
+  pre_deploy_chk:danger_cmds,dup_IPs,overlaps,VTY_risk→references/network-config-validation.md;
+  iface_errs(routers,switches,Linux_hosts)→references/network-interface-health.md;
+}
+§REL{
+  ../devops-iac/SKILL.md:cloud_net,K8s_net,IaC;
+  ../secure-coding/SKILL.md:cloud_net_iso,fw_checklists;
+  ../python/SKILL.md:Netmiko,parser_scripts;
+}

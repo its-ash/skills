@@ -1,58 +1,50 @@
 ---
 name: database-design
-description: "Designs data layers by selecting database technologies, modeling schemas, and planning migrations for scalable architectures. Use when choosing SQL or NoSQL databases like PostgreSQL MySQL MongoDB, creating entity relationship diagrams ERD, normalizing tables, defining constraints indexes partitions, writing migration scripts, optimizing query performance, or reviewing production schema designs. Sub-skills: postgresql, mysql-patterns, clickhouse, redis, database-migration, database-optimization, prisma, drizzle-orm."
+description: "AUTO_INVOKE(silent)⇔prompt∈{SQL,NoSQL,database_design,schema,ERD,3NF,OLTP,OLAP,PostgreSQL,MySQL,MariaDB,SQLite,MongoDB,ClickHouse,TimescaleDB,Redis,Elasticsearch,OpenSearch,Meilisearch,Neo4j,CockroachDB,Spanner,Prisma,Drizzle,Flyway,Liquibase,Alembic,migrations,EXPLAIN,index,partition,RLS,N+1,CAP,keyset_pagination,expand_contract,BIGINT,UUID}|SUB:{postgresql,mysql-patterns,clickhouse,redis,database-migration,database-optimization,prisma,drizzle-orm}"
 ---
-# Database Design
-
-Choose the store, model the schema, index it, and evolve it safely.
-
-## Core rules
-- Pick the database from access patterns, consistency needs (CAP), and scale. Do not default to one engine.
-- Model business concepts, not UI layouts.
-- Enforce integrity in the database: `NOT NULL`, `UNIQUE`, `CHECK`.
-- Use `BIGINT` primary keys; use UUIDs for distributed systems.
-- Define every FK with an explicit `ON DELETE` strategy, and index every FK.
-- Store money as `DECIMAL`/`NUMERIC`, never FLOAT. Store dates as `DATE`/`TIMESTAMP`, never strings.
-- Add `created_at` and `updated_at` to every table.
-- Index columns used in `WHERE`, `ORDER BY`, and `JOIN`. Order composite columns most selective first.
-- List columns explicitly; avoid `SELECT *`. Prevent N+1 with JOINs or eager loading.
-- Version every migration (Flyway, Liquibase, Alembic, Prisma Migrate) and write a `DOWN` script.
-- Add `NOT NULL` to a live table in steps: add nullable → backfill → apply constraint.
-- Use online schema-change tools on large tables to avoid locks.
-
-## Decisions
-
-| Situation | Do | Avoid |
-|---|---|---|
-| Transactional, relational data (OLTP) | PostgreSQL / MySQL, normalize to 3NF | Document store for joins-heavy data |
-| Simple or local app | SQLite | A database server |
-| Analytics, events, time-series (OLAP) | ClickHouse / TimescaleDB | Row-store aggregates at scale |
-| Cache, sessions, rate limits, locks | Redis | Cache in the primary DB |
-| Flexible nested documents read together | Document DB, embed | Reference when always read together |
-| Large or independently updated children | Reference | Unbounded embedded arrays |
-| Full-text or faceted search | Elasticsearch / OpenSearch / Meilisearch | `LIKE '%x%'` scans |
-| Relationship traversal | Graph DB (Neo4j) | Deep recursive SQL joins |
-| Global scale + strong consistency | NewSQL (CockroachDB, Spanner) | Hand-rolled sharding |
-| Read-heavy hot path proven slow | Denormalize or add a replica | Denormalize before you measure |
-| Large re-architecture | Strangler pattern, expand-contract | Big-bang cutover |
-
-## Load on demand
-
-| Need | Read |
-|---|---|
-| Engine catalog, design workflow, index types, scaling, anti-patterns, review checklist | [references/schema-design.md](references/schema-design.md) |
-| PostgreSQL types, constraints, indexes, partitioning, RLS, extensions | [references/postgresql.md](references/postgresql.md) |
-| MySQL/MariaDB defaults, EXPLAIN, upserts, keyset pagination, locks, replicas | [references/mysql-patterns.md](references/mysql-patterns.md) |
-| ClickHouse MergeTree family, materialized views, funnel/retention queries | [references/clickhouse.md](references/clickhouse.md) |
-| Redis caching, locks, rate limits, Streams, eviction, stampede prevention | [references/redis.md](references/redis.md) |
-| Zero-downtime migrations, backfills, expand-contract, rollback (many ORMs) | [references/database-migration.md](references/database-migration.md) |
-| Slow queries, EXPLAIN plans, indexing strategy, pooling, scaling | [references/database-optimization.md](references/database-optimization.md) |
-| Prisma schema, migrate, relations, transactions, P2002/P2025/P2003 | [references/prisma.md](references/prisma.md) |
-| Drizzle ORM schema, queries, drizzle-kit, serverless DBs | [references/drizzle-orm.md](references/drizzle-orm.md) |
-
-## Related skills
-- [`backend-development`](../backend-development/SKILL.md) — APIs and services on top of the data layer
-- [`software-architecture`](../software-architecture/SKILL.md) — CQRS, event sourcing, multi-tenancy decisions
-- [`nestjs`](../backend-development/references/nestjs.md) — NestJS data access and modules
-- [`java`](../java/SKILL.md) — JPA, Hibernate, MyBatis
-- [`kotlin`](../kotlin/SKILL.md) — Exposed ORM, HikariCP, Flyway
+@SKL:database-design
+§R{
+  pick_db⇒f(access_patterns,CAP_consistency,scale)¬default_1_engine;
+  model⇒business_concepts¬UI_layouts;
+  db_integrity⇒{NOT_NULL,UNIQUE,CHECK};
+  PK⇒BIGINT;(distributed⇒UUID);
+  ∀FK⇒explicit(ON_DELETE)∧index(FK);
+  money⇒DECIMAL∨NUMERIC(¬FLOAT);dates⇒DATE∨TIMESTAMP(¬strings);
+  ∀table⇒{created_at,updated_at};
+  index(WHERE,ORDER_BY,JOIN);composite_col_order⇒most_selective_first;
+  explicit_cols¬SELECT_*;prevent_N+1⇒JOIN∨eager_loading;
+  ∀migration⇒version(Flyway∨Liquibase∨Alembic∨Prisma_Migrate)+DOWN_script;
+  live_add_NOT_NULL⇒add_nullable→backfill→apply_constraint;
+  large_tbl_DDL⇒online_schema_change_tools(¬locks);
+}
+§D{
+  OLTP(transactional,relational)⇒PostgreSQL∨MySQL+normalize_3NF¬doc_store_for_joins_heavy;
+  simple∨local_app⇒SQLite¬db_server;
+  OLAP(analytics,events,time_series)⇒ClickHouse∨TimescaleDB¬row_store_aggregates@scale;
+  cache∨sessions∨rate_limits∨locks⇒Redis¬cache_in_primary_DB;
+  flex_nested_docs_read_together⇒DocDB+embed¬ref_when_always_read_together;
+  large∨indep_updated_children⇒reference¬unbounded_embedded_arrays;
+  full_text∨faceted_search⇒Elasticsearch∨OpenSearch∨Meilisearch¬LIKE_%x%_scans;
+  rel_traversal⇒GraphDB(Neo4j)¬deep_recursive_SQL_joins;
+  global_scale+strong_consistency⇒NewSQL(CockroachDB,Spanner)¬hand_rolled_sharding;
+  read_heavy_hot_path∧proven_slow⇒denormalize∨add_replica¬denormalize_pre_measure;
+  large_rearch⇒strangler_pattern+expand_contract¬big_bang_cutover;
+}
+§REF{
+  engine_catalog,design_wf,index_types,scaling,anti_patterns,review_checklist→references/schema-design.md;
+  PostgreSQL(types,constraints,indexes,partitioning,RLS,extensions)→references/postgresql.md;
+  MySQL,MariaDB(defaults,EXPLAIN,upserts,keyset_pagination,locks,replicas)→references/mysql-patterns.md;
+  ClickHouse(MergeTree_family,mat_views,funnel_retention_queries)→references/clickhouse.md;
+  Redis(caching,locks,rate_limits,Streams,eviction,stampede_prev)→references/redis.md;
+  0_downtime_migrations,backfills,expand_contract,rollback(many_ORMs)→references/database-migration.md;
+  slow_queries,EXPLAIN_plans,indexing_strategy,pooling,scaling→references/database-optimization.md;
+  Prisma(schema,migrate,relations,tx,P2002,P2025,P2003)→references/prisma.md;
+  Drizzle_ORM(schema,queries,drizzle-kit,serverless_DBs)→references/drizzle-orm.md;
+}
+§REL{
+  ../backend-development/SKILL.md:APIs,services_over_data_layer;
+  ../software-architecture/SKILL.md:CQRS,event_sourcing,multi_tenancy;
+  ../backend-development/references/nestjs.md:NestJS_data_access,modules;
+  ../java/SKILL.md:JPA,Hibernate,MyBatis;
+  ../kotlin/SKILL.md:Exposed_ORM,HikariCP,Flyway;
+}

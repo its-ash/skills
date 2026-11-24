@@ -1,63 +1,63 @@
 ---
 name: machine-learning
-description: "Production ML engineering: data contracts, leakage checks, reproducible training, metric economics, error analysis, promotion gates, serving, monitoring, rollback. Use when hardening ML beyond notebooks, adding first ML to a codebase, writing PyTorch training loops or DataLoaders, designing recsys, ranking, or reranker pipelines, tuning thresholds, precision, recall, AUC, calibration, debugging drift, label leakage, train/serve skew, or speeding up slow ETL or backfill. Sub-skills: pytorch-patterns, ml-adoption-playbook, recsys-pipeline-architect, data-throughput-accelerator."
+description: "AUTO_INVOKE(silent)⇔prompt∈{ML,MLE,production_ML,data_contract,leakage,point-in-time,reproducible_training,PyTorch,DataLoader,AMP,torch.compile,recsys,ranking,reranker,threshold,precision,recall,AUC,F1,calibration,drift,label_leakage,train/serve_skew,promotion_gates,shadow,canary,rollback,ETL,backfill,baseline,error_analysis}|SUB:{pytorch-patterns,ml-adoption-playbook,recsys-pipeline-architect,data-throughput-accelerator}"
 ---
-# Machine Learning Engineering
-Turn model work into a production system: data contracts, repeatable training, quality gates, deployable artifacts, monitoring.
-
-## Core rules
-- Start from the decision the model changes, not the model. Reject "improve the model" as a requirement.
-- Write the Iteration Compact before model code ([template](references/mle-workflow.md#iteration-compact-write-before-model-code-fits-in-a-pr-description)).
-- Lock a data contract: entity grain, label timing, feature timing, point-in-time joins, split policy, snapshot ID.
-- Check leakage first. Remove any feature not available at prediction time or joined with future data.
-- Build a baseline before complexity. Add capacity only when error analysis shows a fixable cause.
-- Make training reproducible: typed config, pinned deps, seeds, dataset version, code SHA, config hash, artifact URI.
-- Ship preprocessing inside the artifact. Share train/serve transforms or prove equivalence with a test.
-- Declare promotion gates before training ends. Automate them and fail closed.
-- Compare against baseline and current production model, per slice, not only in aggregate.
-- Treat offline metrics as gates, not guarantees. Use shadow, canary, or A/B when product behavior changes.
-- Serve with input validation, timeout, fallback, model version in output and logs, no PII in logs.
-- Monitor system health, feature drift, prediction drift, and delayed-label quality.
-- Keep a rollback that switches to a known-good artifact without retraining.
-- Keep each important production mistake as a regression test, eval slice, or runbook entry.
-- Match scope to the system. Do not add heavy MLOps when a contract, baseline, eval script, and rollback note suffice.
-
-## Decisions
-| Situation | Do | Avoid |
-|---|---|---|
-| Wrong positive costs most | Favor precision | Accuracy as headline metric |
-| Missed positive costs most | Favor recall | Default 0.5 threshold |
-| Order matters more than one cutoff | AUC or ranking metrics | F1 for ranking |
-| Precision/recall cost truly balanced | F1, with the reason stated | F1 by habit |
-| Any metric choice | State which mistake it makes cheaper, which more likely, who pays | Metric with no cost owner |
-| Real-world feedback as labels | Treat as delayed, biased, partial labels | Treat as ground truth |
-| Latency/cost limits | Track as first-class metrics | Ignore until serving |
-
-| Situation | Do | Avoid |
-|---|---|---|
-| Noisy labels | Adjudicate, confidence weights, soft targets | Train on raw labels blindly |
-| Class imbalance | Compare weighted loss, resampling, threshold move, calibration | Resample without comparison |
-| Missing values | Decide: informative, imputable, or abstain | Silent fill with 0 |
-| Time-dependent data | Time-based split, point-in-time joins | Random split |
-| Threshold tuning | Tune on validation | Repeat tuning on test set |
-| Mistakes after a run | Cluster FP/FN, map to labels, features, threshold, or fallback | Vague "improve model" next task |
-
-## Load on demand
-| Need | Read |
-|---|---|
-| Iteration Compact, decision loop, feature hypotheses, error analysis, Observation Ledger, contracts, pipeline and gate code, serving, monitoring, checklist, anti-patterns, MLE-01..10 task map | [references/mle-workflow.md](references/mle-workflow.md) |
-| PyTorch models, train/val loops, Datasets, DataLoaders, checkpoints, AMP, `torch.compile`, non-reproducible runs | [references/pytorch-patterns.md](references/pytorch-patterns.md) |
-| First ML feature in a codebase: framing, heuristic check, data readiness, decoupled inference API, flag, baseline | [references/ml-adoption-playbook.md](references/ml-adoption-playbook.md) |
-| Recsys, ranking, feed, notification triage, RAG reranker (Source, Hydrator, Filter, Scorer, Selector, SideEffect) | [references/recsys-pipeline-architect.md](references/recsys-pipeline-architect.md) |
-| Slow ingestion, backfill, export, ETL, warehouse load; prove correctness by row and timestamp counts | [references/data-throughput-accelerator.md](references/data-throughput-accelerator.md) |
-
-## Related skills
-- [`python`](../python/SKILL.md) — layout, uv, ruff, mypy; [`python-testing`](../python/references/python-testing.md) for transform tests.
-- [`eval-harness`](../ai-agent-engineering/references/eval-harness.md) — regression gates; also [`ai-regression-testing`](../unit-testing-patterns/references/ai-regression-testing.md).
-- [`ai-agent-engineering`](../ai-agent-engineering/SKILL.md) — LLM agents, RAG, [`llm-cost-optimization`](../ai-agent-engineering/references/llm-cost-optimization.md), [`search-first`](../ai-agent-engineering/references/search-first.md).
-- [`software-architecture`](../software-architecture/SKILL.md) — record hard-to-reverse data, model, rollout choices.
-- [`api-design`](../backend-development/references/api-design.md), [`fastapi`](../backend-development/references/fastapi.md) — prediction APIs, batch jobs, idempotent retrain.
-- [`database-design`](../database-design/SKILL.md) — label, feature, prediction stores; [`postgresql`](../database-design/references/postgresql.md), [`clickhouse`](../database-design/references/clickhouse.md).
-- [`docker`](../devops-iac/references/docker.md), [`observability`](../devops-iac/references/observability.md) — reproducible images; version, slice, drift dashboards.
-- [`secure-coding`](../secure-coding/SKILL.md) — secrets, PII, unsafe deserialization in artifacts, notebooks, logs.
-- [`devops-iac`](../devops-iac/SKILL.md) — CI/CD, Kubernetes for training and serving.
+@SKL:machine-learning
+§R{
+  start⇒decision_changed_by_model∧¬model_first∧reject('improve_the_model'_req)
+  pre_model_code⇒write(Iteration_Compact→references/mle-workflow.md#iteration-compact-write-before-model-code-fits-in-a-pr-description)
+  data_contract⇒lock(entity_grain,label_t,feature_t,point_in_time_joins,split_policy,snapshot_ID)
+  leakage⇒check_first∧drop(feature∉avail@pred_t∨joined(future_data))
+  complexity⇒baseline_first∧add_cap⇔error_analysis(fixable_cause)
+  repro⇒typed_cfg∧pinned_deps∧seeds∧dataset_ver∧code_SHA∧cfg_hash∧artifact_URI
+  preprocess⇒ship_in_artifact∧(share(train_serve_xform)∨test_equiv)
+  promo_gates⇒declare_pre_train_end∧automate∧fail_closed
+  eval_cmp⇒vs(baseline,cur_prod)∧per_slice∧¬agg_only
+  offline_metrics⇒gates∧¬guarantees∧Δ(prod_behavior)⇒(shadow∨canary∨A/B)
+  serve⇒in_val∧timeout∧fallback∧model_ver∈(out,logs)∧¬PII∈logs
+  monitor⇒sys_health∧feature_drift∧pred_drift∧delayed_label_qual
+  rollback⇒switch_known_good_artifact∧¬retrain
+  prod_mistakes⇒keep_as(reg_test∨eval_slice∨runbook_entry)
+  scope⇒match_sys∧¬heavy_MLOps⇔suffice(contract,baseline,eval_script,rollback_note)
+}
+§D{
+  wrong_pos_cost_max⇒favor_precision¬accuracy_headline;
+  missed_pos_cost_max⇒favor_recall¬def_0.5_thresh;
+  order>1_cutoff⇒AUC∨ranking_metrics¬F1(ranking);
+  prec_rec_cost_balanced⇒F1+stated_reason¬F1_by_habit;
+  ∀metric_choice⇒state(cheaper_mistake,likelier_mistake,cost_owner)¬metric_sans_cost_owner;
+  realworld_fb_labels⇒treat_as(delayed,biased,partial)¬ground_truth;
+  latency/cost_limits⇒track_first_class¬defer_until_serving;
+  noisy_labels⇒adjudicate∨conf_weights∨soft_targets¬train_raw_blind;
+  class_imbalance⇒cmp(weighted_loss,resampling,thresh_move,calibration)¬resample_sans_cmp;
+  missing_vals⇒decide(informative∨imputable∨abstain)¬silent_fill_0;
+  time_dep_data⇒time_split∧point_in_time_joins¬random_split;
+  thresh_tuning⇒tune@val¬repeat_tune@test;
+  post_run_mistakes⇒cluster(FP/FN)→map(labels,features,thresh,fallback)¬vague('improve_model');
+}
+§REF{
+  IterCompact,dec_loop,feat_hyp,err_analysis,ObsLedger,contracts,pipe+gate_code,serve,monitor,chk,anti_patterns,MLE-01..10→references/mle-workflow.md;
+  PyTorch:models,train/val_loops,Dataset,DataLoader,ckpt,AMP,torch.compile,non_repro→references/pytorch-patterns.md;
+  first_ML_in_repo:framing,heuristic_chk,data_ready,decoupled_inf_API,flag,baseline→references/ml-adoption-playbook.md;
+  recsys,ranking,feed,notif_triage,RAG_reranker(Source,Hydrator,Filter,Scorer,Selector,SideEffect)→references/recsys-pipeline-architect.md;
+  slow_ingest,backfill,export,ETL,warehouse_load,prove_by(row_cnt,ts_cnt)→references/data-throughput-accelerator.md;
+}
+§REL{
+  ../python/SKILL.md:layout,uv,ruff,mypy;
+  ../python/references/python-testing.md:xform_tests;
+  ../ai-agent-engineering/references/eval-harness.md:reg_gates;
+  ../unit-testing-patterns/references/ai-regression-testing.md:reg_gates;
+  ../ai-agent-engineering/SKILL.md:LLM_agents,RAG;
+  ../ai-agent-engineering/references/llm-cost-optimization.md:LLM_cost;
+  ../ai-agent-engineering/references/search-first.md:search_first;
+  ../software-architecture/SKILL.md:ADR(data,model,rollout);
+  ../backend-development/references/api-design.md:pred_API,batch,idempotent_retrain;
+  ../backend-development/references/fastapi.md:pred_API,batch,idempotent_retrain;
+  ../database-design/SKILL.md:label/feat/pred_stores;
+  ../database-design/references/postgresql.md:stores;
+  ../database-design/references/clickhouse.md:stores;
+  ../devops-iac/references/docker.md:repro_imgs;
+  ../devops-iac/references/observability.md:ver/slice/drift_dashboards;
+  ../secure-coding/SKILL.md:secrets,PII,unsafe_deser(artifacts,notebooks,logs);
+  ../devops-iac/SKILL.md:CI/CD,K8s(train,serve);
+}

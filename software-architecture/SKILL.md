@@ -1,61 +1,45 @@
 ---
 name: software-architecture
-description: "Software architecture decisions: choose Clean Architecture, Hexagonal, DDD, CQRS, or event sourcing, document trade-offs, validate designs. Use when designing a system, splitting a monolith, writing an ADR, defining bounded contexts, choosing microservices or a modular monolith, writing acceptance criteria for risky changes, ports and adapters refactors, module ownership docs, or cross-module regression ledgers. Sub-skills: architecture-decision-records, hexagonal-architecture, intent-driven-development, module-governance, module-regression."
+description: "AUTO_INVOKE(silent)⇔prompt∈{software_arch,system_design,Clean_Arch,Hexagonal,ports_adapters,DDD,CQRS,event_sourcing,Saga,monolith_split,modular_monolith,microservices,ADR,bounded_context,trade_off,acceptance_criteria,risky_change,module_ownership,REGRESSION.md}|SUB:{architecture-decision-records,hexagonal-architecture,intent-driven-development,module-governance,module-regression}"
 ---
-
-# Software Architecture
-
-Pick the simplest architecture that meets the constraints, and record why.
-
-## Core rules
-
-- Capture functional goals, non-functional constraints, and business priorities before you choose a pattern.
-- List real constraints: regulation, existing infrastructure, team skills, budget, timeline.
-- Compare at least two alternatives in a trade-off table (pros, cons, risk, effort).
-- Choose the simplest pattern that meets the constraints. Do not apply full DDD or microservices to simple CRUD.
-- Write an ADR for each significant decision ([architecture-decision-records.md](references/architecture-decision-records.md)).
-- Point dependencies inward. Keep business logic out of UI and controllers; put infrastructure behind domain-owned interfaces.
-- Name modules by domain (`OrderCalculator`), never `utils`/`helpers`/`common`.
-- Search for a maintained library or service before you write custom infrastructure code.
-- For risky changes (security, data, migration, integration), write acceptance criteria first ([intent-driven-development.md](references/intent-driven-development.md)).
-- Run the validation checklist before you finalize ([patterns-and-ddd.md](references/patterns-and-ddd.md#validation-checklist)).
-
-## Decisions
-
-| Situation | Do | Avoid |
-|---|---|---|
-| Complex business rules, testability needed | Clean Architecture | Logic in controllers |
-| Core must not depend on DB/UI choice; many adapters | Hexagonal (ports and adapters) | Framework types in the domain |
-| Rich, changing domain; many teams; ubiquitous language needed | DDD (pass viability check below) | DDD for CRUD |
-| Large read/write imbalance; scale reads and writes apart | CQRS | One model for both under heavy load |
-| Audit, replay, complex state transitions | Event Sourcing + aggregates | Mutable rows when history is required |
-| Long-running multi-service transaction | Saga with compensation actions | Distributed 2PC |
-| Independent deploys, team autonomy, varied scaling | Microservices, each owning its data and API | Shared database across services |
-| Small team, unclear boundaries | Modular monolith; split later by slice | Early microservices |
-
-**DDD viability**: adopt full DDD only if >= 2 are true:
-- Business rules are complex, change often, or need explicit invariants.
-- Several teams work on overlapping domains and models collide.
-- Integration contracts are unstable or need versioning.
-- Audit, traceability, or regulatory compliance is critical.
-
-## Load on demand
-
-| Need | Read |
-|---|---|
-| Decision steps, trade-off table, pattern traits, DDD strategic/tactical patterns, structure rules, anti-patterns, validation checklist, Mermaid diagram | [patterns-and-ddd.md](references/patterns-and-ddd.md) |
-| Numbered ADRs in `docs/adr/`, ADR status, index, "why did we choose X?" | [architecture-decision-records.md](references/architecture-decision-records.md) |
-| Ports and adapters in TS, Java, Kotlin, Go; composition root; migration by slice | [hexagonal-architecture.md](references/hexagonal-architecture.md) |
-| Ambiguous or high-risk change to scoped acceptance criteria and brief | [intent-driven-development.md](references/intent-driven-development.md) |
-| Local module instructions, domain-context links, interface ownership | [module-governance.md](references/module-governance.md) |
-| `REGRESSION.md` ledger of consumers; gate changes on their exit codes | [module-regression.md](references/module-regression.md) |
-
-## Related skills
-
-- [`clean-code`](../clean-code/SKILL.md) - naming, function design, deslop
-- [`code-review`](../code-review/SKILL.md) - review changes before merge
-- [`cloud-architecture`](../devops-iac/references/cloud-architecture.md) - cloud service design on AWS, Azure, GCP
-- [`database-design`](../database-design/SKILL.md) - data layer and schema modeling
-- [`documentation`](../documentation/SKILL.md) - living docs, glossaries, decision logs
-- [`product-strategy`](../product-strategy/SKILL.md) - capability plans before architecture work
-- [`backend-development`](../backend-development/SKILL.md) - APIs, services, messaging, resilience
+@SKL:software-architecture
+§R{
+  choose_pattern≺capture(func_goals,nfr_constraints,biz_prio);
+  constraints⊇{regulation,existing_infra,team_skills,budget,timeline};
+  ∀choice⇒compare(≥2_alts)∈trade_off_table(pros,cons,risk,effort);
+  pick(simplest_pattern_meeting_constraints);simple_CRUD⇒¬(full_DDD∨microservices);
+  ∀sig_decision⇒write_ADR@references/architecture-decision-records.md;
+  deps→inward;biz_logic∉(UI∨controllers);infra∈domain_owned_ifaces;
+  mod_name⇒by_domain(OrderCalculator)¬(utils∨helpers∨common);
+  write(custom_infra)≺search(maintained_lib∨svc);
+  risky_Δ∈{sec,data,migration,integration}⇒write(acceptance_criteria)_first@references/intent-driven-development.md;
+  finalize≺run(val_checklist@references/patterns-and-ddd.md#validation-checklist);
+  full_DDD⇔(|{complex_or_changing_rules_or_explicit_invariants,multi_team_overlapping_models,unstable_or_versioned_integ_contracts,crit_audit_traceability_or_reg_compliance}|≥2);
+}
+§D{
+  complex_biz_rules∧testability⇒Clean_Arch¬logic_in_controllers;
+  core_indep_of(DB,UI)∧many_adapters⇒Hexagonal(ports,adapters)¬fw_types_in_domain;
+  rich_changing_domain∧many_teams∧ubiquitous_lang⇒DDD(pass_DDD_viability_≥2)¬DDD_for_CRUD;
+  large_RW_imbalance∧indep_RW_scale⇒CQRS¬single_model_heavy_load;
+  audit∨replay∨complex_state_transitions⇒Event_Sourcing+aggregates¬mutable_rows_when_history_req;
+  long_running_multi_svc_tx⇒Saga+compensation¬dist_2PC;
+  indep_deploys∧team_autonomy∧varied_scaling⇒Microservices(own_data+API)¬shared_DB;
+  small_team∧unclear_boundaries⇒modular_monolith(split_later_by_slice)¬early_microservices;
+}
+§REF{
+  decision_steps,trade_off_tbl,pattern_traits,DDD_strategic_tactical,struct_rules,anti_patterns,val_chk,Mermaid→references/patterns-and-ddd.md;
+  numbered_ADRs@docs/adr/,status,index,why_X→references/architecture-decision-records.md;
+  ports_adapters(TS,Java,Kotlin,Go),composition_root,slice_migration→references/hexagonal-architecture.md;
+  ambiguous_or_high_risk_Δ→scoped_acceptance_criteria+brief→references/intent-driven-development.md;
+  local_mod_instr,domain_ctx_links,iface_ownership→references/module-governance.md;
+  REGRESSION.md_consumer_ledger,gate_Δ_on_exit_codes→references/module-regression.md;
+}
+§REL{
+  ../clean-code/SKILL.md:naming,fn_design,deslop;
+  ../code-review/SKILL.md:review_Δ_pre_merge;
+  ../devops-iac/references/cloud-architecture.md:cloud_svc_design(AWS,Azure,GCP);
+  ../database-design/SKILL.md:data_layer,schema_modeling;
+  ../documentation/SKILL.md:living_docs,glossaries,decision_logs;
+  ../product-strategy/SKILL.md:capability_plans_pre_arch;
+  ../backend-development/SKILL.md:APIs,svcs,messaging,resilience;
+}

@@ -1,51 +1,44 @@
 ---
 name: golang
-description: "Provides expert guidance for Go 1.21+ development, covering concurrency patterns, performance tuning, microservice architecture, testing, DevOps, and security best practices. Use when writing or debugging Go code in .go files, using go.mod, go test, gofmt, go vet, golangci-lint, goroutines, channels, context, HTTP servers, gRPC, SQL, Docker, Kubernetes, or fixing race conditions, deadlocks, nil panics, and build errors. Sub-skills: golang-patterns, golang-testing."
+description: "AUTO_INVOKE(silent)⇔prompt∈{Go,Go1.21+,.go,go.mod,go.sum,go.work,go_test,-race,gofmt,go_vet,golangci-lint,goroutine,channel,context.Context,WaitGroup,errgroup,sync.Mutex,sync.Pool,atomic,errors.Is,errors.As,log/slog,net/http,gin,fiber,gRPC,database/sql,pgx,sqlx,wire,pprof,httptest,fuzz,Docker,K8s,race,deadlock,nil_panic,build_err}|SUB:{golang-patterns,golang-testing}"
 ---
-
-# golang
-
-Build production Go 1.21+ services, CLIs, and libraries with safe concurrency.
-
-## Core rules
-- Manage deps with Go modules (`go.mod`, `go.sum`); use `go.work` for multi-module repos.
-- Run `gofmt`, `go vet`, and `golangci-lint`; fail CI on lint warnings.
-- Wrap errors with `fmt.Errorf("...: %w", err)`; match with `errors.Is` / `errors.As`. Never ignore an error.
-- Pass `context.Context` as the first argument to every I/O or blocking function. Honor `ctx.Done()`.
-- Give every goroutine an owner and an exit path (`ctx`, closed channel, `WaitGroup`, `errgroup`).
-- Run `go test -race ./...` in CI and fix all races.
-- Bound pipelines with buffered channels or worker pools; never spawn unbounded goroutines.
-- Prefer channels and `WaitGroup`; use `sync.Mutex` or `atomic` only for shared state that needs it.
-- Keep interfaces small; define them where they are used. Accept interfaces, return structs.
-- Log with `log/slog`.
-- Pool DB and HTTP connections; set pool limits explicitly.
-- Write table-driven tests for exported functions and benchmarks for hot paths.
-- Return errors for expected failures; reserve `panic` for programmer bugs.
-
-## Decisions
-| Situation | Do | Avoid |
-|---|---|---|
-| N independent jobs | worker pool over a jobs channel + `ctx` | one goroutine per item, no limit |
-| Fail fast across goroutines | `errgroup.WithContext` | manual `WaitGroup` + error channel |
-| Multi-stage stream | pipeline with buffered channels (back-pressure) | unbounded slices between stages |
-| Simple wait | `sync.WaitGroup` | busy loops, `time.Sleep` |
-| Router | `net/http` (small); `gin`/`fiber` (rich middleware) | heavy framework for 3 routes |
-| SQL | `database/sql` + `pgx`; `sqlx` for named params | `gorm` on hot paths |
-| DI | constructors; `wire` for large graphs | global package state |
-| Slow code | benchmark + `pprof` first, then fix top hotspot | guess-driven tuning |
-| Many short-lived buffers | `sync.Pool`, preallocate slices | allocate per call |
-| Container image | multi-stage build to small base | shipping the toolchain |
-
-## Load on demand
-| Need | Read |
-|---|---|
-| Idioms: zero values, error types, worker pool, errgroup, goroutine leaks, graceful shutdown, functional options, `sync.Pool`, package layout, `.golangci.yml`, anti-patterns | [references/golang-patterns.md](references/golang-patterns.md) |
-| Tests: TDD, table-driven, subtests, `t.Helper`/`t.Cleanup`, golden files, mocks, benchmarks, fuzzing, `httptest`, coverage, CI | [references/golang-testing.md](references/golang-testing.md) |
-| Stack choices: HTTP/gRPC, middleware, health, persistence, migrations, pprof, Dockerfile, K8s probes, metrics, tracing, tooling, security scans | [references/production-stack.md](references/production-stack.md) |
-
-## Related skills
-- [`backend-development`](../backend-development/SKILL.md) — API design, resilience, service boundaries.
-- [`performance`](../web-quality-audit/references/performance.md) — Web performance and Core Web Vitals.
-- [`unit-testing-patterns`](../unit-testing-patterns/SKILL.md) — General test structure and TDD.
-- [`docker`](../devops-iac/references/docker.md) — Dockerfile optimization and container security.
-- [`secure-coding`](../secure-coding/SKILL.md) — Secrets, auth, input validation, injection.
+@SKL:golang
+§R{
+  deps⇒Go_modules(go.mod,go.sum)∧multi-module_repo⇒go.work;
+  checks⇒gofmt∧go_vet∧golangci-lint∧CI_fail_on(lint_warnings);
+  errors⇒wrap(fmt.Errorf("...: %w",err))∧match(errors.Is∨errors.As)∧¬ignore(err);
+  ∀(IO∨blocking_fn)⇒arg0(context.Context)∧honor(ctx.Done());
+  ∀goroutine⇒owner∧exit_path(ctx∨closed_chan∨WaitGroup∨errgroup);
+  CI⇒go_test_-race_./...∧fix_all_races;
+  pipelines⇒bound(buffered_chan∨worker_pool)∧¬unbounded_goroutines;
+  sync⇒prefer(chan∧WaitGroup);(sync.Mutex∨atomic)⇔shared_state_needs_it;
+  interfaces⇒small∧define@consumer(accept_interfaces,return_structs);
+  logging⇒log/slog;
+  DB∧HTTP_clients⇒pool_conns∧explicit(pool_limits);
+  tests⇒table-driven(exported_fns)∧benchmarks(hot_paths);
+  failures⇒return_err(expected)∧panic(programmer_bugs_only);
+}
+§D{
+  N_independent_jobs⇒worker_pool(jobs_chan+ctx)¬1_goroutine_per_item_unbounded;
+  fail_fast_across_goroutines⇒errgroup.WithContext¬manual_WaitGroup+err_chan;
+  multi-stage_stream⇒pipeline(buffered_chans,back-pressure)¬unbounded_slices;
+  simple_wait⇒sync.WaitGroup¬(busy_loops∨time.Sleep);
+  router⇒(net/http(small);gin∨fiber(rich_mw))¬heavy_fw_for_3_routes;
+  SQL⇒(database/sql+pgx;sqlx(named_params))¬gorm_on_hot_paths;
+  DI⇒constructors(wire_for_large_graphs)¬global_pkg_state;
+  slow_code⇒benchmark+pprof_first→fix_top_hotspot¬guess_tuning;
+  many_short_buffers⇒sync.Pool∧prealloc_slices¬alloc_per_call;
+  container_image⇒multi-stage_build→small_base¬ship_toolchain;
+}
+§REF{
+  idioms,zero_values,error_types,worker_pool,errgroup,goroutine_leaks,graceful_shutdown,functional_options,sync.Pool,pkg_layout,.golangci.yml,anti-patterns→references/golang-patterns.md;
+  TDD,table-driven,subtests,t.Helper,t.Cleanup,golden_files,mocks,benchmarks,fuzzing,httptest,coverage,CI→references/golang-testing.md;
+  HTTP,gRPC,middleware,health,persistence,migrations,pprof,Dockerfile,K8s_probes,metrics,tracing,tooling,security_scans→references/production-stack.md;
+}
+§REL{
+  ../backend-development/SKILL.md:API_design,resilience,service_boundaries;
+  ../web-quality-audit/references/performance.md:web_perf,CoreWebVitals;
+  ../unit-testing-patterns/SKILL.md:test_structure,TDD;
+  ../devops-iac/references/docker.md:Dockerfile_opt,container_security;
+  ../secure-coding/SKILL.md:secrets,auth,input_val,injection;
+}

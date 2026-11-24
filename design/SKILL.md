@@ -1,92 +1,62 @@
 ---
 name: design
-description: "Modern frontend UI design and design systems: a11y, typography, layout, motion, filled tabs, tonal cards, forms, tokens, oklch/light-dark theming, modern CSS (Grid, subgrid, @container, :has(), scroll-driven, view transitions, anchor positioning). Use for websites, landing pages, dashboards, product UIs, animations, CSS, or heroes. Sub-skills: immersive-web, figma, mobile-design, brand-theming, motion-canvas, visual-design-direction, design-system, make-interfaces-feel-better, motion-react, html-slides, shadcn-ui, tailwind-css, threejs, gsap."
+description: "AUTO_INVOKE(silent)⇔prompt∈{UI,design_system,frontend,a11y,WCAG2.2,typography,layout,motion,CSS,oklch,light-dark,@theme,Tailwind_4.3,shadcn/ui,Fluent,Material_M3,Carbon,Radix,Base_UI,Three.js,R3F,GSAP,Figma,Motion_Canvas,motion/react,HTML_slides,dialog,popover,CSS_anchor,@container,View_Transitions,:has(),:user-invalid,bento,glassmorphism,landing,dashboard,hero,mobile_UI,tokens}|SUB:{immersive-web,figma,mobile-design,brand-theming,motion-canvas,visual-design-direction,design-system,make-interfaces-feel-better,motion-react,html-slides,shadcn-ui,tailwind-css,threejs,gsap}"
 ---
-
-# Design
-
-Build modern, production-grade frontend UI that is specific to the brief, accessible, optically refined, and free of dated or AI-default tells. Sections §0-§26 live in the files under "Load on demand".
-
-## Core rules
-
-- **Read the brief first:** Before code, output one line: `"Reading this as: <page kind> for <audience>, with a <vibe> language, leaning toward <system/aesthetic>."` (§0). Declare the three dials (§1).
-- **Quiet constraints win:** Accessibility-first, public-sector, regulated, and kids requirements override aesthetics (§0).
-- **One design system:** Use one design system per project. Never hand-roll CSS to imitate an official package (§2).
-- **Modern color & theming:** Lock one theme, one accent (saturation < 80%), one neutral gray family, and one radius scale per page. Define tokens in `oklch()` with `color-scheme: light dark` and `light-dark()`. Derive hover/active/tint states with relative color syntax or `color-mix()`. Never use pure `#000` or `#fff` (§4.2, §4.11).
-- **Tonal surfaces & cards:** Build depth with subtle tonal surface steps (`canvas -> card -> elevated`), full-perimeter 1px hairline borders, and soft background-tinted layered shadows. **Never** use one-sided accent borders (`border-l-4`, `border-t-4`, etc.) on cards, callouts, alerts, or list items. **Never** nest cards inside cards. Enforce uniform internal padding on all sides and concentric border radius (`outer = inner + padding`) (§4.4, §7).
-- **Modern controls & navigation:**
-  - **Header:** Full-width with square outer edges (`rounded-none`), never a floating pill bar by default; `sticky top-0` with subtle `backdrop-blur` + bottom hairline for apps/dashboards/long-scroll, static flow for editorial/landing (§7).
-  - **Tabs:** Filled and rounded active tabs inside a subtle muted track (segmented/pill fill). **Never** underline-only or bare-text tabs (§7).
-  - **Selection:** Selected nav items, dropdown options, rows, and cards use a distinct tonal fill or full-perimeter accent ring. **Never** mark selection with a one-sided border (§7).
-  - **Form controls:** Filled accent checkboxes, radios, and pill switches; labels above inputs; inline `:user-invalid` validation; `tabular-nums` for dynamic numbers (§4.6, §7).
-  - **Badges & status:** Soft tonal fills (`color-mix` tint + high-contrast text + subtle hairline), never loud solid blocks or decorative pulsing dots (§7).
-- **Native web platform first:** Use `<dialog>` (`showModal()`, `closedby`), `popover`, CSS anchor positioning, `<details name>`, `:has()`, container queries, `appearance: base-select`, `field-sizing: content`, and View Transitions. No div modals, no JS-positioned tooltips (§7, §25).
-- **Accessibility (WCAG 2.2 AA):** Pass contrast on CTAs, inputs, placeholders, focus rings, badges, helper and error text; targets 24px minimum, 44px on touch; `:focus-visible` never obscured by sticky chrome (§4.5, §9).
-- **Layout & hero discipline:** Keep CTAs on one line at desktop with one label per intent. Keep the hero inside the viewport (`min-h-dvh`). Use explicit mobile collapse and real content/images — never fake div screenshots (§4.5, §4.7, §4.8, §4.9).
-- **Purposeful motion:** Justify each animation in one sentence. Animate only `transform`/`opacity`/`clip-path`. Never `ease-in`. Keep UI transitions < 300ms (exit faster than enter) with `@starting-style` for entrances. For reduced motion, cross-fade; do not remove all feedback (§5, §6, §9).
-- **Zero scroll jank:** Never use scroll listeners, `scrollY` in React state, or rAF loops on React state. Use CSS scroll-driven animations, `IntersectionObserver`, and motion values (§8, §12).
-- **Dependencies:** Check `package.json`; output the install command for each missing dependency (§3).
-- **Anti-slop:** Ban every AI/dated tell: em-dashes, banned buzzwords, placeholder names, default purple/neon glow, underline-only tabs, one-sided card borders, nested cards (§10).
-- **Raw CSS:** Apply the §25.B rules when writing CSS directly.
-- **Pre-flight gate:** **Run the mandatory pre-flight (§21, [preflight.md](references/preflight.md)) before you deliver.**
-
-## Decisions
-
-### §1 Dials
-
-`DESIGN_VARIANCE` (1 symmetric - 10 chaos), `MOTION_INTENSITY` (1 static - 10 cinematic), `VISUAL_DENSITY` (1 airy - 10 cockpit). Baseline `8 / 6 / 4`. Definitions: §11.
-
-| Signal / use case | VAR | MOT | DEN |
-|---|---|---|---|
-| Minimalist / editorial / Linear-style | 5-6 | 3-4 | 2-3 |
-| Premium consumer / luxury | 7 | 6 | 3 |
-| Playful / Awwwards / agency | 9-10 | 8-10 | 3 |
-| Landing (SaaS default) | 7 | 6 | 4 |
-| Portfolio designer / developer | 8 / 6 | 7 / 5 | 3 / 4 |
-| Editorial / blog | 6 | 4 | 3 |
-| Dashboard / product UI | 4-5 | 4-5 | 6-8 |
-| Trust-first / public-sector | 3 | 2 | 5 |
-| Redesign preserve / overhaul | = / +2 | +1 / +2 | = |
-
-### §2 Design system
-
-| Brief | Use | Avoid |
-|---|---|---|
-| Microsoft / enterprise | `@fluentui/react-components` | Custom Fluent look-alike |
-| Material | `@material/web` + M3 Expressive tokens | Hand-rolled Material CSS |
-| IBM B2B | `@carbon/react` | Mixing a second system |
-| Shopify / Atlassian / GitHub | Polaris / `@atlaskit/*` / `@primer/*` | Copying their CSS |
-| UK / US public-sector | `govuk-frontend` / `uswds` | Custom aesthetics |
-| Accessible React base / own components | Base UI 1.0 / `@radix-ui/themes` / shadcn/ui (CLI 3) | Default unstyled shadcn look (§10) |
-| Tailwind SaaS | Tailwind 4.3 CSS-first `@theme` + `light-dark()` tokens | `tailwind.config.js`, runtime CSS-in-JS, `dark:` on every class |
-| No library (aesthetic) | Tonal minimalism, bento, glassmorphism (`backdrop-filter` + layered borders + `prefers-reduced-transparency` fallback), brutalism, editorial, dark tech, mesh gradients, kinetic type | Calling a web Liquid Glass copy real (label it an approximation) |
-
-## Load on demand
-
-| Need | Read |
-|---|---|
-| §0 brief, §3 default stack, §4 bias correction (type, color, layout, cards, states, forms, hero, images, copy, theme), §11 dial definitions, §14 redesign, §20 out of scope, §23 prototype variants, §24 site packs | [direction.md](references/direction.md) |
-| §5 animation decisions, §6 springs and gestures, §7 modern components, §8 performance, §9 a11y, §12-§13 tools and libraries, §15-§19 enhancement, debugging, vocabulary, §22 review fixes | [motion.md](references/motion.md) |
-| §10 anti-slop, §21 pre-flight checklist | [preflight.md](references/preflight.md) |
-| §25 CSS rules, CSS decision guide, CSS topic files, CSS pre-flight | [css-implementation.md](references/css-implementation.md) |
-| §26 tokens and theming; extract tokens, 10-dimension audit, AI-slop check | [design-system.md](references/design-system.md) |
-| iOS/Android, touch, React Native, Flutter layouts | [mobile-design.md](references/mobile-design.md) |
-| Brand colors, type, identity across web, decks, docs | [brand-theming.md](references/brand-theming.md) |
-| Figma node to code with 1:1 parity | [figma.md](references/figma.md) |
-| GSAP ScrollTrigger, parallax, R3F, WebGL | [immersive-web.md](references/immersive-web.md) |
-| Motion Canvas scenes, video export | [motion-canvas.md](references/motion-canvas.md) |
-| Opinionated visual direction; product UI evidence contract | [visual-design-direction.md](references/visual-design-direction.md) |
-| Polish: concentric radius, optical alignment, tabular numbers, hit areas | [make-interfaces-feel-better.md](references/make-interfaces-feel-better.md) |
-| `motion/react` code patterns | [motion-react.md](references/motion-react.md) |
-| HTML slide decks, PPTX to HTML | [html-slides.md](references/html-slides.md) |
-| shadcn/ui components, registries, CLI | [shadcn-ui.md](references/shadcn-ui.md) |
-| Tailwind 4.3 setup, CSS-first `@theme`, `light-dark()` theming | [tailwind-css.md](references/tailwind-css.md) |
-| Three.js r186+ API, shaders/TSL, R3F 9 | [threejs.md](references/threejs.md) |
-| GSAP API, timelines, ScrollTrigger, `useGSAP` | [gsap.md](references/gsap.md) |
-
-## Related skills
-
-- [`frontend-development`](../frontend-development/SKILL.md) - React/Next.js, TypeScript, MUI, TanStack
-- [`ux-research`](../ux-research/SKILL.md) - personas, journeys, usability tests
-- [`web-accessibility`](../web-quality-audit/references/web-accessibility.md) - WCAG 2.2 and ARIA 1.3 audits
-- [`web-performance`](../web-quality-audit/references/web-performance.md) - Core Web Vitals diagnosis
+@SKL:design
+§R{
+  pre_code(§0,§1)⇒emit_1_line('Reading this as: <kind> for <audience>, <vibe> language, leaning <sys/aesthetic>.')∧declare_3_dials(DESIGN_VARIANCE,MOTION_INTENSITY,VISUAL_DENSITY);
+  quiet_constraints(a11y_first∨public_sector∨regulated∨kids)≻aesthetics(§0);
+  1_design_sys/project;¬hand_roll_CSS_imitating_official_pkg(§2);
+  color/theme(§4.2,§4.11)⇒lock(1_theme,1_accent(sat<80%),1_neutral_gray,1_radius_scale)/page;tokens=oklch()+color-scheme:light dark+light-dark();hover/active/tint=rel_color∨color-mix();¬#000∨#fff;
+  surfaces/cards(§4.4,§7)⇒tonal_steps(canvas→card→elevated)+1px_full_perimeter_hairline+soft_bg_tinted_layered_shadows;¬one_sided_accent_border(border-l-4,border-t-4)@(card,callout,alert,li);¬nested_cards;uniform_padding_all_sides∧concentric_radius(outer=inner+padding);
+  header(§7)⇒full_width∧rounded-none(¬floating_pill_default);(app∨dash∨long_scroll⇒sticky_top-0+backdrop-blur+bottom_hairline;editorial∨landing⇒static_flow);
+  tabs(§7)⇒filled+rounded_active∈muted_track(segmented/pill)¬underline_only∨bare_text;
+  selection(nav,dropdown_opt,row,card)(§7)⇒tonal_fill∨full_perimeter_accent_ring¬one_sided_border;
+  forms(§4.6,§7)⇒filled_accent(checkbox,radio,pill_switch);labels>inputs;inline(:user-invalid);dynamic_nums⇒tabular-nums;
+  badges/status(§7)⇒soft_tonal_fill(color-mix+hi_contrast_text+hairline)¬loud_solid∨decor_pulse_dot;
+  web_native_first(§7,§25)⇒<dialog>(showModal(),closedby),popover,CSS_anchor,<details name>,:has(),@container,appearance:base-select,field-sizing:content,ViewTransitions¬div_modals∨JS_positioned_tooltips;
+  a11y(WCAG2.2_AA)(§4.5,§9)⇒pass_contrast(CTA,input,placeholder,focus_ring,badge,helper,err);target≥24px(touch≥44px);:focus-visible_never_obscured_by_sticky_chrome;
+  layout/hero(§4.5,§4.7-4.9)⇒desktop_CTA_1_line(1_label/intent);hero∈viewport(min-h-dvh);explicit_mobile_collapse;real_content/imgs¬fake_div_screenshots;
+  motion(§5,§6,§9)⇒1_sent_justification/anim;props∈{transform,opacity,clip-path};¬ease-in;UI_trans<300ms(exit<enter)+@starting-style;reduced_motion⇒cross_fade(¬rm_all_feedback);
+  zero_scroll_jank(§8,§12)⇒CSS_scroll_driven∨IntersectionObserver∨motion_vals¬scroll_listeners∨scrollY_in_React_state∨rAF_on_React_state;
+  deps(§3)⇒check(package.json)→emit_install_cmd(∀missing_dep);
+  anti_slop(§10)⇒ban{em_dashes,buzzwords,placeholder_names,default_purple/neon_glow,underline_tabs,1_sided_card_borders,nested_cards};raw_CSS⇒§25.B;
+  preflight_gate(§21)⇒run(references/preflight.md)≺deliver;
+}
+§D{
+  dials(§1,§11;VAR[1:sym..10:chaos],MOT[1:stat..10:cine],DEN[1:airy..10:cockpit],base=8/6/4):min/editorial/Linear⇒5-6/3-4/2-3;prem_consumer/luxury⇒7/6/3;playful/Awwwards/agency⇒9-10/8-10/3;SaaS_landing⇒7/6/4;portfolio(des/dev)⇒8/7/3|6/5/4;editorial/blog⇒6/4/3;dash/prod_UI⇒4-5/4-5/6-8;trust_first/public_sector⇒3/2/5;redesign(preserve/overhaul)⇒=/+1/=|+2/+2/=;
+  sys(§2):MS/enterprise⇒@fluentui/react-components¬custom_Fluent_lookalike;
+  sys(§2):Material⇒@material/web+M3_Expressive_tokens¬hand_rolled_M3_CSS;
+  sys(§2):IBM_B2B⇒@carbon/react¬mix_2nd_sys;
+  sys(§2):Shopify/Atlassian/GitHub⇒Polaris/@atlaskit/*/@primer/*¬copy_CSS;
+  sys(§2):UK/US_public_sector⇒govuk-frontend/uswds¬custom_aesthetics;
+  sys(§2):a11y_React_base/own⇒Base_UI_1.0/@radix-ui/themes/shadcn_ui(CLI_3)¬default_unstyled_shadcn(§10);
+  sys(§2):Tailwind_SaaS⇒Tailwind_4.3_CSS_first_@theme+light-dark()_tokens¬tailwind.config.js∨runtime_CSSinJS∨dark:_per_class;
+  sys(§2):no_lib(aesthetic)⇒tonal_min∨bento∨glassmorphism(backdrop-filter+layered_borders+prefers-reduced-transparency_fallback)∨brutalism∨editorial∨dark_tech∨mesh_gradients∨kinetic_type¬claim_web_LiquidGlass_real(label_approx);
+}
+§REF{
+  §0_brief,§3_stack,§4_bias_corr(type,color,layout,cards,states,forms,hero,imgs,copy,theme),§11_dials,§14_redesign,§20_OOS,§23_proto_vars,§24_site_packs→references/direction.md;
+  §5_anim,§6_springs_gestures,§7_mod_comp,§8_perf,§9_a11y,§12-13_tools_libs,§15-19_enhance_debug_vocab,§22_rev_fixes→references/motion.md;
+  §10_anti_slop,§21_preflight_chk→references/preflight.md;
+  §25_CSS_rules,CSS_dec_guide,topic_files,CSS_preflight→references/css-implementation.md;
+  §26_tokens_theming,extract_tokens,10dim_audit,AI_slop_chk→references/design-system.md;
+  iOS,Android,touch,React_Native,Flutter_layouts→references/mobile-design.md;
+  brand_colors,type,identity(web,decks,docs)→references/brand-theming.md;
+  Figma_node→code(1:1_parity)→references/figma.md;
+  GSAP_ScrollTrigger,parallax,R3F,WebGL→references/immersive-web.md;
+  Motion_Canvas_scenes,video_export→references/motion-canvas.md;
+  opinionated_vis_dir,prod_UI_evidence_contract→references/visual-design-direction.md;
+  polish(concentric_radius,optical_align,tabular_nums,hit_areas)→references/make-interfaces-feel-better.md;
+  motion/react_code_patterns→references/motion-react.md;
+  HTML_slide_decks,PPTX→HTML→references/html-slides.md;
+  shadcn/ui_comps,registries,CLI→references/shadcn-ui.md;
+  Tailwind_4.3_setup,CSS_first_@theme,light-dark()_theming→references/tailwind-css.md;
+  Three.js_r186+_API,shaders/TSL,R3F_9→references/threejs.md;
+  GSAP_API,timelines,ScrollTrigger,useGSAP→references/gsap.md;
+}
+§REL{
+  ../frontend-development/SKILL.md:React,Next.js,TS,MUI,TanStack;
+  ../ux-research/SKILL.md:personas,journeys,usability_tests;
+  ../web-quality-audit/references/web-accessibility.md:WCAG2.2,ARIA1.3_audits;
+  ../web-quality-audit/references/web-performance.md:Core_Web_Vitals_diag;
+}

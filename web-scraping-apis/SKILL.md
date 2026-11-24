@@ -1,46 +1,41 @@
 ---
 name: web-scraping-apis
-description: "Unified guide for using Firecrawl, Tavily, Cloudflare Browser Rendering, and Xquik to scrape pages, search the web, crawl sites into markdown, render JavaScript, and fetch X/Twitter posts. Use when scraping with Firecrawl, Tavily, Cloudflare Browser Rendering, or Xquik; crawling sites; extracting HTML/JSON; converting to .md; searching SERPs; rendering JavaScript; fetching tweets; using curl; handling 403, 429, or CAPTCHA; or building a scheduled scraper agent that monitors jobs, prices, news, or repos with LLM scoring. Sub-skills: bright-data, data-scraper-agent."
+description: "AUTO_INVOKE(silent)⇔prompt∈{scrape,crawl,Firecrawl,Tavily,Cloudflare_Browser_Rendering,Xquik,Bright_Data,SERP,tweets,X_Twitter,HTML,JSON,markdown,.md,render_JS,curl,403,429,CAPTCHA,Web_Unlocker,proxies,robots.txt,modifiedSince,excludePatterns,scraper_agent,monitor_jobs_prices_news_repos,LLM_scoring}|SUB:{bright-data,data-scraper-agent}"
 ---
-# Web Scraping APIs
-Pick the right hosted API to scrape, search, crawl, or pull X data, and call it safely.
-
-## Core rules
-- Read keys from env only: `FIRECRAWL_API_KEY`, `TAVILY_API_KEY`, `CLOUDFLARE_ACCOUNT_ID` + `CLOUDFLARE_API_TOKEN`, `XQ_API_KEY`.
-- Send the auth header on every call: `Authorization: Bearer <key>` (Firecrawl, Tavily, Cloudflare), `x-api-key` (Xquik).
-- Respect `robots.txt` and site terms.
-- Set `render:false` for static sites; it cuts cost and latency.
-- Set `limit` / `max_results` to the smallest value that does the job.
-- Async jobs: start → poll until `completed` → fetch pages with `cursor` until it is null.
-- Retry only 429 and 5xx: back off 1 s, 2 s, 4 s, max 3 tries. Never retry other 4xx.
-- Check quota before large jobs; cache search results.
-- Save each page with a `<!-- Source: <url> -->` header for traceability.
-- Stream large outputs (PDF base64, CSV) to files, not memory.
-- Revoke keys and delete temp output when done.
-
-## Decisions
-| Situation | Do | Avoid |
-|---|---|---|
-| One page: full text, screenshot, or PDF | Firecrawl `/v0/scrape` | Full-site crawl |
-| Web search, then article text | Tavily `/search` → `/crawl` | Scraping SERP HTML |
-| Whole docs site to markdown, JS rendered | Cloudflare Browser Rendering crawl | Page-by-page scrape |
-| Daily site sync | Full crawl once, then `modifiedSince` | Daily full crawl |
-| Noisy sections (changelog, API ref) | `excludePatterns` | Crawl then filter |
-| Tweets, profiles, followers, trends, giveaways | Xquik | Raw X scraping |
-| Proxies, Web Unlocker, SERP API, 403/CAPTCHA | [bright-data](references/bright-data.md) | Hand-rolled proxy rotation |
-| Scheduled monitor with LLM scoring | [data-scraper-agent](references/data-scraper-agent.md) | One-off scripts in cron |
-| Browser automation you control | [`playwright`](../unit-testing-patterns/references/playwright.md) | Hosted render for simple clicks |
-
-## Load on demand
-| Need | Read |
-|---|---|
-| Firecrawl, Tavily, Xquik endpoints, curl examples, limits | [references/api-endpoints.md](references/api-endpoints.md) |
-| Cloudflare crawl: start/poll/page, Python saver, params, limits | [references/cloudflare-crawl.md](references/cloudflare-crawl.md) |
-| Bright Data: SERP API, Web Unlocker, Scraper API, Browser API, MCP, RRF reranking | [references/bright-data.md](references/bright-data.md) |
-| Scheduled Python agent: collect, Gemini Flash batch scoring, Notion/Sheets/Supabase, feedback, GitHub Actions cron | [references/data-scraper-agent.md](references/data-scraper-agent.md) |
-
-## Related skills
-- [`playwright`](../unit-testing-patterns/references/playwright.md) — browser automation and e2e
-- [`screenshot`](../screenshot/SKILL.md) — desktop screen capture
-- [`research`](../research/SKILL.md) — cited research, Exa search, OSINT
-- [`programmatic-seo`](../seo/references/programmatic-seo.md) — template pages from scraped data
+@SKL:web-scraping-apis
+§R{
+  keys∈env_only:{FIRECRAWL_API_KEY,TAVILY_API_KEY,CLOUDFLARE_ACCOUNT_ID+CLOUDFLARE_API_TOKEN,XQ_API_KEY};
+  ∀call:auth_header←(Firecrawl∨Tavily∨Cloudflare⇒"Authorization: Bearer <key>")⊕(Xquik⇒"x-api-key");
+  respect(robots.txt∧site_terms);
+  static_site⇒render:false(cuts_cost∧latency);
+  limit∨max_results←min_sufficient_val;
+  async_job:start→poll(completed)→fetch_pages(cursor)_until(cursor≡null);
+  retry∈{429,5xx}_only:backoff(1s,2s,4s),max_tries=3;¬retry(other_4xx);
+  large_job⇒check_quota_first;cache(search_results);
+  ∀saved_page:prepend("<!-- Source: <url> -->");
+  large_out(PDF_base64,CSV)⇒stream_to_file¬memory;
+  done⇒revoke(keys)∧delete(temp_output)
+}
+§D{
+  1_page(full_text∨screenshot∨PDF)⇒Firecrawl(/v0/scrape)¬full_site_crawl;
+  web_search→article_text⇒Tavily(/search→/crawl)¬scrape_SERP_HTML;
+  whole_docs_site→md(JS_rendered)⇒Cloudflare_Browser_Rendering_crawl¬page_by_page_scrape;
+  daily_site_sync⇒full_crawl_once→modifiedSince¬daily_full_crawl;
+  noisy_sections(changelog,API_ref)⇒excludePatterns¬crawl_then_filter;
+  tweets∨profiles∨followers∨trends∨giveaways⇒Xquik¬raw_X_scraping;
+  proxies∨Web_Unlocker∨SERP_API∨403/CAPTCHA⇒references/bright-data.md¬hand_rolled_proxy_rotation;
+  scheduled_monitor+LLM_scoring⇒references/data-scraper-agent.md¬one_off_cron_scripts;
+  browser_automation_you_control⇒../unit-testing-patterns/references/playwright.md¬hosted_render_for_simple_clicks
+}
+§REF{
+  Firecrawl,Tavily,Xquik_endpoints,curl_ex,limits→references/api-endpoints.md;
+  Cloudflare_crawl:start/poll/page,Python_saver,params,limits→references/cloudflare-crawl.md;
+  Bright_Data:SERP_API,Web_Unlocker,Scraper_API,Browser_API,MCP,RRF_rerank→references/bright-data.md;
+  scheduled_Py_agent:collect,Gemini_Flash_batch_score,Notion/Sheets/Supabase,feedback,GH_Actions_cron→references/data-scraper-agent.md
+}
+§REL{
+  ../unit-testing-patterns/references/playwright.md:browser_automation,e2e;
+  ../screenshot/SKILL.md:desktop_screen_capture;
+  ../research/SKILL.md:cited_research,Exa_search,OSINT;
+  ../seo/references/programmatic-seo.md:template_pages_from_scraped_data
+}
