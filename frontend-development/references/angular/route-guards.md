@@ -1,52 +1,16 @@
-# Route Guards
-
-Route guards control whether a user can navigate to or leave a route.
-
-## Types of Guards
-
-- **`CanActivate`**: Can the user access this route? (e.g., Auth check).
-- **`CanActivateChild`**: Can the user access children of this route?
-- **`CanDeactivate`**: Can the user leave this route? (e.g., Unsaved changes).
-- **`CanMatch`**: Should this route even be considered for matching? (e.g., Feature flags). If it returns `false`, the router continues checking other routes.
-
-## Creating a Guard
-
-Guards are typically functional since Angular 15.
-
-```ts
-export const authGuard: CanActivateFn = (route, state) => {
-  const authService = inject(AuthService);
-  const router = inject(Router);
-
-  if (authService.isLoggedIn()) {
-    return true;
-  }
-
-  // Redirect to login
-  return router.parseUrl('/login');
-};
-```
-
-## Applying Guards
-
-Add them to the route configuration as an array. They execute in order.
-
-```ts
-{
-  path: 'admin',
-  component: Admin,
-  canActivate: [authGuard],
-  canActivateChild: [adminChildGuard],
-  canDeactivate: [unsavedChangesGuard]
+@REF:route-guards
+§R{
+functional(Angular≥15),inject();arrays⇒ordered;
+ret∈{bool(true=allow,false=block),UrlTree|RedirectCommand,Observable|Promise};
+SEC:client_guards≠server_auth⇒verify_on_server
 }
+§API{
+CanActivate:route;CanActivateChild:children;
+CanDeactivate:leave(unsaved);CanMatch:match(flags;false⇒try_next_route)
+}
+§PAT{
+```ts
+export const authGuard:CanActivateFn=(r,s)=>inject(AuthService).isLoggedIn()?true:inject(Router).parseUrl('/login');
+// {path:'admin',component:Admin,canActivate:[authGuard],canActivateChild:[c],canDeactivate:[d]}
 ```
-
-## Return Values
-
-- `boolean`: `true` to allow, `false` to block.
-- `UrlTree` or `RedirectCommand`: Redirect to a different route.
-- `Observable` or `Promise`: Resolves to the above types.
-
-## Security Note
-
-**Client-side guards are NOT a substitute for server-side security.** Always verify permissions on the server.
+}

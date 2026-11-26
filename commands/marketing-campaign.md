@@ -1,128 +1,40 @@
 ---
-description: Plan and execute a full marketing campaign. Accepts a product brief and returns positioning, landing page copy, email sequence, social posts, ad variants, video scripts, and a content calendar. Can also review existing copy for conversion quality. Delegates to the content-marketer agent.
+description: "Plan & execute marketing campaign (positioning→landing→email→social→ads→video→calendar) or audit copy; delegates to content-marketer."
 allowed-tools: ["Read", "Grep", "Glob", "WebSearch", "WebFetch", "Write", "Agent"]
 ---
-
-# /marketing-campaign
-
-Plan and execute a marketing campaign from brief to full content suite.
-
-## Usage
-
-```
-/marketing-campaign                          # Prompt for brief interactively
-/marketing-campaign [product brief]          # Full campaign from inline brief
-/marketing-campaign copy [type]              # Single deliverable only
-/marketing-campaign review [file-or-brief]   # Copy audit for conversion and brand consistency
-```
-
-## What It Does
-
-1. **Research** — Profiles the target audience and maps competitors before writing anything
-2. **Positioning** — Locks the campaign angle and tone profile first
-3. **Copy production** — Generates the full content suite in the right order (landing page → emails → social → ads → video scripts → calendar)
-4. **Review** — Gates all output through a conversion and brand consistency checklist
-
-## Modes
-
-### Full Campaign Mode
-
-Provide a product brief containing:
-- Product name and description
-- Target audience (specific, not generic)
-- Core problem the product solves
-- Core benefit / outcome
-- Tone guidance
-- Channels required
-- Launch goal or timeline
-
-The agent returns all campaign deliverables in order, with a copy review summary at the end.
-
-### Single Deliverable Mode
-
-```
-/marketing-campaign copy landing-page
-/marketing-campaign copy email-sequence
-/marketing-campaign copy social-posts
-/marketing-campaign copy ads
-/marketing-campaign copy video-scripts
-```
-
-Requires positioning to be defined first. Run full mode or provide the angle before requesting a single deliverable.
-
-### Copy Review Mode
-
-```
-/marketing-campaign review path/to/copy.md
-/marketing-campaign review "paste copy here"
-```
-
-Returns a structured audit against:
-- 5-second clarity test (above-fold copy)
-- CTA quality (specific, earned, one per piece)
-- Brand tone consistency
-- Claim specificity and supportability
-- Platform-native fit
-- Cross-channel consistency
-
-## Brief Template
-
-```markdown
-Product: [name]
-Description: [1-3 sentences on what it does]
-Audience: [who, specifically]
-Problem: [the specific pain the product solves]
-Benefit: [the outcome the user gets]
-Tone: [adjectives + what to avoid]
-Channels: [landing page, email, LinkedIn, X, ads, video]
-Goal: [launch, waitlist, signups, awareness — and timeline]
-```
-
-## Output Location
-
-When saving campaign assets, the convention is `.claude/campaigns/{campaign-name}/`:
-
-```
-.claude/campaigns/product-launch/
-├── positioning.md
-├── landing-page.md
-├── email-sequence.md
-├── social-posts.md
-├── ad-copy.md
-├── video-scripts.md
-└── content-calendar.md
-```
-
-Confirm the save location before writing files.
-
-## Examples
-
-```
-/marketing-campaign Build a 7-day launch campaign for an AI career platform for UK university students.
-```
-
-```
-/marketing-campaign copy landing-page
-```
-
-```
-/marketing-campaign review .claude/campaigns/the-key/landing-page.md
-```
-
-## Agent Delegation
-
-This command invokes:
-- `content-marketer` agent — campaign planning and copy production
-- `researcher` agent — deep audience or competitive intelligence
-
-Reference skills:
-- `content-writing/references/brand-voice.md` — voice capture when tone must stay the same across outputs
-- `content-writing/references/social-content.md` — platform-native social content
-- `content-writing/references/social-publishing.md` — multi-platform distribution
-- `content-writing/references/copywriting.md` — landing page and CTA copy
-
-## Related Commands
-
-- `/plan` — Strategic planning before a campaign
-- `/plan-prd` — Product requirements document before briefing a campaign
-- `/code-review` — Review code behind a landing page implementation
+@CMD:marketing-campaign
+§ARGS{
+  ∅⇒prompt(brief)
+  <brief>⇒full_campaign
+  copy <type∈{landing-page,email-sequence,social-posts,ads,video-scripts}>⇒single(req:positioning_first)
+  review <path|copy_text>⇒copy_audit
+}
+§FLOW{
+  1:research(target_audience,competitors)
+  2:lock(positioning,tone_profile)
+  3:prod(landing-page→email-sequence→social-posts→ad-copy→video-scripts→content-calendar)
+  4:gate(review_checklist)∧copy_review_summary
+}
+§BRIEF{
+  Product:{name}
+  Description:{1-3_sentences}
+  Audience:{specific_segment}
+  Problem:{specific_pain}
+  Benefit:{user_outcome}
+  Tone:{adjectives+avoid}
+  Channels:{landing_page,email,LinkedIn,X,ads,video}
+  Goal:{launch|waitlist|signups|awareness+timeline}
+}
+§GATE{
+  review_audit∈{5s_clarity(above_fold),CTA(specific∧earned∧1/piece),brand_tone_consistency,claim_specificity_support,platform_native_fit,cross_channel_consistency}
+}
+§OUT{
+  dir:".claude/campaigns/{campaign-name}/"
+  files:[positioning.md,landing-page.md,email-sequence.md,social-posts.md,ad-copy.md,video-scripts.md,content-calendar.md]
+  rule:confirm_save_location_before_write
+}
+§DELEG{
+  agents:{content-marketer:plan+copy,researcher:audience+competitive_intel}
+  refs:content-writing/references/{brand-voice,social-content,social-publishing,copywriting}.md
+  rel:{/plan,/plan-prd,/code-review}
+}

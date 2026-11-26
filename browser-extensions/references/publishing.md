@@ -1,26 +1,11 @@
-# Publishing, Monetization, and Release Checklist
-
-## Publish
-1. Prepare: check manifest version, icons, required fields.
-2. Test: load unpacked in `chrome://extensions` with Developer Mode on. Firefox: `web-ext lint`.
-3. Package: zip the extension root. Exclude source-control files.
-4. Upload: Chrome Web Store or Mozilla Add-ons. Explain each requested permission.
-
-## Monetize (optional)
-- Open a donation page from `chrome.runtime.onInstalled`.
-- Offer a premium tier that uses extra optional permissions.
-- Follow each store's payment policy.
-
-## Release checklist
-- [ ] Folders follow the standard layout.
-- [ ] `manifest_version: 3`; all file paths correct.
-- [ ] Only required permissions; optional permissions where they fit.
-- [ ] Service worker has an `onInstalled` handler and does not block.
-- [ ] Content scripts set `run_at` and precise `matches`.
-- [ ] UI pages load ES modules with `type="module"`.
-- [ ] Message handlers call `sendResponse` and return `true` for async replies.
-- [ ] Storage calls use the Chrome Storage API with error handling.
-- [ ] Lint passes (`web-ext lint`; no `chrome://extensions` warnings).
-- [ ] Tested in Chrome, Edge, and Firefox.
-- [ ] Zip holds only needed files and icons.
-- [ ] Store listing explains each permission and has screenshots.
+@REF:publishing
+§PUB{
+  1:check(manifest_version=3,icons,req_fields);
+  2:test(Chrome:`chrome://extensions`+DevMode_load_unpacked;Firefox:`web-ext lint`);
+  3:pkg(zip_root,¬VCS);
+  4:upload(CWS|AMO,justify_every_perm)
+}
+§MONETIZE{opt;donate_on_chrome.runtime.onInstalled;premium_via_optional_permissions;store_payment_policy}
+§CHK{
+  std_layout;mv3+paths;min_perms+optional_permissions;SW_onInstalled+non_blocking;cs(run_at+precise_matches);UI_type=module;onMessage_sendResponse+return_true;chrome.storage+err_handle;web-ext_lint+0_warnings;Chrome+Edge+Firefox;zip_needed_only;perm_justifications+screenshots
+}

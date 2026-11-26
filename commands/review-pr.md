@@ -1,39 +1,14 @@
 ---
-description: Comprehensive PR review using specialized agents (code-reviewer, comment-analyzer, pr-test-analyzer, silent-failure-hunter, type-design-analyzer). Use for a multi-agent PR review pass; for the step-by-step checklist review use /code-review.
+description: "Multi-agent PR review (/code-review=checklist)."
 argument-hint: "[pr-number | pr-url] [--focus=comments|tests|errors|types|code]"
 ---
-
-Run a comprehensive multi-perspective review of a pull request.
-
-## Usage
-
-`/review-pr [PR-number-or-URL] [--focus=comments|tests|errors|types|code]`
-
-**Input**: $ARGUMENTS
-
-If no PR is specified, review the current branch's PR. If no focus is specified, run the full review stack.
-
-## Steps
-
-1. Identify the PR:
-   - use `gh pr view` to get PR details, changed files, and diff
-2. Find project guidance:
-   - look for `AGENTS.md`, `CLAUDE.md`, lint config, TypeScript config, repo conventions
-3. Run specialized review agents:
-   - `code-reviewer`
-   - `comment-analyzer`
-   - `pr-test-analyzer`
-   - `silent-failure-hunter`
-   - `type-design-analyzer`
-4. Aggregate results:
-   - dedupe overlapping findings
-   - rank by severity
-5. Report findings grouped by severity
-
-## Confidence Rule
-
-Only report issues with confidence >= 80:
-
-- Critical: bugs, security, data loss
-- Important: missing tests, quality problems, style violations
-- Advisory: suggestions only when explicitly requested
+@CMD:review-pr
+§ARGS{in:$ARGUMENTS;pr:[pr-number|pr-url](∅⇒curr_PR);focus:[--focus=comments|tests|errors|types|code](∅⇒all)}
+§FLOW{
+1:`gh pr view`→PR,Δfiles,diff;
+2:guidance:`AGENTS.md`,`CLAUDE.md`,lint,TS,conventions;
+3:agents(¬focus⇒all):code=code-reviewer,comments=comment-analyzer,tests=pr-test-analyzer,errors=silent-failure-hunter,types=type-design-analyzer;
+4:dedupe∧rank(severity);
+5:emit_grouped
+}
+§GATE{conf≥80;Critical:bugs,sec,data_loss;Important:tests,quality,style;Advisory:if_req}

@@ -1,45 +1,14 @@
-# Token Budget Advisor
-
-Offer the user a choice of response depth (25%/50%/75%/100%) with token estimates **before** you answer, then answer at that level.
-
-## When to use
-
-- User wants to control how long or detailed a response is
-- User mentions tokens, budget, depth, or response length
-- User says "short version", "tldr", "brief", "al 25%", "exhaustive", etc.
-- Any time the user wants to choose depth/detail level upfront
-
-**Do not trigger** when: user already set a level this session (maintain it silently), or the answer is trivially one line.
-
-## How It Works
-
-### Step 1 — Estimate input tokens
-
-Estimate the prompt token count with these heuristics:
-
-- prose: `words × 1.3`
-- code-heavy or mixed/code blocks: `chars / 4`
-
-For mixed content, use the dominant content type and keep the estimate heuristic.
-
-### Step 2 — Estimate response size by complexity
-
-Classify the prompt, then apply the multiplier range to get the full response window:
-
-| Complexity   | Multiplier range | Example prompts                                      |
-|--------------|------------------|------------------------------------------------------|
-| Simple       | 3× – 8×          | "What is X?", yes/no, single fact                   |
-| Medium       | 8× – 20×         | "How does X work?"                                  |
-| Medium-High  | 10× – 25×        | Code request with context                           |
-| Complex      | 15× – 40×        | Multi-part analysis, comparisons, architecture      |
-| Creative     | 10× – 30×        | Stories, essays, narrative writing                  |
-
-Response window = `input_tokens × mult_min` to `input_tokens × mult_max` (but don’t exceed your model’s configured output-token limit).
-
-### Step 3 — Present depth options
-
-Present this block **before** answering, using the actual estimated numbers:
-
+@REF:token-budget-advisor
+# Src: https://github.com/Xabilimon1/Token-Budget-Advisor-Claude-Code-
+§WHEN{len/detail_ctrl;tokens|budget|depth|length|"short version"|"tldr"|"brief"|"al 25%"|"exhaustive"|upfront_depth;ex:{"Give me the short version first.","How many tokens will your answer use?","Respond at 50% depth.","I want the exhaustive answer, not the summary.","Dame la version corta y luego la detallada."}}
+§SKIP{session_set⇒keep_silent;1_line_trivial;unrelated:{"What is a JWT token?","The checkout flow uses a payment token.","Is this normal?","Complete the refactor."}}
+§FLOW{
+1_in:prose:words×1.3|code/mix:chars/4(dominant,heuristic);
+2_win:[in×m_min,min(in×m_max,model_max_out)]:Simple(3×–8×:"What is X?",yes/no,1_fact)|Medium(8×–20×:"How does X work?")|MedHigh(10×–25×:code+ctx)|Complex(15×–40×:multi_part,cmp,arch)|Creative(10×–30×:story,essay,narrative);
+3_ask(¬short∧¬session_set):emit §TPL;25%:min+(max-min)×0.25|50%:min+(max-min)×0.50|75%:min+(max-min)×0.75|100%:max;
+4_ans:25%_Essential(2-4sent|+direct,conclusion|-ctx,ex,nuance,alts)|50%_Moderate(1-3para|+ans,ctx,1ex|-deep,edge,refs)|75%_Detailed(struct|+multi_ex,pros/cons,alts|-extreme_edge,all_refs)|100%_Exhaustive(unbounded|+all|-∅)
+}
+§TPL{
 ```
 Analyzing your prompt...
 
@@ -56,55 +25,6 @@ Which level? (1-4 or say "25% depth", "50% depth", "75% depth", "100% depth")
 
 Precision: heuristic estimate ~85-90% accuracy (±15%).
 ```
-
-Level token estimates (within the response window):
-- 25%  → `min + (max - min) × 0.25`
-- 50%  → `min + (max - min) × 0.50`
-- 75%  → `min + (max - min) × 0.75`
-- 100% → `max`
-
-### Step 4 — Respond at the chosen level
-
-| Level            | Target length       | Include                                             | Omit                                              |
-|------------------|---------------------|-----------------------------------------------------|---------------------------------------------------|
-| 25% Essential    | 2-4 sentences max   | Direct answer, key conclusion                       | Context, examples, nuance, alternatives           |
-| 50% Moderate     | 1-3 paragraphs      | Answer + necessary context + 1 example              | Deep analysis, edge cases, references             |
-| 75% Detailed     | Structured response | Multiple examples, pros/cons, alternatives          | Extreme edge cases, exhaustive references         |
-| 100% Exhaustive  | No restriction      | Everything — full analysis, all code, all perspectives | Nothing                                        |
-
-## Shortcuts — skip the question
-
-If the user already signals a level, respond at that level immediately without asking:
-
-| What they say                                      | Level |
-|----------------------------------------------------|-------|
-| "1" / "25% depth" / "short version" / "brief answer" / "tldr"  | 25%   |
-| "2" / "50% depth" / "moderate depth" / "balanced answer"        | 50%   |
-| "3" / "75% depth" / "detailed answer" / "thorough answer"       | 75%   |
-| "4" / "100% depth" / "exhaustive answer" / "full deep dive"     | 100%  |
-
-If the user set a level earlier in the session, **maintain it silently** for subsequent responses unless they change it.
-
-## Precision note
-
-This method uses heuristic estimation — no real tokenizer. Accuracy ~85-90%, variance ±15%. Always show the disclaimer.
-
-## Examples
-
-### Triggers
-
-- "Give me the short version first."
-- "How many tokens will your answer use?"
-- "Respond at 50% depth."
-- "I want the exhaustive answer, not the summary."
-- "Dame la version corta y luego la detallada."
-
-### Does Not Trigger
-
-- "What is a JWT token?"
-- "The checkout flow uses a payment token."
-- "Is this normal?"
-- "Complete the refactor."
-- Follow-up questions after the user already chose a depth for the session
-
-Source: [Token Budget Advisor for Claude Code](https://github.com/Xabilimon1/Token-Budget-Advisor-Claude-Code-).
+}
+§SHORT{"1"|"25% depth"|"short version"|"brief answer"|"tldr"⇒25%;"2"|"50% depth"|"moderate depth"|"balanced answer"⇒50%;"3"|"75% depth"|"detailed answer"|"thorough answer"⇒75%;"4"|"100% depth"|"exhaustive answer"|"full deep dive"⇒100%;persist_silently_until_changed}
+§R{heuristic(no_tokenizer,~85-90%_acc,±15%_var);always_show_disclaimer}

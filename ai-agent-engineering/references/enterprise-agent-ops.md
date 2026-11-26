@@ -1,52 +1,8 @@
-# Enterprise Agent Ops
-
-Operational controls for long-lived or cloud-hosted agent systems: lifecycle, observability, safety scopes, and change management.
-
-## When to use
-
-- You run a production agent fleet on PM2, systemd, or containers.
-- The agents need monitoring, incident response, kill switches, or deployment gates.
-- The system runs continuously, not as single CLI sessions.
-
-## Operational Domains
-
-1. runtime lifecycle (start, pause, stop, restart)
-2. observability (logs, metrics, traces)
-3. safety controls (scopes, permissions, kill switches)
-4. change management (rollout, rollback, audit)
-
-## Baseline Controls
-
-- immutable deployment artifacts
-- least-privilege credentials
-- environment-level secret injection
-- hard timeout and retry budgets
-- audit log for high-risk actions
-
-## Metrics to Track
-
-- success rate
-- mean retries per task
-- time to recovery
-- cost per successful task
-- failure class distribution
-
-## Incident Pattern
-
-When failure spikes:
-1. freeze new rollout
-2. capture representative traces
-3. isolate failing route
-4. patch with smallest safe change
-5. run regression + security checks
-6. resume gradually
-
-## Deployment Integrations
-
-Use with:
-- PM2 workflows
-- systemd services
-- container orchestrators (`devops-iac/references/kubernetes.md`)
-- CI/CD gates (`devops-iac/references/github-actions.md`)
-- metrics, logs, and traces (`devops-iac/references/observability.md`)
-- security controls (`references/agent-security-hardening.md`)
+@REF:enterprise-agent-ops
+§SCOPE{prod_ops:lc,obs,safety,chg}
+§WHEN{PM2|systemd|containers;mon|IR|kill_sw|gates;continuous≠CLI}
+§DOM{1:lc(start,pause,stop,restart);2:obs(log,metric,trace);3:safety(scope,perm,kill_sw);4:chg(rollout,rollback,audit)}
+§CTRL{immut_artif;min_priv;env_sec;hard(timeout,retry);audit(high_risk)}
+§MET{succ_rate;retries/task;TTR;cost/succ;fail_dist}
+§IR{spike⇒1:freeze→2:traces→3:isolate→4:min_patch→5:reg+sec→6:resume}
+§REL{PM2|systemd;`devops-iac/references/kubernetes.md`;`devops-iac/references/github-actions.md`;`devops-iac/references/observability.md`;`references/agent-security-hardening.md`}

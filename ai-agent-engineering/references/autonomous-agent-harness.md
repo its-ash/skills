@@ -1,266 +1,75 @@
-# Autonomous Agent Harness
-
-Turn Claude Code into an autonomous agent system with persistent memory, scheduled operations, computer use, and a task queue, in place of standalone agent frameworks such as Hermes or AutoGPT.
-
-Combine Claude Code's session tools with separately configured scheduling, memory, and computer-use integrations. This is a setup pattern, not a bundled always-on runtime.
-
-## Consent and Safety Boundaries
-
-Autonomous operation must be explicitly requested and scoped by the user. Do not create schedules, dispatch remote agents, write persistent memory, use computer control, post externally, modify third-party resources, or act on private communications unless the user has approved that capability and the target workspace for the current setup.
-
-Prefer dry-run plans and local queue files before enabling recurring or event-driven actions. Keep credentials, private workspace exports, personal datasets, and account-specific automations out of reusable shared artifacts.
-
-## When to use
-
-- User wants an agent that runs continuously or on a schedule
-- Setting up automated workflows that trigger periodically
-- Building a personal AI assistant that remembers context across sessions
-- User says "run this every day", "check on this regularly", "keep monitoring"
-- Wants to replicate functionality from Hermes, AutoGPT, or similar autonomous agent frameworks
-- Needs computer use combined with scheduled execution
-
-## Architecture
-
-```
-┌──────────────────────────────────────────────────────────────┐
-│                    Claude Code Runtime                        │
-│                                                              │
-│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌─────────────┐ │
-│  │  Crons   │  │ Dispatch │  │ Memory   │  │ Computer    │ │
-│  │ Schedule │  │ Remote   │  │ Store    │  │ Use         │ │
-│  │ Tasks    │  │ Agents   │  │          │  │             │ │
-│  └────┬─────┘  └────┬─────┘  └────┬─────┘  └──────┬──────┘ │
-│       │              │             │                │        │
-│       ▼              ▼             ▼                ▼        │
-│  ┌──────────────────────────────────────────────────────┐    │
-│  │              Skill + Agent Layer                      │    │
-│  │                                                      │    │
-│  │  skills/     agents/     commands/     hooks/        │    │
-│  └──────────────────────────────────────────────────────┘    │
-│       │              │             │                │        │
-│       ▼              ▼             ▼                ▼        │
-│  ┌──────────────────────────────────────────────────────┐    │
-│  │              MCP Server Layer                        │    │
-│  │                                                      │    │
-│  │  memory    github    exa    supabase    browser-use  │    │
-│  └──────────────────────────────────────────────────────┘    │
-└──────────────────────────────────────────────────────────────┘
-```
-
-## Core Components
-
-### 1. Persistent Memory
-
-Use Claude Code's built-in memory system enhanced with MCP memory server for structured data.
-
-**Built-in memory** (`~/.claude/projects/*/memory/`):
-- User preferences, feedback, project context
-- Stored as markdown files with frontmatter
-- Automatically loaded at session start
-
-**MCP memory server** (structured knowledge graph):
-- Entities, relations, observations
-- Queryable graph structure
-- Cross-session persistence
-
-**Memory patterns:**
-
-```
-# Short-term: current session context
-Use TodoWrite for in-session task tracking
-
-# Medium-term: project memory files
-Write to ~/.claude/projects/*/memory/ for cross-session recall
-
-# Long-term: MCP knowledge graph
-Use mcp__memory__create_entities for permanent structured data
-Use mcp__memory__create_relations for relationship mapping
-Use mcp__memory__add_observations for new facts about known entities
-```
-
-### 2. Scheduled Operations (Crons)
-
-Use Claude Code's native [scheduled tasks](https://code.claude.com/docs/en/scheduled-tasks) for recurring prompts within an interactive session. These tasks are session-scoped; an external scheduler is required for work that must run independently of an open session. No scheduling MCP server is required for `/loop`.
-
-**Setting up a cron:**
-
-```
-# In an interactive Claude Code session
-/loop 30m Review open PRs in this repository and summarize CI failures.
-```
-
-For a one-shot run from a shell, set the working directory before invoking the CLI:
-
-```bash
-cd "/path/to/repo" && claude -p "Review open PRs and summarize"
-```
-
-Use an OS scheduler or CI schedule to invoke that command repeatedly when no interactive session is running. Configure the runner's authentication and tool permissions separately.
-
-**Useful cron patterns:**
-
-| Pattern | Schedule | Use Case |
-|---------|----------|----------|
-| Daily standup | `0 9 * * 1-5` | Review PRs, issues, deploy status |
-| Weekly review | `0 10 * * 1` | Code quality metrics, test coverage |
-| Hourly monitor | `0 * * * *` | Production health, error rate checks |
-| Nightly build | `0 2 * * *` | Run full test suite, security scan |
-| Pre-meeting | `*/30 * * * *` | Prepare context for upcoming meetings |
-
-### 3. Dispatch / Remote Agents
-
-Have an authenticated CI job or webhook receiver invoke Claude Code in a workspace it owns. The supported entrypoint is [programmatic CLI mode](https://code.claude.com/docs/en/headless), not a public Anthropic dispatch endpoint.
-
-**Dispatch patterns:**
-
-```bash
-# Run inside the CI workspace
-cd "/path/to/repo" && claude -p "Build failed on main. Diagnose the failure."
-
-# Trigger from webhook
-# GitHub webhook -> authenticated CI runner -> claude -p -> reviewable result
-
-# Trigger from another agent
-claude -p "Analyze the output of the security scan and create issues for findings"
-```
-
-### 4. Computer Use
-
-Computer control needs a separately configured integration. Anthropic's [computer-use tool and reference environment](https://platform.claude.com/docs/en/agents-and-tools/tool-use/computer-use-tool) require an application to execute tool calls in an isolated desktop environment. Adding an MCP package name does not supply that environment.
-
-**Capabilities:**
-- Browser automation (navigate, click, fill forms, screenshot)
-- Desktop control (open apps, type, mouse control)
-- File system operations beyond CLI
-
-**Use cases within the harness:**
-- Automated testing of web UIs
-- Form filling and data entry
-- Screenshot-based monitoring
-- Multi-app workflows
-
-### 5. Task Queue
-
-Manage a persistent queue of tasks that survive session boundaries.
-
-**Implementation:**
-
-```
-# Task persistence via memory
-Write task queue to ~/.claude/projects/*/memory/task-queue.md
-
-# Task format
----
-name: task-queue
-type: project
-description: Persistent task queue for autonomous operation
----
-
-## Active Tasks
-- [ ] PR #123: Review and approve if CI green
-- [ ] Monitor deploy: check /health every 30 min for 2 hours
-- [ ] Research: Find 5 leads in AI tooling space
-
-## Completed
-- [x] Daily standup: reviewed 3 PRs, 2 issues
-```
-
-## Replacing Hermes
-
-| Hermes Component | Claude Code Equivalent | How |
-|------------------|---------------|-----|
-| Gateway/Router | CLI + external scheduler | An authenticated runner starts agent sessions |
-| Memory System | Claude memory + MCP memory server | Built-in persistence + knowledge graph |
-| Tool Registry | MCP servers | Dynamically loaded tool providers |
-| Orchestration | Skills + agents | Skill definitions direct agent behavior |
-| Computer Use | Separately configured integration | Browser or desktop control in an isolated environment |
-| Context Manager | Session management + memory | Session resume + memory files |
-| Task Queue | Memory-persisted task list | TodoWrite + memory files |
-
-## Setup Guide
-
-### Step 1: Configure MCP Servers
-
-Memory MCP is optional. The [MCP reference memory server](https://github.com/modelcontextprotocol/servers/tree/main/src/memory) is published as `@modelcontextprotocol/server-memory`; version `2026.8.31` was verified on the public npm registry on 2026-09-07. It is a reference implementation, not a bundled service.
-
-After reviewing that package and approving its use, merge this entry into the user-scoped MCP configuration in `~/.claude.json`, preserving existing settings. Replace `MEMORY_FILE_PATH` with an absolute path in a private directory you own. See [Claude Code MCP configuration](https://code.claude.com/docs/en/mcp) for CLI registration and Windows `cmd /c npx` configuration.
-
-```json
-{
-  "mcpServers": {
-    "memory": {
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-memory@2026.8.31"],
-      "env": {
-        "MEMORY_FILE_PATH": "/absolute/path/to/private/memory.jsonl"
-      }
-    }
+@REF:autonomous-agent-harness
+§CORE{
+  role:ClaudeCode_autonomous_harness(persistent_mem+crons+computer_use+task_queue);
+  scope:setup_pattern(¬bundled_always_on_runtime);replaces:{Hermes,AutoGPT}
+}
+§R{
+  consent:explicit_user_req∧approval(capability∧target_ws)req∀{schedule,remote_dispatch,mem_write,computer_use,ext_post,3p_mod,priv_comms};
+  dry_run:prefer(dry_run_plan∧local_queue_file)before(recurring|event_driven);
+  hygiene:exclude{creds,priv_ws_exports,personal_datasets,acct_automations}from(shared_artifacts);
+  pkg_sec:¬register(guessed|unpublished_npm_pkg)∵`npx -y`execs_future_pub;verify(pkg∧publisher∧ver);sched+comp_use¬need(3_prev_unpublished_pkgs);
+  session_scope:native_cron=shares_interactive_session;ext_sched=new_session_unless_explicit_resume;
+  limits:comp_use_needs_explicit_perms(¬assume);cli_auto_consumes_usage+provider_limits⇒pick_safe_intervals;
+  mem_bound:keep_concise∧archive_old(¬unbounded_growth);
+  verify:always_check_cron_success∧add_err_handling_to_cron_prompts
+}
+§WHEN{
+  continuous|scheduled_agent;periodic_workflows;cross_session_assistant;prompts∈{"run this every day","check on this regularly","keep monitoring"};replace:{Hermes,AutoGPT};comp_use+cron
+}
+§ARCH{
+  runtime:{Crons/Schedule,Dispatch/Remote,MemoryStore,ComputerUse}→layer1:{skills/,agents/,commands/,hooks/}→mcp:{memory,github,exa,supabase,browser-use}
+}
+§PAT{
+  mem:{
+    short:TodoWrite(in_session);
+    med:~/.claude/projects/*/memory/*.md(frontmatter;user_prefs,feedback,proj_ctx;auto_load_start);
+    long:mcp_memory_kg({mcp__memory__create_entities,mcp__memory__create_relations,mcp__memory__add_observations};entities,relations,observations;cross_session)
+  };
+  cron:{
+    native:[scheduled tasks](https://code.claude.com/docs/en/scheduled-tasks)(session_scoped;no_mcp_for_/loop)⇒`/loop 30m Review open PRs in this repository and summarize CI failures.`;
+    headless:`cd "/path/to/repo" && claude -p "Review open PRs and summarize"`(via_OS_cron|CI_sched;cfg_auth+tool_perms_sep);
+    exprs:{standup:`0 9 * * 1-5`(PRs,issues,deploy);weekly:`0 10 * * 1`(quality,cov);hourly:`0 * * * *`(prod_health,err_rate);nightly:`0 2 * * *`(full_tests,sec_scan);pre_mtg:`*/30 * * * *`(mtg_ctx)}
+  };
+  dispatch:{
+    entrypoint:[programmatic CLI mode](https://code.claude.com/docs/en/headless)(CI_job|webhook_receiver→`claude -p`in_owned_ws;¬public_Anthropic_dispatch_endpoint);
+    ci:`cd "/path/to/repo" && claude -p "Build failed on main. Diagnose the failure."`;
+    webhook:GH_webhook→auth_CI_runner→`claude -p`→reviewable_result;
+    agent2agent:`claude -p "Analyze the output of the security scan and create issues for findings"`
+  };
+  computer_use:{
+    req:[computer-use tool and reference environment](https://platform.claude.com/docs/en/agents-and-tools/tool-use/computer-use-tool)(sep_cfg_app_in_isolated_desktop;MCP_pkg_name_alone=insufficient);
+    caps:{browser(nav,click,forms,screenshot),desktop(apps,type,mouse),non_cli_fs};
+    use:{web_UI_test,form_entry,screenshot_mon,multi_app}
+  };
+  task_queue:{
+    path:~/.claude/projects/*/memory/task-queue.md;
+    tpl:`---\nname: task-queue\ntype: project\ndescription: Persistent task queue for autonomous operation\n---\n## Active Tasks\n- [ ] PR #123: Review and approve if CI green\n- [ ] Monitor deploy: check /health every 30 min for 2 hours\n## Completed\n- [x] Daily standup: reviewed 3 PRs, 2 issues`
   }
 }
+§HERMES_MAP{
+  Gateway/Router⇒CLI+ext_scheduler(auth_runner_starts_sessions);
+  MemorySystem⇒Claude_mem+MCP_mem_srv(persistence+KG);
+  ToolRegistry⇒MCP_servers(dynamic_providers);
+  Orchestration⇒skills+agents;
+  ComputerUse⇒sep_cfg_integration(isolated_browser|desktop);
+  ContextManager⇒session_resume+mem_files;
+  TaskQueue⇒TodoWrite+mem_files
+}
+§CFG{
+  step1_mcp_opt:{
+    pkg:`@modelcontextprotocol/server-memory@2026.8.31`([MCP reference memory server](https://github.com/modelcontextprotocol/servers/tree/main/src/memory);npm_verified:2026-09-07;ref_impl¬bundled);
+    target:~/.claude.json(merge_preserving_existing;MEMORY_FILE_PATH=abs_private_path);
+    docs:[Claude Code MCP configuration](https://code.claude.com/docs/en/mcp)(CLI_reg∧Windows`cmd /c npx`);
+    json:```json
+{"mcpServers":{"memory":{"command":"npx","args":["-y","@modelcontextprotocol/server-memory@2026.8.31"],"env":{"MEMORY_FILE_PATH":"/absolute/path/to/private/memory.jsonl"}}}}
 ```
-
-Do not register guessed or unpublished npm packages: `npx -y` would execute whatever is later published under that name. Verify the exact package, publisher, and version before adding another server. Scheduling and computer use do not require the three unpublished package names previously listed here.
-
-### Step 2: Create Base Crons
-
-For polling during an interactive session, enter:
-
-```text
-/loop 30m Review open PRs in this repository and summarize CI failures.
-```
-
-For daily or weekly work that must survive a closed session, configure an external scheduler, such as an OS cron job or GitHub Actions, to run the one-shot command from Step 2 of Core Components. Calling `claude -p` to request a schedule does not provision an always-on scheduler. Choose the schedule, workspace, and allowed actions explicitly before enabling it.
-
-### Step 3: Initialize Memory Graph
-
-```bash
-# Bootstrap your identity and context
-claude -p "Create memory entities for: me (user profile), my projects, my key contacts. Add observations about current priorities."
-```
-
-### Step 4: Enable Computer Use (Optional)
-
-Follow the computer-use reference environment linked above, or the documentation for a specific browser integration you have reviewed. Grant only the required permissions and verify a harmless action in the isolated environment before adding it to scheduled workflows.
-
-## Example Workflows
-
-### Autonomous PR Reviewer
-```
-Cron: every 30 min during work hours
-1. Check for new PRs on watched repos
-2. For each new PR:
-   - Pull branch locally
-   - Run tests
-   - Review changes with code-reviewer agent
-   - Post review comments via GitHub MCP
-3. Update memory with review status
-```
-
-### Personal Research Agent
-```
-Cron: daily at 6 AM
-1. Check saved search queries in memory
-2. Run Exa searches for each query
-3. Summarize new findings
-4. Compare against yesterday's results
-5. Write digest to memory
-6. Flag high-priority items for morning review
-```
-
-### Meeting Prep Agent
-```
-Trigger: 30 min before each calendar event
-1. Read calendar event details
-2. Search memory for context on attendees
-3. Pull recent email/Slack threads with attendees
-4. Prepare talking points and agenda suggestions
-5. Write prep doc to memory
-```
-
-## Constraints
-
-- Native scheduled prompts share their interactive session. External scheduler invocations start separate sessions unless explicitly resumed.
-- Computer use requires explicit permission grants. Don't assume access.
-- CLI automation still consumes model usage and is subject to the configured provider's limits. Choose appropriate scheduler intervals.
-- Memory files should be kept concise. Archive old data rather than letting files grow unbounded.
-- Always verify that scheduled tasks completed successfully. Add error handling to cron prompts.
+  };
+  step2_cron:interactive=`/loop 30m Review open PRs in this repository and summarize CI failures.`;persistent=OS_cron|GH_Actions→`claude -p`(note:`claude -p`req_sched¬provision_daemon;set_sched+ws+actions_explicitly);
+  step3_init_kg:`claude -p "Create memory entities for: me (user profile), my projects, my key contacts. Add observations about current priorities."`;
+  step4_comp_use_opt:follow_ref_env|reviewed_browser_int→min_perms→verify_harmless_in_isolated_env→schedule
+}
+§EX{
+  pr_reviewer:`*/30`work_hrs→check_new_PRs→∀PR:(pull_branch→tests→code_reviewer→post_GH_MCP_comments)→upd_mem;
+  research:`0 6 * * *`→read_saved_queries(mem)→Exa_search→summarize→diff_yesterday→write_digest(mem)→flag_high_pri;
+  meeting_prep:`T-30m`→read_cal_event→search_mem(attendees)→pull_email/Slack→draft_talking_points+agenda→write_prep(mem)
+}

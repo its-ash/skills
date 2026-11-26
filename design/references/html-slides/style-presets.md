@@ -1,330 +1,49 @@
-# Style Presets Reference
-
-Curated visual styles for [`html-slides`](../html-slides.md). The parent [`design`](../../SKILL.md) anti-slop rules (§10) and banned fonts (§4.1) still apply: change a preset when it conflicts.
-
-Use this file for:
-- the mandatory viewport-fitting CSS base
-- preset selection and mood mapping
-- CSS gotchas and validation rules
-
-Abstract shapes only. Avoid illustrations unless the user explicitly asks for them.
-
-## Viewport Fit Is Non-Negotiable
-
-Every slide must fully fit in one viewport.
-
-### Golden Rule
-
-```text
-Each slide = exactly one viewport height.
-Too much content = split into more slides.
-Never scroll inside a slide.
-```
-
-### Density Limits
-
-| Slide Type | Maximum Content |
-|------------|-----------------|
-| Title slide | 1 heading + 1 subtitle + optional tagline |
-| Content slide | 1 heading + 4-6 bullets or 2 paragraphs |
-| Feature grid | 6 cards maximum |
-| Code slide | 8-10 lines maximum |
-| Quote slide | 1 quote + attribution |
-| Image slide | 1 image, ideally under 60vh |
-
-## Mandatory Base CSS
-
-Copy this block into every generated presentation and then theme on top of it.
-
+@REF:style-presets
+§R{
+  parent:[`html-slides`](../html-slides.md)∧[`design`](../../SKILL.md)(§10_anti-slop∧§4.1_banned_fonts⇒override_conflicting_preset);
+  visuals:abstract_shapes_only∧¬illustrations(unless_explicit_req);
+  vp_fit:NON_NEGOTIABLE⇒(1_slide=100vh/100dvh∧overflow⇒split_slides∧¬scroll_inside_slide);
+  direct_sel:user_knows_style⇒pick_preset_name_directly(¬force_preview_gen)
+}
+§LIMITS{title:1_h1+1_sub+opt_tag;content:1_h+(4-6_bullets∨2_p);feature_grid:≤6_cards;code:≤8-10_lines;quote:1_quote+attr;image:1_img∧<60vh}
+§BASE_CSS{
 ```css
-/* ===========================================
-   VIEWPORT FITTING: MANDATORY BASE STYLES
-   =========================================== */
-
-html, body {
-    height: 100%;
-    overflow-x: hidden;
-}
-
-html {
-    scroll-snap-type: y mandatory;
-    scroll-behavior: smooth;
-}
-
-.slide {
-    width: 100vw;
-    height: 100vh;
-    height: 100dvh;
-    overflow: hidden;
-    scroll-snap-align: start;
-    display: flex;
-    flex-direction: column;
-    position: relative;
-}
-
-.slide-content {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    max-height: 100%;
-    overflow: hidden;
-    padding: var(--slide-padding);
-}
-
-:root {
-    --title-size: clamp(1.5rem, 5vw, 4rem);
-    --h2-size: clamp(1.25rem, 3.5vw, 2.5rem);
-    --h3-size: clamp(1rem, 2.5vw, 1.75rem);
-    --body-size: clamp(0.75rem, 1.5vw, 1.125rem);
-    --small-size: clamp(0.65rem, 1vw, 0.875rem);
-
-    --slide-padding: clamp(1rem, 4vw, 4rem);
-    --content-gap: clamp(0.5rem, 2vw, 2rem);
-    --element-gap: clamp(0.25rem, 1vw, 1rem);
-}
-
-.card, .container, .content-box {
-    max-width: min(90vw, 1000px);
-    max-height: min(80vh, 700px);
-}
-
-.feature-list, .bullet-list {
-    gap: clamp(0.4rem, 1vh, 1rem);
-}
-
-.feature-list li, .bullet-list li {
-    font-size: var(--body-size);
-    line-height: 1.4;
-}
-
-.grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr));
-    gap: clamp(0.5rem, 1.5vw, 1rem);
-}
-
-img, .image-container {
-    max-width: 100%;
-    max-height: min(50vh, 400px);
-    object-fit: contain;
-}
-
-@media (max-height: 700px) {
-    :root {
-        --slide-padding: clamp(0.75rem, 3vw, 2rem);
-        --content-gap: clamp(0.4rem, 1.5vw, 1rem);
-        --title-size: clamp(1.25rem, 4.5vw, 2.5rem);
-        --h2-size: clamp(1rem, 3vw, 1.75rem);
-    }
-}
-
-@media (max-height: 600px) {
-    :root {
-        --slide-padding: clamp(0.5rem, 2.5vw, 1.5rem);
-        --content-gap: clamp(0.3rem, 1vw, 0.75rem);
-        --title-size: clamp(1.1rem, 4vw, 2rem);
-        --body-size: clamp(0.7rem, 1.2vw, 0.95rem);
-    }
-
-    .nav-dots, .keyboard-hint, .decorative {
-        display: none;
-    }
-}
-
-@media (max-height: 500px) {
-    :root {
-        --slide-padding: clamp(0.4rem, 2vw, 1rem);
-        --title-size: clamp(1rem, 3.5vw, 1.5rem);
-        --h2-size: clamp(0.9rem, 2.5vw, 1.25rem);
-        --body-size: clamp(0.65rem, 1vw, 0.85rem);
-    }
-}
-
-@media (max-width: 600px) {
-    :root {
-        --title-size: clamp(1.25rem, 7vw, 2.5rem);
-    }
-
-    .grid {
-        grid-template-columns: 1fr;
-    }
-}
-
-@media (prefers-reduced-motion: reduce) {
-    *, *::before, *::after {
-        animation-duration: 0.01ms !important;
-        transition-duration: 0.2s !important;
-    }
-
-    html {
-        scroll-behavior: auto;
-    }
-}
+html,body{height:100%;overflow-x:hidden}
+html{scroll-snap-type:y mandatory;scroll-behavior:smooth}
+.slide{width:100vw;height:100vh;height:100dvh;overflow:hidden;scroll-snap-align:start;display:flex;flex-direction:column;position:relative}
+.slide-content{flex:1;display:flex;flex-direction:column;justify-content:center;max-height:100%;overflow:hidden;padding:var(--slide-padding)}
+:root{--title-size:clamp(1.5rem,5vw,4rem);--h2-size:clamp(1.25rem,3.5vw,2.5rem);--h3-size:clamp(1rem,2.5vw,1.75rem);--body-size:clamp(.75rem,1.5vw,1.125rem);--small-size:clamp(.65rem,1vw,.875rem);--slide-padding:clamp(1rem,4vw,4rem);--content-gap:clamp(.5rem,2vw,2rem);--element-gap:clamp(.25rem,1vw,1rem)}
+.card,.container,.content-box{max-width:min(90vw,1000px);max-height:min(80vh,700px)}
+.feature-list,.bullet-list{gap:clamp(.4rem,1vh,1rem)}
+.feature-list li,.bullet-list li{font-size:var(--body-size);line-height:1.4}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr));gap:clamp(.5rem,1.5vw,1rem)}
+img,.image-container{max-width:100%;max-height:min(50vh,400px);object-fit:contain}
+@media(max-height:700px){:root{--slide-padding:clamp(.75rem,3vw,2rem);--content-gap:clamp(.4rem,1.5vw,1rem);--title-size:clamp(1.25rem,4.5vw,2.5rem);--h2-size:clamp(1rem,3vw,1.75rem)}}
+@media(max-height:600px){:root{--slide-padding:clamp(.5rem,2.5vw,1.5rem);--content-gap:clamp(.3rem,1vw,.75rem);--title-size:clamp(1.1rem,4vw,2rem);--body-size:clamp(.7rem,1.2vw,.95rem)}.nav-dots,.keyboard-hint,.decorative{display:none}}
+@media(max-height:500px){:root{--slide-padding:clamp(.4rem,2vw,1rem);--title-size:clamp(1rem,3.5vw,1.5rem);--h2-size:clamp(.9rem,2.5vw,1.25rem);--body-size:clamp(.65rem,1vw,.85rem)}}
+@media(max-width:600px){:root{--title-size:clamp(1.25rem,7vw,2.5rem)}.grid{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms !important;transition-duration:.2s !important}html{scroll-behavior:auto}}
 ```
-
-## Viewport Checklist
-
-- every `.slide` has `height: 100vh`, `height: 100dvh`, and `overflow: hidden`
-- all typography uses `clamp()`
-- all spacing uses `clamp()` or viewport units
-- images have `max-height` constraints
-- grids adapt with `auto-fit` + `minmax()`
-- short-height breakpoints exist at `700px`, `600px`, and `500px`
-- if anything feels cramped, split the slide
-
-## Mood to Preset Mapping
-
-| Mood | Good Presets |
-|------|--------------|
-| Impressed / Confident | Bold Signal, Electric Studio, Dark Botanical |
-| Excited / Energized | Creative Voltage, Neon Cyber, Split Pastel |
-| Calm / Focused | Notebook Tabs, Paper & Ink, Swiss Modern |
-| Inspired / Moved | Dark Botanical, Vintage Editorial, Pastel Geometry |
-
-## Preset Catalog
-
-### 1. Bold Signal
-
-- Vibe: confident, high-impact, keynote-ready
-- Best for: pitch decks, launches, statements
-- Fonts: Archivo Black + Space Grotesk
-- Palette: charcoal base, hot orange focal card, crisp white text
-- Signature: oversized section numbers, high-contrast card on dark field
-
-### 2. Electric Studio
-
-- Vibe: clean, bold, agency-polished
-- Best for: client presentations, strategic reviews
-- Fonts: Manrope only
-- Palette: black, white, saturated cobalt accent
-- Signature: two-panel split and sharp editorial alignment
-
-### 3. Creative Voltage
-
-- Vibe: energetic, retro-modern, playful confidence
-- Best for: creative studios, brand work, product storytelling
-- Fonts: Syne + Space Mono
-- Palette: electric blue, neon yellow, deep navy
-- Signature: halftone textures, badges, punchy contrast
-
-### 4. Dark Botanical
-
-- Vibe: elegant, premium, atmospheric
-- Best for: luxury brands, thoughtful narratives, premium product decks
-- Fonts: Cormorant + IBM Plex Sans
-- Palette: near-black, warm ivory, blush, gold, terracotta
-- Signature: blurred abstract circles, fine rules, restrained motion
-
-### 5. Notebook Tabs
-
-- Vibe: editorial, organized, tactile
-- Best for: reports, reviews, structured storytelling
-- Fonts: Bodoni Moda + DM Sans
-- Palette: cream paper on charcoal with pastel tabs
-- Signature: paper sheet, colored side tabs, binder details
-
-### 6. Pastel Geometry
-
-- Vibe: approachable, modern, friendly
-- Best for: product overviews, onboarding, lighter brand decks
-- Fonts: Plus Jakarta Sans only
-- Palette: pale blue field, cream card, soft pink/mint/lavender accents
-- Signature: vertical pills, rounded cards, soft shadows
-
-### 7. Split Pastel
-
-- Vibe: playful, modern, creative
-- Best for: agency intros, workshops, portfolios
-- Fonts: Outfit only
-- Palette: peach + lavender split with mint badges
-- Signature: split backdrop, rounded tags, light grid overlays
-
-### 8. Vintage Editorial
-
-- Vibe: witty, personality-driven, magazine-inspired
-- Best for: personal brands, opinionated talks, storytelling
-- Fonts: DM Serif Display + Work Sans
-- Palette: cream, charcoal, dusty warm accents
-- Signature: geometric accents, bordered callouts, punchy serif headlines
-
-### 9. Neon Cyber
-
-- Vibe: futuristic, techy, kinetic
-- Best for: AI, infra, dev tools, future-of-X talks
-- Fonts: Clash Display + Satoshi
-- Palette: midnight navy, cyan, magenta
-- Signature: particles, grids, data-radar energy (no neon glow on text)
-
-### 10. Terminal Green
-
-- Vibe: developer-focused, hacker-clean
-- Best for: APIs, CLI tools, engineering demos
-- Fonts: JetBrains Mono only
-- Palette: GitHub dark + terminal green
-- Signature: scan lines, command-line framing, precise monospace rhythm
-
-### 11. Swiss Modern
-
-- Vibe: minimal, precise, data-forward
-- Best for: corporate, product strategy, analytics
-- Fonts: Archivo + Nunito
-- Palette: white, black, signal red
-- Signature: visible grids, asymmetry, geometric discipline
-
-### 12. Paper & Ink
-
-- Vibe: literary, thoughtful, story-driven
-- Best for: essays, keynote narratives, manifesto decks
-- Fonts: Cormorant Garamond + Source Serif 4
-- Palette: warm cream, charcoal, crimson accent
-- Signature: pull quotes, drop caps, elegant rules
-
-## Direct Selection Prompts
-
-If the user already knows the style they want, let them pick directly from the preset names above instead of forcing preview generation.
-
-## Animation Feel Mapping
-
-| Feeling | Motion Direction |
-|---------|------------------|
-| Dramatic / Cinematic | slow fades, parallax, large scale-ins |
-| Techy / Futuristic | glow, particles, grid motion, scramble text |
-| Playful / Friendly | springy easing, rounded shapes, floating motion |
-| Professional / Corporate | subtle 200-300ms transitions, clean slides |
-| Calm / Minimal | very restrained movement, whitespace-first |
-| Editorial / Magazine | strong hierarchy, staggered text and image interplay |
-
-## CSS Gotcha: Negating Functions
-
-Never write these:
-
-```css
-right: -clamp(28px, 3.5vw, 44px);
-margin-left: -min(10vw, 100px);
-```
-
-Browsers ignore them silently.
-
-Always write this instead:
-
-```css
-right: calc(-1 * clamp(28px, 3.5vw, 44px));
-margin-left: calc(-1 * min(10vw, 100px));
-```
-
-## Validation Sizes
-
-Test at minimum:
-- Desktop: `1920x1080`, `1440x900`, `1280x720`
-- Tablet: `1024x768`, `768x1024`
-- Mobile: `375x667`, `414x896`
-- Landscape phone: `667x375`, `896x414`
-
-## Anti-Patterns
-
-Do not use:
-- purple-on-white startup templates
-- Inter / Roboto / Arial as the visual voice unless the user explicitly wants utilitarian neutrality
-- bullet walls, tiny type, or code blocks that require scrolling
-- decorative illustrations when abstract geometry would do the job better
+}
+§MOOD{impressed_confident:[Bold_Signal,Electric_Studio,Dark_Botanical];excited_energized:[Creative_Voltage,Neon_Cyber,Split_Pastel];calm_focused:[Notebook_Tabs,Paper_Ink,Swiss_Modern];inspired_moved:[Dark_Botanical,Vintage_Editorial,Pastel_Geometry]}
+§PRESETS[name:vibe|for|fonts|palette|signature]{
+  1_Bold_Signal:confident,high_impact,keynote|pitch,launches,statements|Archivo_Black+Space_Grotesk|charcoal,hot_orange_card,crisp_white|oversized_sec_nums,high_contrast_card_on_dark;
+  2_Electric_Studio:clean,bold,agency|client_decks,strategic_reviews|Manrope|black,white,cobalt|2panel_split,sharp_editorial_align;
+  3_Creative_Voltage:energetic,retro_modern,playful|creative_studios,brand,storytelling|Syne+Space_Mono|electric_blue,neon_yellow,deep_navy|halftones,badges,punchy_contrast;
+  4_Dark_Botanical:elegant,premium,atmospheric|luxury,narratives,premium_product|Cormorant+IBM_Plex_Sans|near_black,warm_ivory,blush,gold,terracotta|blurred_abstract_circles,fine_rules,restrained_motion;
+  5_Notebook_Tabs:editorial,organized,tactile|reports,reviews,structured_story|Bodoni_Moda+DM_Sans|cream_paper_on_charcoal,pastel_tabs|paper_sheet,colored_side_tabs,binder_details;
+  6_Pastel_Geometry:approachable,modern,friendly|product_overviews,onboarding,light_brand|Plus_Jakarta_Sans|pale_blue,cream_card,pink/mint/lavender|vertical_pills,rounded_cards,soft_shadows;
+  7_Split_Pastel:playful,modern,creative|agency_intros,workshops,portfolios|Outfit|peach+lavender_split,mint_badges|split_backdrop,rounded_tags,light_grid_overlays;
+  8_Vintage_Editorial:witty,personality,magazine|personal_brands,opinionated_talks,storytelling|DM_Serif_Display+Work_Sans|cream,charcoal,dusty_warm|geometric_accents,bordered_callouts,punchy_serif_h;
+  9_Neon_Cyber:futuristic,techy,kinetic|AI,infra,devtools,future_talks|Clash_Display+Satoshi|midnight_navy,cyan,magenta|particles,grids,data_radar,¬neon_glow_on_txt;
+  10_Terminal_Green:dev_focused,hacker_clean|APIs,CLI,eng_demos|JetBrains_Mono|GitHub_dark,terminal_green|scan_lines,cli_framing,monospace_rhythm;
+  11_Swiss_Modern:minimal,precise,data_forward|corporate,product_strategy,analytics|Archivo+Nunito|white,black,signal_red|visible_grids,asymmetry,geometric_discipline;
+  12_Paper_Ink:literary,thoughtful,story_driven|essays,keynote_narratives,manifestos|Cormorant_Garamond+Source_Serif_4|warm_cream,charcoal,crimson|pull_quotes,drop_caps,elegant_rules
+}
+§MOTION{dramatic_cinematic:slow_fades,parallax,large_scale_ins;techy_futuristic:glow,particles,grid_motion,scramble_txt;playful_friendly:springy_ease,rounded_shapes,floating;professional_corporate:subtle_200-300ms,clean_slides;calm_minimal:very_restrained,whitespace_first;editorial_magazine:strong_hierarchy,staggered_txt_img_interplay}
+§GOTCHA{¬(`right:-clamp(28px,3.5vw,44px)`|`margin-left:-min(10vw,100px)`)[silently_ignored];req:`right:calc(-1 * clamp(28px, 3.5vw, 44px))`∧`margin-left:calc(-1 * min(10vw, 100px))`}
+§CHK{
+  vp:[.slide{100vh,100dvh,overflow:hidden},type(clamp()),space(clamp()|vh|vw),img(max-height),.grid(auto-fit+minmax()),@media(max-height:700|600|500px),cramped⇒split];
+  sizes:{desktop:[1920x1080,1440x900,1280x720],tablet:[1024x768,768x1024],mobile:[375x667,414x896],landscape_phone:[667x375,896x414]}
+}
+§ANTI{¬purple_on_white_startup_tpl;¬(Inter|Roboto|Arial)(unless_explicit_utilitarian);¬bullet_walls;¬tiny_type;¬scrollable_code_blocks;¬decorative_illustrations_over_abstract_geom}

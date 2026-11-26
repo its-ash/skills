@@ -1,108 +1,19 @@
-# Project Flow Ops
-
-Join GitHub issues, PRs, and Linear tasks into one execution flow. GitHub stays public; Linear is the internal execution layer. Use it when the problem is coordination, not coding.
-
-## When to use
-
-- Triage open PR or issue backlogs
-- Decide what belongs in Linear vs what should remain GitHub-only
-- Link active GitHub work to internal execution lanes
-- Classify PRs into merge, port/rebuild, close, or park
-- Audit whether review comments, CI failures, or stale issues are blocking execution
-
-## Operating Model
-
-- **GitHub** is the public and community truth
-- **Linear** is the internal execution truth for active scheduled work
-- Not every GitHub issue needs a Linear issue
-- Create or update Linear only when the work is:
-  - active
-  - delegated
-  - scheduled
-  - cross-functional
-  - important enough to track internally
-
-## Core Workflow
-
-### 1. Read the public surface first
-
-Gather:
-
-- GitHub issue or PR state
-- author and branch status
-- review comments
-- CI status
-- linked issues
-
-### 2. Classify the work
-
-Every item should end up in one of these states:
-
-| State | Meaning |
-|-------|---------|
-| Merge | self-contained, policy-compliant, ready |
-| Port/Rebuild | useful idea, but must be manually re-landed by the maintainers |
-| Close | wrong direction, stale, unsafe, or duplicated |
-| Park | potentially useful, but not scheduled now |
-
-### 3. Decide whether Linear is warranted
-
-Create or update Linear only if:
-
-- execution is actively planned
-- multiple repos or workstreams are involved
-- the work needs internal ownership or sequencing
-- the issue is part of a larger program lane
-
-Do not mirror everything mechanically.
-
-### 4. Keep the two systems consistent
-
-When work is active:
-
-- GitHub issue/PR should say what is happening publicly
-- Linear should track owner, priority, and execution lane internally
-
-When work ships or is rejected:
-
-- post the public resolution back to GitHub
-- mark the Linear task accordingly
-
-## Review Rules
-
-- Never merge from title, summary, or trust alone; use the full diff
-- Rebuild external-source features in the project when they are valuable but not self-contained
-- CI red means classify and fix or block; do not pretend it is merge-ready
-- If the real blocker is product direction, say so instead of hiding behind tooling
-
-## Output Format
-
-Return:
-
+@REF:project-flow-ops
+§PURPOSE{Join GitHub(public truth)∧Linear(internal execution truth) for coordination(¬coding).}
+§TRIG{triage PR/issue backlog|Linear vs GitHub-only|link GitHub→lanes|classify PRs|audit review/CI/stale blockers}
+§MODEL{GitHub=public truth;Linear=internal truth;¬mirror all;create/update Linear ⇔ work∈{active,delegated,scheduled,cross-functional,important internal}}
+§FLOW{
+1:READ_PUBLIC:{issue/PR state,author+branch,reviews,CI,linked issues};
+2:CLASSIFY∈{`Merge`:self-contained,compliant,ready|`Port/Rebuild`:useful,must manually re-land|`Close`:wrong dir,stale,unsafe,dup|`Park`:useful,unscheduled};
+3:LINEAR_GATE:create/update ⇔ (active planned ∨ multi-repo/workstream ∨ needs owner/sequencing ∨ program lane);¬mirror mechanically;
+4:SYNC:{active⇒GitHub=public status,Linear=owner/priority/lane;shipped|rejected⇒post GitHub resolution∧update Linear}
+}
+§R{¬merge from title/summary/trust alone⇒inspect full diff|valuable non-self-contained external features⇒Port/Rebuild|CI red⇒classify+fix|block(¬merge-ready)|direction blocker⇒state directly(¬hide behind tooling)}
+§OUT{
 ```text
-PUBLIC STATUS
-- issue / PR state
-- CI / review state
-
-CLASSIFICATION
-- merge / port-rebuild / close / park
-- one-paragraph rationale
-
-LINEAR ACTION
-- create / update / no Linear item needed
-- project / lane if applicable
-
-NEXT OPERATOR ACTION
-- exact next move
-```
-
-## Good Use Cases
-
-- "Audit the open PR backlog and tell me what to merge vs rebuild"
-- "Map GitHub issues into our v1 and v2 program lanes"
-- "Check whether this needs a Linear issue or should stay GitHub-only"
-
-## Related
-
-- [github-ops.md](github-ops.md) and [issue-review.md](issue-review.md) for the GitHub side.
-- For Linear access, use a Linear MCP server or the Linear API.
+PUBLIC STATUS: <issue/PR state; CI/review state>
+CLASSIFICATION: <merge|port-rebuild|close|park> — <1-para rationale>
+LINEAR ACTION: <create|update|no Linear item needed>; <project/lane>
+NEXT OPERATOR ACTION: <exact next move>
+```}
+§REL{[github-ops.md](github-ops.md),[issue-review.md](issue-review.md);Linear:MCP|API}

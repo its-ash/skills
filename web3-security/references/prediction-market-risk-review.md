@@ -1,58 +1,10 @@
-# Prediction Market Risk Review
-
-Review prediction-market, basket, oracle, and trading-agent workflows for compliance, safety, data quality, privacy, and execution risk.
-
-## When to use
-
-- Before a prediction-market workflow touches user financial context, venue
-  authentication, portfolio data, API keys, automation, trade planning, or
-  execution-capable tools.
-
-## Review Gates
-
-### Advice Boundary
-
-- Confirm the output is informational.
-- Remove buy/sell/hold/size recommendations.
-- Keep manual user decision points explicit.
-
-### Venue And Regulatory Boundary
-
-- Identify venue terms, geography restrictions, account limits, and API rules.
-- Flag betting, derivatives, securities, or commodities ambiguity for legal
-  review when relevant.
-- Do not bypass venue restrictions or rate limits.
-
-### Data Quality
-
-- Check market liquidity, spread, resolution rules, stale prices, and source
-  timestamps.
-- Separate public venue data from gated or paid data-provider data.
-- Do not mix public and private sources without labels.
-
-### Security
-
-- Do not request or store private keys, seed phrases, or passwords.
-- Keep data-provider API keys and venue API keys out of logs and docs.
-- Use read-only scopes by default.
-- Require circuit breakers, spend limits, dry runs, and human approval before
-  any private implementation adds execution.
-
-### Privacy
-
-- Minimize user portfolio, financial, and knowledge-base data.
-- Redact private sources in public artifacts.
-- Preserve only the fields needed for the review.
-
-## Output Contract
-
-Return:
-
-1. scope reviewed
-2. pass/warn/fail findings
-3. blocked actions
-4. required mitigations
-5. safe next step
-
-If any execution-capable step is requested, require a separate implementation
-plan and explicit user approval.
+@REF:prediction-market-risk-review
+§SCOPE{review(pred_mkt|basket|oracle|bot)∈{compliance,safety,data,priv,exec}_pre(fin|auth|portfolio|keys|auto|trade|exec)}
+§GATES{
+  adv:confirm(info)∧strip(buy|sell|hold|size)∧explicit(manual_pts);
+  reg:id(terms,geo,acct_lim,API_rules)∧flag_legal(betting|derivs|secs|comms)∧¬bypass(lim|rate_lim);
+  data:chk(liq,spread,res_rules,stale_px,ts)∧sep(pub_venue,gated_paid)∧¬mix_unlabelled;
+  sec:¬req∧¬store(keys|seeds|pwds);¬log∧¬doc(provider_keys|venue_keys);default(read_only);req(breaker,spend_lim,dry_run,human_ok)@pre_exec_impl;
+  priv:min(portfolio|fin|KB)∧redact(priv∈pub)∧keep(needed_fields)
+}
+§OUT{1:scope,2:pass_warn_fail,3:blocked,4:mitigations,5:safe_next_step;exec_req⇒sep_impl_plan∧explicit_user_approval}

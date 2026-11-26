@@ -1,158 +1,37 @@
-# GAN-Style Harness
+@REF:gan-style-harness
+# GAN-Style Adversarial Harness (Generator–Evaluator loop; Anthropic 2026-03-24)
 
-A Generator-Evaluator agent harness that builds an application through iteration until the output clears a quality bar.
+§PREMISE{
+  self_eval_bias:agents_praise_own_mediocre_output⇒separate_ruthless_Evaluator_beats_self_critique;
+  loop:Planner(spec)→[Generator(build)⇄Evaluator(live_test+score)]*N
+}
 
-> Inspired by [Anthropic's Harness Design for Long-Running Application Development](https://www.anthropic.com/engineering/harness-design-long-running-apps) (March 24, 2026)
+§D{
+  use⇒1line_prompt→full_app ∨ high_craft_UI ∨ full_stack_working_features ∨ ¬AI_slop ∨ budget∈[$50,$200];
+  ¬use⇒1file_fix(`claude -p`) ∨ budget<$10 ∨ simple_refactor(de-sloppify) ∨ pre_specced_w/_tests(TDD)
+}
 
-A multi-agent harness that separates **generation** from **evaluation**, creating an adversarial feedback loop that drives quality far beyond what a single agent can achieve.
+§ARCH{
+  Planner(default=sonnet,env=`GAN_PLANNER_MODEL`):1line_prompt→ambitious_16feature_multi_sprint_`spec.md`(stories,tech_reqs,visual_dir,eval_criteria);
+  Generator(default=sonnet,env=`GAN_GENERATOR_MODEL`):sprint|continuous_mode;negotiates_sprint_contract_w/_Evaluator_pre_code;stack(React,FastAPI|Express,DB,CSS);git_per_iter;reads_`feedback-*.md`;
+  Evaluator(default=sonnet,env=`GAN_EVALUATOR_MODEL`):QA_on_live_app_via_Playwright_MCP(`mcp__playwright__*`:click,forms,API);ruthlessly_strict(¬praise_mediocre);outputs_`feedback-NNN.md`(weighted_score_alone_on_last_line)
+}
 
-## Core Insight
+§RUBRIC{
+  scale:1..10;weighted_score=Σ(score*weight);pass≥7.0(`GAN_PASS_THRESHOLD`);max_iter=15(typ:5..15);
+  Design_Quality(0.3):1-3=generic_AI_slop|4-6=competent_unremarkable|7-8=distinctive_cohesive|9-10=pro_designer;
+  Originality(0.2):1-3=default_colors_stock_no_personality|4-6=some_custom_mostly_std|7-8=clear_creative_vision|9-10=novel_delightful;
+  Craft(0.3):1-3=broken_layouts_missing_states_no_anim|4-6=rough_inconsistent_spacing|7-8=polished_smooth_responsive|9-10=pixel_perfect_micro_interactions;
+  Functionality(0.2):1-3=core_broken_missing|4-6=happy_path_ok_edge_fail|7-8=all_work_good_err_handle|9-10=bulletproof_all_edges
+}
 
-> When asked to evaluate their own work, agents are pathological optimists — they praise mediocre output and talk themselves out of legitimate issues. But engineering a **separate evaluator** to be ruthlessly strict is far more tractable than teaching a generator to self-critique.
-
-This is the same dynamic as GANs (Generative Adversarial Networks): the Generator produces, the Evaluator critiques, and that feedback drives the next iteration.
-
-## When to use
-
-- Building complete applications from a one-line prompt
-- Frontend design tasks requiring high visual quality
-- Full-stack projects that need working features, not just code
-- Any task where "AI slop" aesthetics are unacceptable
-- Projects where you want to invest $50-200 for production-quality output
-
-## When NOT to Use
-
-- Quick single-file fixes (use standard `claude -p`)
-- Tasks with tight budget constraints (<$10)
-- Simple refactoring (use de-sloppify pattern instead)
-- Tasks that are already well-specified with tests (use TDD workflow)
-
-## Architecture
-
-```
-                    ┌─────────────┐
-                    │   PLANNER   │
-                    │  (Sonnet)   │
-                    └──────┬──────┘
-                           │ Product Spec
-                           │ (features, sprints, design direction)
-                           ▼
-              ┌────────────────────────┐
-              │                        │
-              │   GENERATOR-EVALUATOR  │
-              │      FEEDBACK LOOP     │
-              │                        │
-              │  ┌──────────┐          │
-              │  │GENERATOR │--build-->│──┐
-              │  │ (Sonnet) │          │  │
-              │  └────▲─────┘          │  │
-              │       │                │  │ live app
-              │    feedback             │  │
-              │       │                │  │
-              │  ┌────┴─────┐          │  │
-              │  │EVALUATOR │<-test----│──┘
-              │  │ (Sonnet) │          │
-              │  │+Playwright│         │
-              │  └──────────┘          │
-              │                        │
-              │   5-15 iterations      │
-              └────────────────────────┘
-```
-
-## The Three Agents
-
-### 1. Planner Agent
-
-**Role:** Product manager — expands a brief prompt into a full product specification.
-
-**Key behaviors:**
-- Takes a one-line prompt and produces a 16-feature, multi-sprint specification
-- Defines user stories, technical requirements, and visual design direction
-- Is deliberately **ambitious** — conservative planning leads to underwhelming results
-- Produces evaluation criteria that the Evaluator will use later
-
-**Model:** Sonnet by default; raise via `GAN_PLANNER_MODEL=opus` for deeper spec expansion
-
-### 2. Generator Agent
-
-**Role:** Developer — implements features according to the spec.
-
-**Key behaviors:**
-- Works in structured sprints (or continuous mode with newer models)
-- Negotiates a "sprint contract" with the Evaluator before writing code
-- Uses full-stack tooling: React, FastAPI/Express, databases, CSS
-- Manages git for version control between iterations
-- Reads Evaluator feedback and incorporates it in next iteration
-
-**Model:** Sonnet by default; raise via `GAN_GENERATOR_MODEL=opus` for maximum coding capability
-
-### 3. Evaluator Agent
-
-**Role:** QA engineer — tests the live running application, not just code.
-
-**Key behaviors:**
-- Uses **Playwright MCP** to interact with the live application
-- Clicks through features, fills forms, tests API endpoints
-- Scores against four criteria (configurable):
-  1. **Design Quality** — Does it feel like a coherent whole?
-  2. **Originality** — Custom decisions vs. template/AI patterns?
-  3. **Craft** — Typography, spacing, animations, micro-interactions?
-  4. **Functionality** — Do all features actually work?
-- Returns structured feedback with scores and specific issues
-- Is engineered to be **ruthlessly strict** — never praises mediocre work
-
-**Model:** Sonnet by default; raise via `GAN_EVALUATOR_MODEL=opus` for stronger judgment + tool use
-
-## Evaluation Criteria
-
-The default four criteria, each scored 1-10:
-
-```markdown
-## Evaluation Rubric
-
-### Design Quality (weight: 0.3)
-- 1-3: Generic, template-like, "AI slop" aesthetics
-- 4-6: Competent but unremarkable, follows conventions
-- 7-8: Distinctive, cohesive visual identity
-- 9-10: Could pass for a professional designer's work
-
-### Originality (weight: 0.2)
-- 1-3: Default colors, stock layouts, no personality
-- 4-6: Some custom choices, mostly standard patterns
-- 7-8: Clear creative vision, unique approach
-- 9-10: Surprising, delightful, genuinely novel
-
-### Craft (weight: 0.3)
-- 1-3: Broken layouts, missing states, no animations
-- 4-6: Works but feels rough, inconsistent spacing
-- 7-8: Polished, smooth transitions, responsive
-- 9-10: Pixel-perfect, delightful micro-interactions
-
-### Functionality (weight: 0.2)
-- 1-3: Core features broken or missing
-- 4-6: Happy path works, edge cases fail
-- 7-8: All features work, good error handling
-- 9-10: Bulletproof, handles every edge case
-```
-
-### Scoring
-
-- **Weighted score** = sum of (criterion_score * weight)
-- **Pass threshold** = 7.0 (configurable)
-- **Max iterations** = 15 (configurable, typically 5-15 sufficient)
-
-## Usage
-
-### Via Shell Loop
-
+§CMD{
 ```bash
 #!/bin/bash
 set -euo pipefail
 MAX="${GAN_MAX_ITERATIONS:-15}"
 PASS="${GAN_PASS_THRESHOLD:-7.0}"
-
 claude -p --model "${GAN_PLANNER_MODEL:-sonnet}" "You are a Product Planner. Expand this brief into a full product spec with evaluation criteria: '$1'. Write the spec to spec.md"
-
 for i in $(seq -f '%03g' 1 "$MAX"); do
   claude -p --model "${GAN_GENERATOR_MODEL:-sonnet}" "You are a Generator. Read spec.md and the latest feedback-*.md if present. Implement or improve the app. Start the dev server on port ${GAN_DEV_SERVER_PORT:-3000}."
   claude -p --model "${GAN_EVALUATOR_MODEL:-sonnet}" --allowedTools "Read,Bash,mcp__playwright__*" "You are a strict Evaluator. Test the live app at http://localhost:${GAN_DEV_SERVER_PORT:-3000}. Score against the rubric in spec.md. Write feedback to feedback-$i.md. Put the weighted score alone on the last line."
@@ -162,108 +41,38 @@ done
 echo "No pass after $MAX iterations. Escalate to a human." >&2
 exit 1
 ```
+  manual_prompts:Planner(`PLANNER_PROMPT.md`→`spec.md`),Generator(`spec.md`+`feedback-NNN.md`→Sprint/dev:3000),Evaluator(`--allowedTools "Read,Bash,mcp__playwright__*"`+`EVALUATOR_PROMPT.md`→`feedback-NNN.md`)
+}
 
-The environment variables in the Configuration section below control this loop.
+§EVOL{
+  principle:each_harness_component_encodes_model_limitation⇒re-test_&_strip_as_models_improve;
+  Stage1(Sonnet-class):full_sprint_decomp∧context_resets_between_sprints(¬context_anxiety)∧≥2agents(Initializer+Coding)∧heavy_scaffolding;
+  Stage2(Opus_4.5-class):3agents(Planner+Generator+Evaluator)∧sprint_contracts_pre_phase∧10sprint_decomp∧resets_useful_¬critical;
+  Stage3(Opus_4.6-class):1_planning_pass∧continuous_gen∧1_end_pass_eval∧¬sprint_structure∧auto_compaction
+}
 
-### Via Claude Code (Manual)
+§CFG{
+  env:{`GAN_MAX_ITERATIONS=15`,`GAN_PASS_THRESHOLD=7.0`,`GAN_PLANNER_MODEL=sonnet`,`GAN_GENERATOR_MODEL=sonnet`,`GAN_EVALUATOR_MODEL=sonnet`,`GAN_EVAL_CRITERIA=design,originality,craft,functionality`,`GAN_DEV_SERVER_PORT=3000`,`GAN_DEV_SERVER_CMD="npm run dev"`,`GAN_PROJECT_DIR=.`,`GAN_SKIP_PLANNER=false`,`GAN_EVAL_MODE=playwright`};
+  modes:{`playwright`:Browser_MCP+live_interaction→full_stack_UI;`screenshot`:screenshot+visual→static/design_only;`code-only`:tests+lint+build→APIs/libs/CLIs}
+}
 
-```bash
-# Step 1: Plan
-claude -p --model sonnet "You are a Product Planner. Read PLANNER_PROMPT.md. Expand this brief into a full product spec: 'Build a Kanban board app'. Write spec to spec.md"
+§ANTI{
+  1:lenient_evaluator(passes_iter1)⇒tighten_rubric+explicit_AI_pattern_penalties;
+  2:generator_ignores_feedback⇒pass_via_`feedback-NNN.md`_file(¬inline)∧read_at_iter_start;
+  3:infinite_loop⇒set_`GAN_MAX_ITERATIONS`∧stop+human_escalate_on_3iter_score_plateau;
+  4:superficial_eval⇒Playwright_must_interact(click,forms,error_states),¬screenshot_only;
+  5:evaluator_praises_own_fixes⇒Evaluator_critiques_only(¬suggest+self_eval);Generator_fixes;
+  6:context_exhaustion⇒Claude_Agent_SDK_auto_compaction∨reset_context_between_phases
+}
 
-# Step 2: Generate (iteration 1)
-claude -p --model sonnet "You are a Generator. Read spec.md. Implement Sprint 1. Start the dev server on port 3000."
+§BENCH{
+  Anthropic_results:{Solo:20min,$9,barely_functional,core_broken,AI_slop | GAN:4-6h(12-18x),$125-200(14-22x),prod_ready,all_working,distinctive_polished};
+  tradeoff:~20x_time_&_cost⇒qualitative_leap
+}
 
-# Step 3: Evaluate (iteration 1)
-claude -p --model sonnet --allowedTools "Read,Bash,mcp__playwright__*" "You are an Evaluator. Read EVALUATOR_PROMPT.md. Test the live app at http://localhost:3000. Score against the rubric. Write feedback to feedback-001.md"
-
-# Step 4: Generate (iteration 2 — reads feedback)
-claude -p --model sonnet "You are a Generator. Read spec.md and feedback-001.md. Address all issues. Improve the scores."
-
-# Repeat steps 3-4 until pass threshold met
-```
-
-## Evolution Across Model Capabilities
-
-The harness should simplify as models improve. Following Anthropic's evolution:
-
-### Stage 1 — Weaker Models (Sonnet-class)
-- Full sprint decomposition required
-- Context resets between sprints (avoid context anxiety)
-- 2-agent minimum: Initializer + Coding Agent
-- Heavy scaffolding compensates for model limitations
-
-### Stage 2 — Capable Models (Opus 4.5-class)
-- Full 3-agent harness: Planner + Generator + Evaluator
-- Sprint contracts before each implementation phase
-- 10-sprint decomposition for complex apps
-- Context resets still useful but less critical
-
-### Stage 3 — Frontier Models (Opus 4.6-class)
-- Simplified harness: single planning pass, continuous generation
-- Evaluation reduced to single end-pass (model is smarter)
-- No sprint structure needed
-- Automatic compaction handles context growth
-
-> **Key principle:** Every harness component encodes an assumption about what the model can't do alone. When models improve, re-test those assumptions. Strip away what's no longer needed.
-
-## Configuration
-
-### Environment Variables
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `GAN_MAX_ITERATIONS` | `15` | Maximum generator-evaluator cycles |
-| `GAN_PASS_THRESHOLD` | `7.0` | Weighted score to pass (1-10) |
-| `GAN_PLANNER_MODEL` | `sonnet` | Model for planning agent |
-| `GAN_GENERATOR_MODEL` | `sonnet` | Model for generator agent |
-| `GAN_EVALUATOR_MODEL` | `sonnet` | Model for evaluator agent |
-| `GAN_EVAL_CRITERIA` | `design,originality,craft,functionality` | Comma-separated criteria |
-| `GAN_DEV_SERVER_PORT` | `3000` | Port for the live app |
-| `GAN_DEV_SERVER_CMD` | `npm run dev` | Command to start dev server |
-| `GAN_PROJECT_DIR` | `.` | Project working directory |
-| `GAN_SKIP_PLANNER` | `false` | Skip planner, use spec directly |
-| `GAN_EVAL_MODE` | `playwright` | `playwright`, `screenshot`, or `code-only` |
-
-### Evaluation Modes
-
-| Mode | Tools | Best For |
-|------|-------|----------|
-| `playwright` | Browser MCP + live interaction | Full-stack apps with UI |
-| `screenshot` | Screenshot + visual analysis | Static sites, design-only |
-| `code-only` | Tests + linting + build | APIs, libraries, CLI tools |
-
-## Anti-Patterns
-
-1. **Evaluator too lenient** — If the evaluator passes everything on iteration 1, your rubric is too generous. Tighten scoring criteria and add explicit penalties for common AI patterns.
-
-2. **Generator ignoring feedback** — Ensure feedback is passed as a file, not inline. The generator should read `feedback-NNN.md` at the start of each iteration.
-
-3. **Infinite loops** — Always set `GAN_MAX_ITERATIONS`. If the generator can't improve past a score plateau after 3 iterations, stop and flag for human review.
-
-4. **Evaluator testing superficially** — The evaluator must use Playwright to **interact** with the live app, not just screenshot it. Click buttons, fill forms, test error states.
-
-5. **Evaluator praising its own fixes** — Never let the evaluator suggest fixes and then evaluate those fixes. The evaluator only critiques; the generator fixes.
-
-6. **Context exhaustion** — For long sessions, use Claude Agent SDK's automatic compaction or reset context between major phases.
-
-## Results: What to Expect
-
-Based on Anthropic's published results:
-
-| Metric | Solo Agent | GAN Harness | Improvement |
-|--------|-----------|-------------|-------------|
-| Time | 20 min | 4-6 hours | 12-18x longer |
-| Cost | $9 | $125-200 | 14-22x more |
-| Quality | Barely functional | Production-ready | Phase change |
-| Core features | Broken | All working | N/A |
-| Design | Generic AI slop | Distinctive, polished | N/A |
-
-**The tradeoff is clear:** ~20x more time and cost for a qualitative leap in output quality. This is for projects where quality matters.
-
-## References
-
-- [Anthropic: Harness Design for Long-Running Apps](https://www.anthropic.com/engineering/harness-design-long-running-apps) — Original paper by Prithvi Rajasekaran
-- [Epsilla: The GAN-Style Agent Loop](https://www.epsilla.com/blogs/anthropic-harness-engineering-multi-agent-gan-architecture) — Architecture deconstruction
-- [Martin Fowler: Harness Engineering](https://martinfowler.com/articles/exploring-gen-ai/harness-engineering.html) — Broader industry context
-- [OpenAI: Harness Engineering](https://openai.com/index/harness-engineering/) — OpenAI's parallel work
+§REFS{
+  [Anthropic: Harness Design for Long-Running Apps](https://www.anthropic.com/engineering/harness-design-long-running-apps);
+  [Epsilla: The GAN-Style Agent Loop](https://www.epsilla.com/blogs/anthropic-harness-engineering-multi-agent-gan-architecture);
+  [Martin Fowler: Harness Engineering](https://martinfowler.com/articles/exploring-gen-ai/harness-engineering.html);
+  [OpenAI: Harness Engineering](https://openai.com/index/harness-engineering/)
+}

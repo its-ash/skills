@@ -1,284 +1,81 @@
-# C++ Core Guidelines: rule catalog
+@REF:core-guidelines
+§SRC:https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines
 
-Source: [C++ Core Guidelines](https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines). Each section: rules, one example, anti-patterns.
+§R:CrossCutting{
+  RAII:{P.8,R.1,E.6,CP.20};immutability:{P.10,Con.1-5,ES.25};type_safety:{P.4,I.4,ES.46-49,Enum.3};
+  intent:{P.3,F.1,NL.1-2,T.10};min_complexity:{F.2-3,ES.5,Per.4-5};value>ptr:{C.10,R.3-5,F.20,CP.31}
+}
 
-## Cross-cutting principles
-| Principle | Rules |
-|---|---|
-| RAII everywhere | P.8, R.1, E.6, CP.20 |
-| Immutability by default | P.10, Con.1-5, ES.25 |
-| Type safety | P.4, I.4, ES.46-49, Enum.3 |
-| Express intent | P.3, F.1, NL.1-2, T.10 |
-| Minimize complexity | F.2-3, ES.5, Per.4-5 |
-| Value over pointer semantics | C.10, R.3-5, F.20, CP.31 |
+§PAT:P_I{
+  P.1/P.3:express_intent;P.4/P.5:static_type_safety∧compile>runtime;P.8:¬leak;P.10:immutable;
+  I.1/I.4:explicit_strongly_typed_ifaces;I.2:¬non_const_globals;I.11:¬own_transfer_via_raw_ptr/ref;I.23:low_arg_count;
+  ex:`struct Temperature{double kelvin;}; Temperature boil(const Temperature&);`¬`double boil(double*);`
+}
 
-## Philosophy and interfaces (P, I)
-| Rule | Summary |
-|---|---|
-| P.1 / P.3 | Express ideas and intent directly in code |
-| P.4 / P.5 | Static type safety; compile-time over run-time checks |
-| P.8 | Do not leak resources |
-| P.10 | Prefer immutable data |
-| I.1 / I.4 | Explicit, precisely and strongly typed interfaces |
-| I.2 | No non-const globals |
-| I.11 | Never transfer ownership by raw pointer or reference |
-| I.23 | Keep argument count low |
+§PAT:F{
+  F.1-3:named+single_purpose+short;F.4:`constexpr`;F.6:`noexcept`;F.8:pure;
+  F.16:in(cheap→val,else→`const&`;sink→val+move);F.20/21:ret_val/struct>out_params;F.43:¬ret_ptr/ref_to_local;
+  anti:{F.45:ret_`T&&`,F.55:va_arg,F.53:ref_lambda_capture_cross_thread,F.49:ret_`const T`(blocks_move)};
+  ex:`struct ParseResult{std::string token;int position;}; constexpr int factorial(int n)noexcept;`
+}
 
-```cpp
-struct Temperature { double kelvin; };
-Temperature boil(const Temperature& water);  // good: typed, clear units
-double boil(double* temp);                   // bad: unclear ownership and units
-```
+§PAT:C{
+  C.2:`class`(invariant)⊕`struct`(indep);C.9:min_exposure;C.20:Rule_of_Zero;C.21:Rule_of_Five(def/`=delete`_1⇒all);
+  C.35:base_dtor=public_virtual∨protected_non_virtual;C.41:ctor_fully_inits;C.46:single_arg_ctor=`explicit`;
+  C.67:polymorphic_suppresses_public_copy/move;C.121:pure_iface=abstract_pure_virtuals;C.128:exactly_1(`virtual`⊕`override`⊕`final`);
+  anti:{C.82:virtual_in_ctor/dtor,C.90:memset/memcpy_non_trivial,C.140:diff_default_args_override,C.12:`const`/ref_members}
+}
 
-## Functions (F)
-| Rule | Summary |
-|---|---|
-| F.1-F.3 | Named, single-purpose, short functions |
-| F.4 | `constexpr` if compile-time evaluable |
-| F.6 | `noexcept` if it must not throw |
-| F.8 | Prefer pure functions |
-| F.16 | "In" params: cheap types by value, others by `const&`; sinks by value then move |
-| F.20 / F.21 | Return values (a struct for several) over out-params |
-| F.43 | Never return pointer/reference to a local |
-
-```cpp
-struct ParseResult { std::string token; int position; };
-ParseResult parse(std::string_view input);                    // good
-void parse(std::string_view in, std::string& tok, int& pos);  // bad: out-params
-constexpr int factorial(int n) noexcept { return n <= 1 ? 1 : n * factorial(n - 1); }
-static_assert(factorial(5) == 120);
-```
-Avoid: returning `T&&` (F.45); C variadics / `va_arg` (F.55); by-reference lambda capture for other threads (F.53); returning `const T` (blocks move, F.49).
-
-## Classes (C)
-| Rule | Summary |
-|---|---|
-| C.2 | `class` if invariant; `struct` if members vary independently |
-| C.9 | Minimize member exposure |
-| C.20 | Rule of Zero: avoid defining default operations |
-| C.21 | Rule of Five: define or `=delete` one copy/move/dtor → handle all |
-| C.35 | Base dtor: public virtual or protected non-virtual |
-| C.41 | Constructor creates a fully initialized object |
-| C.46 | Single-arg constructors `explicit` |
-| C.67 | Polymorphic class suppresses public copy/move |
-| C.121 | Pure interface = abstract class of pure virtuals |
-| C.128 | Exactly one of `virtual`, `override`, `final` |
-
-```cpp
-struct Employee { std::string name; std::string department; int id; };  // Rule of Zero
-
-class Shape {
-public:
-    virtual ~Shape() = default;
-    virtual double area() const = 0;
-};
-class Circle : public Shape {
-public:
-    explicit Circle(double r) : radius_(r) {}
-    double area() const override { return std::numbers::pi * radius_ * radius_; }
-private:
-    double radius_;
-};
-```
-Avoid: virtual calls in ctor/dtor (C.82); `memset`/`memcpy` on non-trivial types (C.90); different default args in virtual and overrider (C.140); `const` or reference data members (block copy/move, C.12).
-
-## Resource management (R)
-| Rule | Summary |
-|---|---|
-| R.1 | RAII for all resources |
-| R.3 | Raw `T*` is non-owning |
-| R.5 | Prefer scoped objects; no needless heap |
-| R.10 / R.11 | No `malloc`/`free`; no explicit `new`/`delete` |
-| R.13 | One resource allocation per expression (exception safety) |
-| R.20 / R.21 | `unique_ptr`/`shared_ptr` for ownership; `unique_ptr` unless shared |
-| R.22 | `make_shared` for `shared_ptr` |
-
-RAII handle (Rule of Five, move-only):
+§PAT:R{
+  R.1:RAII_all;R.3:raw_`T*`=non_owning;R.5:scoped>heap;R.10/11:¬malloc/free/new/delete;
+  R.13:1_alloc/expr;R.20/21:`unique_ptr`(default)⊕`shared_ptr`(shared_only);R.22:`make_shared`;
+  copy_assign_safety:temp_alloc(`make_unique<char[]>(n)`+`copy_n`)+`data_=std::move(tmp)`+`=default`_noexcept_moves
+}
 ```cpp
 class FileHandle {
+    std::FILE* h_;
 public:
-    explicit FileHandle(const std::string& path) : h_(std::fopen(path.c_str(), "r")) {
-        if (!h_) throw std::runtime_error("Failed to open: " + path);
-    }
+    explicit FileHandle(const std::string& p) : h_(std::fopen(p.c_str(), "r")) { if (!h_) throw std::runtime_error(p); }
     ~FileHandle() { if (h_) std::fclose(h_); }
     FileHandle(const FileHandle&) = delete;
     FileHandle& operator=(const FileHandle&) = delete;
     FileHandle(FileHandle&& o) noexcept : h_(std::exchange(o.h_, nullptr)) {}
-    FileHandle& operator=(FileHandle&& o) noexcept {
-        if (this != &o) { if (h_) std::fclose(h_); h_ = std::exchange(o.h_, nullptr); }
-        return *this;
-    }
-private:
-    std::FILE* h_;
+    FileHandle& operator=(FileHandle&& o) noexcept { if (this != &o) { if (h_) std::fclose(h_); h_ = std::exchange(o.h_, nullptr); } return *this; }
 };
 ```
-For a copyable owner, copy-assign via a temp then move (`auto tmp = make_unique<char[]>(n); copy_n(...); data_ = std::move(tmp);`) for strong exception safety; `= default` the moves with `noexcept`.
 
-## Expressions and statements (ES)
-| Rule | Summary |
-|---|---|
-| ES.5 | Small scopes |
-| ES.12 | Do not reuse names in nested scopes |
-| ES.20 / ES.23 | Always initialize; prefer `{}` |
-| ES.25 | `const`/`constexpr` unless mutation intended |
-| ES.28 | Immediately invoked lambda for complex `const` init |
-| ES.45 | Named constants, no magic numbers |
-| ES.46 | No narrowing conversions |
-| ES.47 | `nullptr`, not `0`/`NULL` |
-| ES.48 / ES.50 | Avoid casts (named casts only); never cast away `const` |
-| ES.100 | Do not mix signed and unsigned arithmetic |
-
-```cpp
-const auto config = [&] {
-    Config c;
-    c.timeout = std::chrono::seconds{30};
-    c.retries = max_retries;
-    return c;
-}();
-```
-
-## Error handling (E)
-| Rule | Summary |
-|---|---|
-| E.1 | Define the error strategy early |
-| E.2 | Throw when a function cannot do its task |
-| E.3 | No exceptions for flow control |
-| E.6 | RAII prevents leaks |
-| E.12 | `noexcept` when throwing is impossible or unacceptable |
-| E.14 | Purpose-designed exception types, never `int` or string literals |
-| E.15 | Throw by value, catch by reference (no slicing) |
-| E.16 | Destructors, deallocation, `swap` never fail |
-| E.17 | Do not catch everything in every function |
-| E.28 | No error handling via globals like `errno` |
-
-```cpp
-class AppError : public std::runtime_error { using std::runtime_error::runtime_error; };
-class NetworkError : public AppError {
-public:
-    NetworkError(const std::string& msg, int code) : AppError(msg), status_code(code) {}
-    int status_code;
-};
-try { fetch_data(url); }
-catch (const NetworkError& e) { log_error(e.what(), e.status_code); }
-catch (const AppError& e) { log_error(e.what()); }  // let unknown errors propagate
-```
-Avoid empty catch blocks.
-
-## Constants (Con)
-| Rule | Summary |
-|---|---|
-| Con.1 | Objects immutable by default |
-| Con.2 | Member functions `const` by default |
-| Con.3 | Pass pointers/references to `const` by default |
-| Con.4 | `const` for values fixed after construction |
-| Con.5 | `constexpr` for compile-time values |
-
-## Concurrency (CP)
-| Rule | Summary |
-|---|---|
-| CP.2 / CP.3 | No data races; minimize shared writable data |
-| CP.4 | Think in tasks, not threads |
-| CP.8 | No `volatile` for sync (hardware I/O only) |
-| CP.20 | RAII locks, never plain `lock()`/`unlock()` |
-| CP.21 | `std::scoped_lock` for multiple mutexes |
-| CP.22 | Never call unknown code (callbacks) under a lock |
-| CP.26 | Do not detach threads |
-| CP.42 | Never wait without a condition |
-| CP.44 | Name every `lock_guard`/`unique_lock` |
-| CP.50 | Keep the mutex with the data it guards |
-| CP.100 | No lock-free code unless you must |
-
-```cpp
-void push(int v) { std::lock_guard lock(m_); q_.push(v); cv_.notify_one(); }
-int pop() {
-    std::unique_lock lock(m_);
-    cv_.wait(lock, [this] { return !q_.empty(); });
-    const int v = q_.front(); q_.pop(); return v;
+§PAT:ES{
+  ES.5:small_scopes;ES.12:¬shadow_nested;ES.20/23:always_init(`{}`);ES.25:`const`/`constexpr`;
+  ES.28:IILE_complex_const_init(`const auto c=[&]{...}();`);ES.45:named_consts(¬magic);
+  ES.46:¬narrowing;ES.47:`nullptr`¬0/NULL;ES.48/50:named_casts_only∧¬cast_away_`const`;ES.100:¬mix_signed_unsigned
 }
-void transfer(Account& a, Account& b, double amt) { std::scoped_lock lock(a.m_, b.m_); a.bal_ -= amt; b.bal_ += amt; }
-std::lock_guard<std::mutex>(m_);  // bad: unnamed, unlocks at once
-```
 
-## Templates (T)
-| Rule | Summary |
-|---|---|
-| T.1 / T.2 | Templates raise abstraction; algorithms over many types |
-| T.10 / T.11 | Concepts on every template argument; standard concepts first |
-| T.13 | Shorthand syntax for simple concepts |
-| T.43 | `using`, not `typedef` |
-| T.47 | No unconstrained templates in visible namespaces |
-| T.120 | Metaprogramming only when `constexpr` cannot do it |
-| T.144 | Overload; do not specialize function templates |
+§PAT:E{
+  E.1:strategy_early;E.2:throw_on_failure;E.3:¬flow_ctrl;E.6:RAII;E.12:`noexcept`;
+  E.14:typed_exceptions(¬int/literal);E.15:throw_val_catch_ref;E.16:dtor/dealloc/`swap`_¬fail;
+  E.17:¬catch_all_everywhere;E.28:¬`errno`/globals;¬empty_catch;
+  ex:`class AppError:public std::runtime_error{using runtime_error::runtime_error;};`
+}
 
-```cpp
-template<std::integral T> T gcd(T a, T b) { while (b != 0) a = std::exchange(b, a % b); return a; }
-void sort(std::ranges::random_access_range auto& r) { std::ranges::sort(r); }
-template<typename T>
-concept Serializable = requires(const T& t) { { t.serialize() } -> std::convertible_to<std::string>; };
-```
+§PAT:Con{Con.1:immutable_obj;Con.2:`const`_methods;Con.3:ptr/ref_to_`const`;Con.4:`const`_post_ctor;Con.5:`constexpr`_compile}
 
-## Standard library (SL)
-| Rule | Summary |
-|---|---|
-| SL.1 / SL.2 | Use libraries; standard library first |
-| SL.con.1 / SL.con.2 | `std::array`/`std::vector` over C arrays; `vector` by default |
-| SL.str.1 / SL.str.2 | `std::string` owns; `std::string_view` observes |
-| SL.io.50 | `'\n'`, not `std::endl` (forces flush) |
+§PAT:CP{
+  CP.2/3:¬race∧min_shared_mut;CP.4:tasks>threads;CP.8:¬`volatile`_sync(HW_IO_only);
+  CP.20:RAII_locks(¬`lock`/`unlock`);CP.21:`std::scoped_lock`(multi_mutex);CP.22:¬callbacks_under_lock;
+  CP.26:¬detach;CP.42:¬wait_uncond(`cv.wait(lk,pred)`);CP.44:name_locks;CP.50:mutex_with_data;CP.100:¬lock_free_unless_must;
+  anti:`std::lock_guard<std::mutex>(m_);`
+}
 
-## Enumerations (Enum)
-| Rule | Summary |
-|---|---|
-| Enum.1 | Enums (or `constexpr`) over macros |
-| Enum.3 | `enum class` over plain `enum` |
-| Enum.5 | No ALL_CAPS enumerators |
-| Enum.6 | No unnamed enums |
+§PAT:T{
+  T.1/2:abstraction+generic;T.10/11:concepts_all_args(std_first);T.13:shorthand(`void sort(std::ranges::random_access_range auto& r)`);
+  T.43:`using`>`typedef`;T.47:¬unconstrained_visible;T.120:TMP_only_if_`constexpr`_cant;T.144:overload¬specialize_fn_tmpl;
+  ex:`template<typename T> concept Serializable=requires(const T& t){{t.serialize()}->std::convertible_to<std::string>;};`
+}
 
-```cpp
-enum class Color { red, green, blue };  // good
-enum { RED, GREEN, BLUE };              // bad: Enum.3, .5, .6
-#define MAX_SIZE 100                     // bad: Enum.1, use constexpr
-```
-
-## Source files and naming (SF, NL)
-| Rule | Summary |
-|---|---|
-| SF.1 | `.cpp` for code, `.h` for interfaces |
-| SF.7 | No global `using namespace` in headers |
-| SF.8 | Include guards (or `#pragma once`) in every header |
-| SF.10 / SF.11 | Self-contained headers; no include-order dependency |
-| NL.5 | No Hungarian notation (`strName`, `iCount`) |
-| NL.8 / NL.10 | Consistent `underscore_style` |
-| NL.9 | ALL_CAPS only for macros |
-
-```cpp
-#ifndef PROJECT_MODULE_WIDGET_H
-#define PROJECT_MODULE_WIDGET_H
-#include <string>
-namespace project::module {
-constexpr int max_buffer_size = 4096;
-class tcp_connection {
-public:
-    void send_message(std::string_view msg);
-private:
-    std::string host_;  // trailing underscore for members
-};
-}  // namespace project::module
-#endif  // PROJECT_MODULE_WIDGET_H
-```
-
-## Performance (Per)
-| Rule | Summary |
-|---|---|
-| Per.1 / Per.2 | No optimization without reason; not prematurely |
-| Per.4 / Per.5 | Clear abstractions over "clever" low-level code |
-| Per.6 | No performance claims without measurement |
-| Per.7 | Design to enable optimization |
-| Per.10 | Rely on the static type system |
-| Per.11 | Move computation to compile time |
-| Per.19 | Access memory predictably (contiguous data) |
-
-```cpp
-constexpr auto squares = [] { std::array<int, 256> t{}; for (int i = 0; i < 256; ++i) t[i] = i * i; return t; }();
-std::vector<Point> points;                        // good: contiguous
-std::vector<std::unique_ptr<Point>> indirect;     // bad: pointer chasing
-```
+§PAT:SL_Enum_SF_NL_Per{
+  SL:{SL.1/2:std_first,SL.con.1/2:`array`/`vector`(default)>C_array,SL.str.1/2:`string`(own)|`string_view`(obs),SL.io.50:`'\n'`>`std::endl`};
+  Enum:{Enum.1:enum/`constexpr`>macro,Enum.3:`enum class`>enum,Enum.5:¬ALL_CAPS_enumerators,Enum.6:¬unnamed};
+  SF:{SF.1:.cpp/.h,SF.7:¬global_`using namespace`_in_.h,SF.8:guards/`#pragma once`,SF.10/11:self_contained_.h};
+  NL:{NL.5:¬Hungarian,NL.8/10:`underscore_style`,NL.9:ALL_CAPS_macros_only,members_trailing:`_`};
+  Per:{Per.1/2:¬premature,Per.4/5:clear>clever,Per.6:measure,Per.7:design_for_opt,Per.10:static_types,Per.11:compile_time(`constexpr`),Per.19:contiguous(`vector<Point>`>`vector<unique_ptr<Point>>`)}
+}

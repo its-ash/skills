@@ -1,159 +1,25 @@
-# Blender Motion State Inspection
-
-Inspect Blender characters, rigs, poses, retargeted animation, ground contact, and facing direction from structured scene state, not from screenshots alone.
-
-## When to use
-
-- A Blender character looks twisted, mirrored, flattened, offset, or foot-sliding in an animation.
-- A user asks whether an imported avatar, armature, or retargeted motion matches an expected pose.
-- You need to compare rendered evidence with structured facts such as bones, bounding boxes, contacts, and facing vectors.
-- A workflow depends on deciding whether a model is a character, prop, proxy mesh, control rig, or broken import.
-
-## Core Principle
-
-Do not judge animated 3D assets only from screenshots. Screenshots are review evidence, but they hide axis conventions, bone names, object scale, local transforms, parented meshes, material slots, and frame-by-frame contact state.
-
-First extract structured Blender state, then use viewport screenshots or renders to confirm what the facts imply.
-
-## How It Works
-
-1. Establish the clean scene and asset baseline before judging motion.
-2. Extract structured facts from Blender using an exporter or Blender Python run inside Blender's own interpreter.
-3. Sample the frames most likely to expose contact, orientation, scale, and retargeting errors.
-4. Compare the measured facts against the user's expected pose, direction, ground plane, and render goal.
-5. Return a concise report that separates confirmed facts, likely causes, and required fixes.
-
-## Inspection Workflow
-
-1. Inventory the scene.
-   - List meshes, armatures, empties, cameras, lights, modifiers, parent relationships, and hidden objects.
-   - Separate character meshes from helper/proxy geometry before judging the avatar.
-   - Record object-space and world-space bounding boxes.
-
-2. Identify the skeleton.
-   - Capture armature names, pose bones, bone heads/tails, roll, parent chains, constraints, and rest-pose axes.
-   - Map semantic bones such as hips, spine, neck, head, shoulders, elbows, hands, thighs, knees, ankles, and feet.
-   - Flag missing left/right pairs and unusual naming schemes.
-
-3. Determine forward, up, and side axes.
-   - Use the pelvis, spine, shoulders, hips, head, and feet together; do not rely on a single mesh normal.
-   - Compare local armature axes with world axes and imported file conventions such as glTF Y-up vs Blender Z-up.
-   - Mark likely mirrored or backwards imports when face/head/feet direction conflicts with root motion.
-
-4. Sample animation frames.
-   - Inspect first, middle, contact, airborne, and extreme frames.
-   - Record root location, root heading, pelvis height, torso lean, limb directions, foot clearance, and mesh bounds.
-   - For long or fast motion, sample more densely around flips, landings, turns, collisions, and floor contacts.
-
-5. Check model integrity before retargeting blame.
-   - Confirm the clean baseline shape before applying animation.
-   - Preserve original mesh, materials, armature, and skinning unless the user explicitly asks for repair.
-   - Treat unexplained sphere-like blobs, giant proxy meshes, or crushed bodies as import/selection issues until proven otherwise.
-
-6. Diagnose contact and motion issues.
-   - Ground penetration: compare lowest foot or shoe vertices with floor height per frame.
-   - Foot sliding: compare foot world positions across planted frames.
-   - Leg crossover: compare left/right thigh, knee, ankle, and foot side ordering.
-   - Twist damage: compare bone swing direction separately from roll/twist around the limb axis.
-   - Scale drift: compare animated mesh bounds against the clean baseline bounds.
-
-7. Report facts before opinions.
-   - Include frame numbers, object names, bone names, world coordinates, and thresholds.
-   - Separate confirmed failures from visual suspicions.
-   - Attach screenshots only after the structured state explains what to look for.
-
-## Recommended Report Shape
-
-```markdown
-## Blender Motion Inspection
-
-### Scene Inventory
-- Character candidates:
-- Armatures:
-- Helper/proxy objects:
-- Cameras/lights:
-
-### Orientation
-- World up:
-- Character forward:
-- Root heading:
-- Mirrored/backwards risk:
-
-### Baseline Integrity
-- Clean mesh bounds:
-- Animated mesh bounds:
-- Materials/skin preserved:
-- Suspicious non-character meshes:
-
-### Frame Findings
-| Frame | Finding | Evidence |
-| --- | --- | --- |
-| 1 | Clean baseline pose | hips/spine/feet aligned |
-| 96 | Foot penetrates floor | left_foot min_z = -0.04 |
-
-### Verdict
-- Pass/fail:
-- Required fix:
-- Render readiness:
-```
-
-## Examples
-
-### Walk Cycle With Foot Sliding
-
-Scenario: a retargeted character appears to skate during a walk cycle, but the front camera angle makes the foot contact hard to judge.
-
-Apply the workflow:
-- Inventory the scene: character mesh `HeroBody`, armature `HeroRig`, ground plane `Floor`, no hidden proxy meshes.
-- Identify the skeleton: semantic feet are `foot.L` and `foot.R`; hips are `pelvis`; root bone is `root`.
-- Sample animation frames: inspect frames 1, 18, 24, 30, 42, and 48 around planted-foot moments.
-- Diagnose contact and motion issues: compare world-space foot locations during planted frames.
-
-Extracted facts:
-
-| Frame | Fact | Evidence |
-| --- | --- | --- |
-| 18 | Left foot is planted | `foot.L min_z = 0.004`, toe and heel both near floor |
-| 24 | Left foot slides while planted | `foot.L x = 0.21 -> 0.28` over six frames |
-| 30 | Pelvis keeps moving forward | `pelvis y = 1.14 -> 1.31` |
-
-Verdict: fail for render readiness. The motion needs foot-lock cleanup or retargeting constraint review; the body mesh does not need proportion changes.
-
-### Backwards Imported Character
-
-Scenario: a character looks correct in a still frame, but the animation moves opposite the expected travel direction.
-
-Apply the workflow:
-- Determine forward, up, and side axes: compare head, chest, feet, and root motion.
-- Sample animation frames: inspect frame 1 and the midpoint of the travel path.
-- Report facts before opinions: include the root heading and model-facing direction separately.
-
-Extracted facts:
-
-| Frame | Fact | Evidence |
-| --- | --- | --- |
-| 1 | Character face points toward world `-Y` | head/chest vector from `neck` to `head` resolves to `-Y` |
-| 72 | Root motion travels toward world `+Y` | `root y = 0.0 -> 2.8` |
-| 72 | Feet remain visually forward-facing opposite travel | toe bones point `-Y` while displacement is `+Y` |
-
-Verdict: likely backwards import or retargeting forward-axis mismatch. Fix the import/retarget axis mapping before editing animation curves.
-
-## Practical Thresholds
-
-- Assume Blender's default meter-scale units unless the scene unit scale says otherwise.
-- Treat ground penetration above 1-2 cm as visible unless the floor is soft or intentionally stylized.
-- Treat a sudden scale change above 5% as a likely rig, constraint, or transform inheritance problem.
-- Treat left/right ankle side-order flips during airborne inverted motion as leg crossover risk even if it recovers later.
-- Treat root heading jumps above 30 degrees per frame as suspicious unless the source motion includes a snap turn.
-
-## Anti-Patterns
-
-- Do not modify body proportions to force pose matching unless the task is explicitly mesh repair.
-- Do not bake away the clean baseline before recording it.
-- Do not use one rendered camera angle as proof that a pose is correct.
-- Do not delete helper objects until you have recorded why they are not part of the character.
-- Do not assume an avatar faces +Y, -Y, +X, or -X without checking head, feet, torso, and root motion together.
-
-## Tooling Notes
-
-If a Blender state exporter is available, prefer JSON that includes meshes, armatures, pose bones, materials, contacts, bounding boxes, and sampled animation frames. If no exporter exists, run a small Blender Python script through Blender itself, for example `blender --background scene.blend --python collect_motion_state.py`, because `bpy` is not available in a normal system Python interpreter.
+@REF:blender-motion-state-inspection
+§WHEN{char∈{twisted,mirrored,flattened,offset,foot_sliding}∨verify(avatar|armature|retarget≡expected_pose)∨cmp(render,facts:{bones,bbox,contacts,facing})∨classify(char|prop|proxy|rig|broken_import)}
+§R{
+  1:¬judge_3d_by_screenshots_alone(hide:axis_conv,bone_names,obj_scale,local_xform,parented_meshes,mat_slots,frame_contacts);
+  2:extract_structured_state_1st(exporter∨bpy_in_blender)→confirm_via_viewport_renders;
+  3:baseline_clean_scene_pre_motion;
+  4:preserve(orig_mesh,materials,armature,skinning) unless explicit_repair_req;
+  5:facts_pre_opinions(frame#,obj,bone,world_coords,thresholds)∧sep(confirmed_fails,visual_suspicions)∧attach_screenshots_after_state_explains
+}
+§FLOW{
+  1_inventory:list(meshes,armatures,empties,cameras,lights,modifiers,parents,hidden)∧sep(char_meshes,helper_proxy)∧rec(obj_bbox,world_bbox);
+  2_skeleton:cap(armatures,pose_bones,heads,tails,roll,parents,constraints,rest_axes)∧map(hips,spine,neck,head,shoulders,elbows,hands,thighs,knees,ankles,feet)∧flag(missing_LR,odd_naming);
+  3_axes:derive(fwd,up,side) from pelvis+spine+shoulders+hips+head+feet(¬1_normal)∧cmp(local_arm,world,import:{glTF_Y_up,Blender_Z_up})∧flag(mirrored|backwards⇔face_head_feet≠root_motion);
+  4_sample:frames∈{first,mid,contact,airborne,extreme}∧rec(root_loc,root_heading,pelvis_z,torso_lean,limb_dirs,foot_clear,bounds)∧dense(flips,landings,turns,collisions,contacts);
+  5_integrity:verify_clean_baseline_pre_anim∧treat(sphere_blobs|giant_proxy|crushed_body)⇒import|selection_bug_until_proven;
+  6_diagnose:{ground_pen:min_z(foot|shoe_verts) vs floor_z/f; foot_slide:Δworld_pos(foot) across planted_f; leg_cross:side_order(L/R thigh,knee,ankle,foot); twist_dmg:sep(swing_dir,roll_twist_around_axis); scale_drift:cmp(anim_bounds,baseline_bounds)}
+}
+§THRESH{units:m(unless scene.unit_settings≠1); ground_pen:>1-2cm⇒visible(unless soft|stylized); scale_Δ:>5%⇒rig|constraint|inherit_bug; ankle_LR_flip_airborne⇒crossover_risk(even_if_recovers); root_heading_Δ:>30°/f⇒suspicious(unless snap_turn)}
+§PAT{
+  foot_slide:foot.L_min_z=0.004(planted)∧foot.L_x:0.21→0.28/6f∧pelvis_y:1.14→1.31⇒fail(fix:foot_lock|retarget_constraints,¬mesh_props);
+  backwards_import:f1(neck→head=-Y)∧f72(root_y:0→2.8=+Y∧toes=-Y)⇒fix_import_retarget_axis_pre_curves
+}
+§OUT_FMT{Scene_Inventory(char_candidates,armatures,helpers_proxy,cameras_lights); Orientation(world_up,char_fwd,root_heading,mirrored_backwards_risk); Baseline_Integrity(clean_bounds,anim_bounds,mats_skin_ok,suspicious_non_char); Frame_Findings(Frame,Finding,Evidence); Verdict(pass_fail,required_fix,render_ready)}
+§ANTI{¬edit_proportions_for_pose(unless mesh_repair); ¬bake_baseline_pre_record; ¬1_cam_angle_proof; ¬del_helpers_pre_logging_why_∉_char; ¬assume_facing(±X|±Y) w/o head+feet+torso+root}
+§CMD{prefer:JSON_exporter(meshes,armatures,pose_bones,materials,contacts,bbox,sampled_frames); fallback:`blender --background scene.blend --python collect_motion_state.py` # bpy∉sys_python}

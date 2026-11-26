@@ -1,88 +1,63 @@
-# Firebase Backend Development
-
-Firebase provides a suite of cloud services for authentication, database, storage, and hosting. Because Firebase shifts much of the backend logic to the client, strict security rules and query-driven data modeling are critical to prevent data breaches and runaway costs.
-
-## Service map
-- **Firebase Authentication**: user identity, OAuth, passkeys via Identity Platform.
-- **Cloud Firestore**: NoSQL documents, vector search, pipelines.
-- **Firebase Data Connect**: relational data on Cloud SQL for PostgreSQL with generated typed SDKs.
-- **Cloud Functions (2nd gen)**: `firebase-functions` v6/v7 on the Node.js 22 or 24 runtime.
-- **Cloud Storage** and **App Hosting**: files, and server-rendered Next.js or Angular apps.
-- **Security Rules v2** and **App Check**: access control and client attestation.
-
-## Data Modeling and Queries
-
-Firebase is optimized for read-heavy, denormalized data. Unlike SQL, you must design your data structure based on your UI's query patterns rather than entity relationships.
-
-### Firestore Design Rules
-- **Denormalize Data**: Duplicate data across documents to avoid multiple reads or client-side joins.
-- **Avoid Deep Nesting**: Use sub-collections instead of deeply nested maps to keep document sizes under the 1MB limit.
-- **Query-First Design**: Define the exact filters and sorts needed for a view before creating the collection structure.
-- **Use Composite Indexes**: Create composite indexes for queries involving multiple fields with inequality filters.
-- **Relational data**: Use Data Connect (Postgres) when the model needs joins, constraints, or transactions across entities.
-
-## Security Rules
-
-Security rules are the only line of defense for client-side SDKs. Never deploy to production with `allow read, write: if true;`.
-
-### Firestore Rules Patterns
-- **Owner-Only Access**: Ensure users can only modify their own data.
-  ```javascript
-  match /users/{userId} {
-    allow read, write: if request.auth != null && request.auth.uid == userId;
+@REF:firebase-backend
+§SVC{
+  Auth:identity,OAuth,passkeys(Identity_Platform);
+  Firestore:NoSQL_docs,vector_search,pipelines;
+  Data_Connect:relational(Cloud_SQL_PostgreSQL)+generated_typed_SDKs;
+  Cloud_Functions_v2:`firebase-functions` v6/v7,Node 22|24;
+  Storage&App_Hosting:files,SSR(Next.js|Angular);
+  Security_Rules_v2&App_Check:access_control,client_attestation
+}
+§D{
+  data_model:read-heavy∧denormalized∧query-first(UI_queries⇒collection_structure);
+  firestore_rules:{
+    denormalize_across_docs⇒¬multi-read/client_joins;
+    sub-collections¬deep_nesting(doc_limit<1MB);
+    query-first(exact_filters+sorts_before_schema);
+    composite_indexes⇔multi-field+inequality_filters;
+    joins|constraints|cross-entity_tx⇒Data_Connect(PostgreSQL)
+  };
+  security_rules:{
+    prod:NEVER `allow read, write: if true;`;
+    owner:```javascript
+match /users/{userId} { allow read, write: if request.auth != null && request.auth.uid == userId; }
+```
+    RBAC:custom_claims∨`roles`_coll;
+    write_val:`request.resource.data`;
+    storage:MIME_whitelist(e.g.`image/jpeg`)∧max_file_size
+  };
+  cloud_functions_v2:{
+    import:`firebase-functions/v2`(`onRequest`,`onCall`,`onDocumentWritten`);set(`region`,`memory`,`concurrency`);
+    admin:`firebase-admin`(trusted_server_ops⇒bypass_rules);
+    idempotent:mandatory(at-least-once_exec);
+    cold_start:minimal_deps;
+    loop_guard:onUpdate_writing_same_doc⇒termination_condition
+  };
+  perf_and_cost:{
+    ¬`onSnapshot`_on_large_colls;
+    paginate:`startAfter`∨`limit`;
+    aggregate:`count()`,`sum()`,`avg()`(¬fetch_all);
+    modular_SDK12:```javascript
+import { getFirestore, collection, getDocs } from 'firebase/firestore';
+```
   }
-  ```
-- **Role-Based Access (RBAC)**: Use custom claims or a `roles` collection to verify permissions.
-- **Validation**: Use `request.resource.data` to validate the schema of incoming writes.
-
-### Cloud Storage Rules
-- **File Type Validation**: Restrict uploads to specific MIME types (e.g., `image/jpeg`).
-- **Size Limits**: Enforce maximum file sizes to prevent storage exhaustion.
-
-## Cloud Functions
-
-Use Cloud Functions (2nd gen) for operations that require administrative privileges or heavy computation.
-
-### Implementation Guidelines
-- **Use 2nd gen APIs**: Import from `firebase-functions/v2` (`onRequest`, `onCall`, `onDocumentWritten`). Set `region`, `memory`, and `concurrency` per function.
-- **Use Firebase Admin SDK**: Always use `firebase-admin` in functions to bypass security rules for trusted server-side operations.
-- **Idempotency**: Ensure functions are idempotent, as they may execute more than once for a single event.
-- **Cold Start Optimization**: Keep function dependencies minimal to reduce latency.
-- **Avoid Infinite Loops**: When writing a function that triggers on a document update, ensure the function does not update the same document without a termination condition.
-
-## Performance and Cost Optimization
-
-### Avoiding Runaway Costs
-- **Limit Listeners**: Avoid attaching real-time listeners (`onSnapshot`) to large collections. Use pagination or specific queries.
-- **Pagination**: Implement `startAfter` or `limit` to avoid loading thousands of documents into memory.
-- **Aggregation**: Use aggregation queries (`count()`, `sum()`, `avg()`) instead of fetching all documents to calculate a total.
-
-### SDK Usage
-- **Modular Imports**: Use the Firebase SDK 12 modular API to enable tree-shaking and reduce bundle size.
-  ```javascript
-  import { getFirestore, collection, getDocs } from 'firebase/firestore';
-  ```
-
-## Pitfalls and Anti-Patterns
-
-- **❌ SQL Thinking**: Attempting to normalize data and perform joins in the client. This leads to excessive read costs and slow performance.
-- **❌ Client-Side Admin Logic**: Performing sensitive operations (like updating a user's subscription status) directly from the client SDK.
-- **❌ Missing Security Rules**: Relying on the client-side UI to hide buttons as a form of security.
-- **❌ Over-using Realtime Database**: Using the Realtime Database for complex querying; use Firestore for structured data and RTDB for simple, high-frequency state sync.
-
-## Checklist
-- [ ] Security rules are defined for every collection and storage path.
-- [ ] Data model is optimized for the specific UI query patterns.
-- [ ] Modular SDK imports are used to minimize bundle size.
-- [ ] Cloud Functions are 2nd gen, idempotent, and use the Admin SDK. App Check is enforced.
-- [ ] Pagination is implemented for all large list views.
-- [ ] Firebase Emulators are used for local development and testing.
-
-## Related skills
-
-Load these when the task spans more than this skill.
-
-- [`backend-development`](../SKILL.md) — Guidance for designing, building, and operating scalable backend services and APIs. Covers REST GraphQL gRPC A…
-- [`database-design`](../../database-design/SKILL.md) — Expert database architect for data layer design, technology selection, and schema modeling. Use for selecting…
-- [`cloud-architecture`](../../devops-iac/references/cloud-architecture.md) — Provides step‑by‑step guidance, best‑practice rules, and checklists for designing, building, and optimizing se…
-- [`flutter`](../../flutter/SKILL.md) — Provides expert guidance for building high‑performance, multi‑platform Flutter apps with Dart 3. Use it for ar…
+}
+§ANTI{
+  SQL_thinking(normalize+client_joins)⇒high_read_cost∧slow;
+  client_admin_logic(e.g.subscription_status)⇒insecure;
+  UI_hiding_as_security(missing_rules);
+  RTDB_for_complex_queries(use Firestore=structured_data,RTDB=simple_high-freq_sync)
+}
+§CHK{
+  rules∀collection∧storage_path;
+  query-optimized_data_model;
+  modular_SDK_imports;
+  functions_v2∧idempotent∧`firebase-admin`∧App_Check_enforced;
+  pagination∀large_lists;
+  Firebase_Emulators(local_dev/test)
+}
+§REL{
+  [backend-development](../SKILL.md);
+  [database-design](../../database-design/SKILL.md);
+  [cloud-architecture](../../devops-iac/references/cloud-architecture.md);
+  [flutter](../../flutter/SKILL.md)
+}

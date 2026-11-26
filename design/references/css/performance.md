@@ -1,90 +1,42 @@
-# Performance
-
-Read when optimizing CSS delivery, rendering cost, animation smoothness, fonts, images, or Core Web Vitals (LCP, CLS, INP).
-
-## Rules
-- Targets (75th percentile): LCP ≤ 2.5s, CLS ≤ 0.1, INP ≤ 200ms. Measure field data (CrUX, `web-vitals`) as well as lab tools.
-- CSS blocks rendering. Keep the critical path small: one main stylesheet in `<head>`, no `@import` chains, and inline critical CSS only for the above-the-fold layout when it is measurably faster.
-- Give the LCP image `fetchpriority="high"` and no `loading="lazy"`. Lazy-load below-the-fold images and iframes with `loading="lazy"`.
-- Always set `width`/`height` (or `aspect-ratio`) on images, video, iframes, and ad slots to prevent CLS.
-- Use `content-visibility: auto` + `contain-intrinsic-size: auto <estimate>` on long, off-screen sections.
-- Animate only compositor-friendly properties (`transform`, `opacity`). Add `will-change` briefly, not globally.
-- Self-host subset WOFF2, preload at most 1-2 critical fonts, and use `font-display: swap` or `optional` with metric-matched fallbacks.
-- Remove unused CSS with build tools (Tailwind's class scanning, PurgeCSS, Lightning CSS). Safelist classes added at runtime.
-- Prefer CSS over JS for UI behavior (popover, dialog, `:has()`, scroll-driven animation). Less JS gives better INP.
-
-## Delivering CSS
-```html
-<link rel="stylesheet" href="/app.css">                         <!-- critical, render-blocking -->
-<link rel="stylesheet" href="/print.css" media="print">          <!-- non-matching media: low priority, non-blocking -->
-<link rel="preload" href="/below.css" as="style" onload="this.rel='stylesheet'">
-<noscript><link rel="stylesheet" href="/below.css"></noscript>
-```
-- `@import` inside CSS creates serial requests. Bundle at build time.
-- Split CSS by route or component when the full bundle is large. HTTP/2 makes several small files cheap.
-- Use content-hashed filenames with long `Cache-Control: max-age=31536000, immutable`.
-- `<link rel="preconnect" href="https://cdn.example.com" crossorigin>` for critical third-party origins.
-
-## Resource priority
-- `fetchpriority="high|low|auto"` on `<img>`, `<link rel="preload">`, `<script>`, and `fetch()`. Baseline since 2024. The old `importance` attribute is obsolete.
-- Lower priority for carousels' hidden slides and below-fold hero variants: `fetchpriority="low"`.
-- Preload only resources discovered late (fonts from CSS, LCP background images). Too many preloads compete with critical requests.
-- Use `<link rel="modulepreload">` for critical JS modules. Use `defer` for app scripts and `async` for independent third-party scripts.
-
-## Rendering cost
-```css
-.feed-section { content-visibility: auto; contain-intrinsic-size: auto 800px; }
-.widget { contain: layout paint; }   /* isolate layout and paint */
-```
-- `content-visibility: auto` skips layout and paint of off-screen content and keeps it in the a11y tree and find-in-page. Baseline since 2024.
-- `contain-intrinsic-size: auto 800px` reserves an estimate and then remembers the real size after first render, which prevents scrollbar jumps.
-- `contain: strict` (size + layout + paint + style) needs explicit dimensions or the box collapses. Prefer `contain: layout paint` or `content`.
-- Avoid layout thrashing in JS: batch reads (`getBoundingClientRect`) before writes, and use `requestAnimationFrame` for visual updates.
-- Large `box-shadow`, `filter: blur()`, and `backdrop-filter` are paint-heavy. Avoid animating them and limit their area.
-- Very broad selectors are rarely a real problem. Big DOMs (over about 1,500 nodes) and frequent style invalidation (changing a class on `<body>`, global custom property updates) cost more.
-
-## Animation performance
-- Compositor-only: `transform`, `opacity`, and (in most engines) `filter`. Everything else runs on the main thread each frame.
-- `will-change: transform` promotes a layer. Too many layers waste GPU memory. Add it on `:hover`/`pointerenter` of the parent or right before a JS animation, and remove it after.
-- Scroll-driven CSS animations run off the main thread, unlike scroll listeners. For listeners, use `{ passive: true }`.
-- Pause off-screen loops with `animation-play-state` toggled by `IntersectionObserver`, or rely on `content-visibility`.
-
-## Images
-- Formats: AVIF > WebP > JPEG for photos; SVG for vector; PNG only for lossless needs.
-- Use `srcset` + `sizes` so phones do not download desktop images.
-- `decoding="async"` on non-critical images.
-- Do not lazy-load the LCP image. Do not set the LCP image as a CSS background (the preload scanner finds `<img>` sooner); if you must, preload it.
-- Replace animated GIFs with `<video autoplay muted loop playsinline>` (much smaller).
-- Facade heavy embeds (YouTube, maps): show a static preview and load the iframe on click.
-
-## Fonts
-- WOFF2 only. Subset with `unicode-range` and tools like glyphhanger or fonttools.
-- One variable font file often replaces 4-6 static files.
-- `font-display: optional` + preload removes font-swap CLS. `swap` + `size-adjust` fallback metrics minimizes it.
-- System font stacks have zero cost.
-
-## CLS checklist
-- Reserve space for images, embeds, ads, and late UI (cookie banners as overlays, not pushed-in content).
-- Use `transform` animations instead of animating `top`/`height` on content.
-- `scrollbar-gutter: stable` stops layout jumps when scrollbars appear.
-- Avoid inserting content above existing content after load unless it follows a user action.
-
-## INP checklist
-- Break long tasks (over 50ms): `await scheduler.yield()` (fallback: `setTimeout`), and move heavy work to Web Workers.
-- Give instant visual feedback (CSS `:active` states, optimistic UI) before expensive work.
-- Debounce input handlers. Avoid forced synchronous layout in event handlers.
-
-## Caching and service workers
-- Service workers: cache-first for hashed static assets, network-first (or stale-while-revalidate) for HTML and API. Version caches and delete old ones on `activate`.
-- `bfcache`: avoid `unload` handlers and `Cache-Control: no-store` on HTML, so back/forward navigations are instant.
-
-## Measuring
-- Chrome DevTools Performance panel (live CWV, LCP element, layout-shift regions), Coverage panel for unused CSS and JS, Lighthouse, and WebPageTest.
-- `PerformanceObserver` for `largest-contentful-paint`, `layout-shift`, `event` entries, or the `web-vitals` library.
-
-## Gotchas
-- `content-visibility: auto` without `contain-intrinsic-size` causes scrollbar jumps.
-- `content-visibility: hidden` keeps rendering state but hides content from AT and find-in-page; `auto` does not.
-- Lazy-loading images above the fold delays LCP.
-- `media="print" onload` tricks need a `<noscript>` fallback.
-- Purging CSS removes classes built with string concatenation. Write full class names in source.
+@REF:performance
+§R{
+CWV_p75⇒LCP≤2.5s∧CLS≤0.1∧INP≤200ms;measure(CrUX,web-vitals,lab);
+critical_path⇒1 main CSS in <head>,¬@import chains,inline critical CSS⇔measurably faster;
+LCP_img⇒fetchpriority="high"∧¬loading="lazy"∧¬CSS_bg(unless preloaded);below-fold⇒loading="lazy";
+CLS_reserve⇒width/height|aspect-ratio(img,video,iframe,ad_slots);
+offscreen⇒content-visibility:auto+contain-intrinsic-size:auto <est>;
+compositor⇒transform,opacity,(mostly filter);will-change briefly,¬globally;
+fonts⇒self-host subset WOFF2,preload≤1-2,font-display:swap|optional+metric fallback;
+purge⇒Tailwind/PurgeCSS/Lightning_CSS∧safelist runtime classes(¬string-concat);
+INP⇒CSS>JS(popover,dialog,:has(),scroll-anim)
+}
+§PAT:Delivery_Priority{
+<link rel="stylesheet" href="/app.css">;media="print"(non-blocking);
+async_CSS:<link rel="preload" href="/b.css" as="style" onload="this.rel='stylesheet'">+<noscript><link rel="stylesheet" href="/b.css"></noscript>;
+@import=serial→bundle_build;HTTP/2⇒split route/component;
+cache⇒content-hashed+Cache-Control:max-age=31536000,immutable;<link rel="preconnect" href="…" crossorigin>;
+fetchpriority="high|low|auto" on img/preload/script/fetch()(Baseline 2024;replaces importance);
+hidden_slides/below-fold⇒fetchpriority="low";preload only late_discovered(CSS fonts,LCP bg);
+JS⇒modulepreload(critical ESM),defer(app),async(3p)
+}
+§PAT:Rendering_Anim{
+content-visibility:auto(Baseline 2024) skips offscreen layout/paint∧keeps a11y+find-in-page(hidden hides both)+contain-intrinsic-size:auto 800px(no scrollbar jump);
+contain:layout paint|content(strict collapses sans dims);
+JS⇒batch getBoundingClientRect() reads before writes+rAF;
+paint_heavy⇒large box-shadow,filter:blur(),backdrop-filter(¬animate,limit area);
+bottleneck⇒large_DOM(>~1500 nodes)∧broad_invalidation(<body> class,global_var_Δ)>broad_selectors;
+will-change:transform on parent :hover/pointerenter or pre-JS_anim,remove after;
+CSS scroll-driven>scroll listener({passive:true});pause offscreen⇒animation-play-state(IntersectionObserver|content-visibility)
+}
+§PAT:Images_Fonts{
+AVIF>WebP>JPEG;SVG(vector);PNG(lossless);srcset+sizes;non-critical⇒decoding="async";
+GIF⇒<video autoplay muted loop playsinline>;heavy_embeds(YT,maps)⇒facade→iframe on click;
+WOFF2_only,subset(unicode-range,glyphhanger|fonttools),1 variable≈4-6 static;
+font-display:optional+preload⇒0_CLS;swap+size-adjust⇒min_CLS;system_stack=0_cost
+}
+§CHK:CLS_INP_Cache{
+CLS⇒reserve_space,overlay late UI(banners¬push),transform_anim(¬top/height),scrollbar-gutter:stable,¬insert above post-load(sans user action);
+INP⇒split tasks(>50ms) via await scheduler.yield()(fallback:setTimeout)|WebWorkers,instant feedback(:active,optimistic),debounce,¬sync_layout;
+SW⇒cache-first(hashed),network-first|SWR(HTML,API),prune on activate;bfcache⇒¬unload∧¬Cache-Control:no-store on HTML;
+measure⇒DevTools Performance(CWV,LCP,LS)+Coverage+Lighthouse+WebPageTest;PerformanceObserver(largest-contentful-paint,layout-shift,event)|web-vitals
+}

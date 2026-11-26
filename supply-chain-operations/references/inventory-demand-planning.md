@@ -1,229 +1,121 @@
-# Inventory Demand Planning
-
-Forecast demand, set safety stock and reorder points, plan promotions and seasonal transitions, and time markdowns for multi-location retail.
-
-## Role and Context
-
-You are a senior demand planner at a multi-location retailer operating 40–200 stores with regional distribution centers. You manage 300–800 active SKUs across categories including grocery, general merchandise, seasonal, and promotional assortments. Your systems include a demand planning suite (Blue Yonder, Oracle Demantra, or Kinaxis), an ERP (SAP, Oracle), a WMS for DC-level inventory, POS data feeds at the store level, and vendor portals for purchase order management. You sit between merchandising (which decides what to sell and at what price), supply chain (which manages warehouse capacity and transportation), and finance (which sets inventory investment budgets and GMROI targets). Your job is to translate commercial intent into executable purchase orders while minimizing both stockouts and excess inventory.
-
-## When to use
-
-- Generating or reviewing demand forecasts for existing or new SKUs
-- Setting safety stock levels based on demand variability and service level targets
-- Planning replenishment for seasonal transitions, promotions, or new product launches
-- Evaluating forecast accuracy and adjusting models or overrides
-- Making buy decisions under supplier MOQ constraints or lead time changes
-
-## How It Works
-
-1. Collect demand signals (POS sell-through, orders, shipments) and cleanse outliers
-2. Select forecasting method per SKU based on ABC/XYZ classification and demand pattern
-3. Apply promotional lifts, cannibalization offsets, and external causal factors
-4. Calculate safety stock using demand variability, lead time variability, and target fill rate
-5. Generate suggested purchase orders, apply MOQ/EOQ rounding, and route for planner review
-6. Monitor forecast accuracy (MAPE, bias) and adjust models in the next planning cycle
-
-## Examples
-
-- **Seasonal promotion planning**: Merchandising plans a 3-week BOGO promotion on a top-20 SKU. Estimate promotional lift using historical promo elasticity, calculate the forward buy quantity, coordinate with the vendor on advance PO and logistics capacity, and plan the post-promo demand dip.
-- **New SKU launch**: No demand history available. Use analog SKU mapping (similar category, price point, brand) to generate an initial forecast, set conservative safety stock at 2 weeks of projected sales, and define the review cadence for the first 8 weeks.
-- **DC replenishment under lead time change**: Key vendor extends lead time from 14 to 21 days due to port congestion. Recalculate safety stock across all affected SKUs, identify which are at risk of stockout before the new POs arrive, and recommend bridge orders or substitute sourcing.
-
-## Core Knowledge
-
-### Forecasting Methods and When to Use Each
-
-**Moving Averages (simple, weighted, trailing):** Use for stable-demand, low-variability items where recent history is a reliable predictor. A 4-week simple moving average works for commodity staples. Weighted moving averages (heavier on recent weeks) work better when demand is stable but shows slight drift. Never use moving averages on seasonal items — they lag trend changes by half the window length.
-
-**Exponential Smoothing (single, double, triple):** Single exponential smoothing (SES, alpha 0.1–0.3) suits stationary demand with noise. Double exponential smoothing (Holt's) adds trend tracking — use for items with consistent growth or decline. Triple exponential smoothing (Holt-Winters) adds seasonal indices — this is the workhorse for seasonal items with 52-week or 12-month cycles. The alpha/beta/gamma parameters are critical: high alpha (>0.3) chases noise in volatile items; low alpha (<0.1) responds too slowly to regime changes. Optimize on holdout data, never on the same data used for fitting.
-
-**Seasonal Decomposition (STL, classical, X-13ARIMA-SEATS):** When you need to isolate trend, seasonal, and residual components separately. STL (Seasonal and Trend decomposition using Loess) is robust to outliers. Use seasonal decomposition when seasonal patterns are shifting year over year, when you need to remove seasonality before applying a different model to the de-seasonalized data, or when building promotional lift estimates on top of a clean baseline.
-
-**Causal/Regression Models:** When external factors drive demand beyond the item's own history — price elasticity, promotional flags, weather, competitor actions, local events. The practical challenge is feature engineering: promotional flags should encode depth (% off), display type, circular feature, and cross-category promo presence. Overfitting on sparse promo history is the single biggest pitfall. Regularize aggressively (Lasso/Ridge) and validate on out-of-time, not out-of-sample.
-
-**Machine Learning (gradient boosting, neural nets):** Justified when you have large data (1,000+ SKUs × 2+ years of weekly history), multiple external regressors, and an ML engineering team. LightGBM/XGBoost with proper feature engineering outperforms simpler methods by 10–20% WAPE on promotional and intermittent items. But they require continuous monitoring — model drift in retail is real and quarterly retraining is the minimum.
-
-### Forecast Accuracy Metrics
-
-- **MAPE (Mean Absolute Percentage Error):** Standard metric but breaks on low-volume items (division by near-zero actuals produces inflated percentages). Use only for items averaging 50+ units/week.
-- **Weighted MAPE (WMAPE):** Sum of absolute errors divided by sum of actuals. Prevents low-volume items from dominating the metric. This is the metric finance cares about because it reflects dollars.
-- **Bias:** Average signed error. Positive bias = forecast systematically too high (overstock risk). Negative bias = systematically too low (stockout risk). Bias < ±5% is healthy. Bias > 10% in either direction means a structural problem in the model, not noise.
-- **Tracking Signal:** Cumulative error divided by MAD (mean absolute deviation). When tracking signal exceeds ±4, the model has drifted and needs intervention — either re-parameterize or switch methods.
-
-### Safety Stock Calculation
-
-The textbook formula is `SS = Z × σ_d × √(LT + RP)` where Z is the service level z-score, σ_d is the standard deviation of demand per period, LT is lead time in periods, and RP is review period in periods. In practice, this formula works only for normally distributed, stationary demand.
-
-**Service Level Targets:** 95% service level (Z=1.65) is standard for A-items. 99% (Z=2.33) for critical/A+ items where stockout cost dwarfs holding cost. 90% (Z=1.28) is acceptable for C-items. Moving from 95% to 99% nearly doubles safety stock — always quantify the inventory investment cost of the incremental service level before committing.
-
-**Lead Time Variability:** When vendor lead times are uncertain, use `SS = Z × √(LT_avg × σ_d² + d_avg² × σ_LT²)` — this captures both demand variability and lead time variability. Vendors with coefficient of variation (CV) on lead time > 0.3 need safety stock adjustments that can be 40–60% higher than demand-only formulas suggest.
-
-**Lumpy/Intermittent Demand:** Normal-distribution safety stock fails for items with many zero-demand periods. Use Croston's method for forecasting intermittent demand (separate forecasts for demand interval and demand size), and compute safety stock using a bootstrapped demand distribution rather than analytical formulas.
-
-**New Products:** No demand history means no σ_d. Use analogous item profiling — find the 3–5 most similar items at the same lifecycle stage and use their demand variability as a proxy. Add a 20–30% buffer for the first 8 weeks, then taper as own history accumulates.
-
-### Reorder Logic
-
-**Inventory Position:** `IP = On-Hand + On-Order − Backorders − Committed (allocated to open customer orders)`. Never reorder based on on-hand alone — you will double-order when POs are in transit.
-
-**Min/Max:** Simple, suitable for stable-demand items with consistent lead times. Min = average demand during lead time + safety stock. Max = Min + EOQ. When IP drops to Min, order up to Max. The weakness: it doesn't adapt to changing demand patterns without manual adjustment.
-
-**Reorder Point / EOQ:** ROP = average demand during lead time + safety stock. EOQ = √(2DS/H) where D = annual demand, S = ordering cost, H = holding cost per unit per year. EOQ is theoretically optimal for constant demand, but in practice you round to vendor case packs, layer quantities, or pallet tiers. A "perfect" EOQ of 847 units means nothing if the vendor ships in cases of 24.
-
-**Periodic Review (R,S):** Review inventory every R periods, order up to target level S. Better when you consolidate orders to a vendor on fixed days (e.g., Tuesday orders for Thursday pickup). R is set by vendor delivery schedule; S = average demand during (R + LT) + safety stock for that combined period.
-
-**Vendor Tier-Based Frequencies:** A-vendors (top 10 by spend) get weekly review cycles. B-vendors (next 20) get bi-weekly. C-vendors (remaining) get monthly. This aligns review effort with financial impact and allows consolidation discounts.
-
-### Promotional Planning
-
-**Demand Signal Distortion:** Promotions create artificial demand peaks that contaminate baseline forecasting. Strip promotional volume from history before fitting baseline models. Keep a separate "promotional lift" layer that applies multiplicatively on top of the baseline during promo weeks.
-
-**Lift Estimation Methods:** (1) Year-over-year comparison of promoted vs. non-promoted periods for the same item. (2) Cross-elasticity model using historical promo depth, display type, and media support as inputs. (3) Analogous item lift — new items borrow lift profiles from similar items in the same category that have been promoted before. Typical lifts: 15–40% for TPR (temporary price reduction) only, 80–200% for TPR + display + circular feature, 300–500%+ for doorbuster/loss-leader events.
-
-**Cannibalization:** When SKU A is promoted, SKU B (same category, similar price point) loses volume. Estimate cannibalization at 10–30% of lifted volume for close substitutes. Ignore cannibalization across categories unless the promo is a traffic driver that shifts basket composition.
-
-**Forward-Buy Calculation:** Customers stock up during deep promotions, creating a post-promo dip. The dip duration correlates with product shelf life and promotional depth. A 30% off promotion on a pantry item with 12-month shelf life creates a 2–4 week dip as households consume stockpiled units. A 15% off promotion on a perishable produces almost no dip.
-
-**Post-Promo Dip:** Expect 1–3 weeks of below-baseline demand after a major promotion. The dip magnitude is typically 30–50% of the incremental lift, concentrated in the first week post-promo. Failing to forecast the dip leads to excess inventory and markdowns.
-
-### ABC/XYZ Classification
-
-**ABC (Value):** A = top 20% of SKUs driving 80% of revenue/margin. B = next 30% driving 15%. C = bottom 50% driving 5%. Classify on margin contribution, not revenue, to avoid overinvesting in high-revenue low-margin items.
-
-**XYZ (Predictability):** X = CV of demand < 0.5 (highly predictable). Y = CV 0.5–1.0 (moderately predictable). Z = CV > 1.0 (erratic/lumpy). Compute on de-seasonalized, de-promoted demand to avoid penalizing seasonal items that are actually predictable within their pattern.
-
-**Policy Matrix:** AX items get automated replenishment with tight safety stock. AZ items need human review every cycle — they're high-value but erratic. CX items get automated replenishment with generous review periods. CZ items are candidates for discontinuation or make-to-order conversion.
-
-### Seasonal Transition Management
-
-**Buy Timing:** Seasonal buys (e.g., holiday, summer, back-to-school) are committed 12–20 weeks before selling season. Allocate 60–70% of expected season demand in the initial buy, reserving 30–40% for reorder based on early-season sell-through. This "open-to-buy" reserve is your hedge against forecast error.
-
-**Markdown Timing:** Begin markdowns when sell-through pace drops below 60% of plan at the season midpoint. Early shallow markdowns (20–30% off) recover more margin than late deep markdowns (50–70% off). The rule of thumb: every week of delay in markdown initiation costs 3–5 percentage points of margin on the remaining inventory.
-
-**Season-End Liquidation:** Set a hard cutoff date (typically 2–3 weeks before the next season's product arrives). Everything remaining at cutoff goes to outlet, liquidator, or donation. Holding seasonal product into the next year rarely works — style items date, and warehousing cost erodes any margin recovery from selling next season.
-
-## Decision Frameworks
-
-### Forecast Method Selection by Demand Pattern
-
-| Demand Pattern | Primary Method | Fallback Method | Review Trigger |
-|---|---|---|---|
-| Stable, high-volume, no seasonality | Weighted moving average (4–8 weeks) | Single exponential smoothing | WMAPE > 25% for 4 consecutive weeks |
-| Trending (growth or decline) | Holt's double exponential smoothing | Linear regression on recent 26 weeks | Tracking signal exceeds ±4 |
-| Seasonal, repeating pattern | Holt-Winters (multiplicative for growing seasonal, additive for stable) | STL decomposition + SES on residual | Season-over-season pattern correlation < 0.7 |
-| Intermittent / lumpy (>30% zero-demand periods) | Croston's method or SBA (Syntetos-Boylan Approximation) | Bootstrap simulation on demand intervals | Mean inter-demand interval shifts by >30% |
-| Promotion-driven | Causal regression (baseline + promo lift layer) | Analogous item lift + baseline | Post-promo actuals deviate >40% from forecast |
-| New product (0–12 weeks history) | Analogous item profile with lifecycle curve | Category average with decay toward actual | Own-data WMAPE stabilizes below analogous-based WMAPE |
-| Event-driven (weather, local events) | Regression with external regressors | Manual override with documented rationale | Re-evaluate when regressor-to-demand correlation falls below 0.6 or event-period forecast error rises >30% for 2 comparable events |
-
-### Safety Stock Service Level Selection
-
-| Segment | Target Service Level | Z-Score | Rationale |
-|---|---|---|---|
-| AX (high-value, predictable) | 97.5% | 1.96 | High value justifies investment; low variability keeps SS moderate |
-| AY (high-value, moderate variability) | 95% | 1.65 | Standard target; variability makes higher SL prohibitively expensive |
-| AZ (high-value, erratic) | 92–95% | 1.41–1.65 | Erratic demand makes high SL astronomically expensive; supplement with expediting capability |
-| BX/BY | 95% | 1.65 | Standard target |
-| BZ | 90% | 1.28 | Accept some stockout risk on mid-tier erratic items |
-| CX/CY | 90–92% | 1.28–1.41 | Low value doesn't justify high SS investment |
-| CZ | 85% | 1.04 | Candidate for discontinuation; minimal investment |
-
-### Promotional Lift Decision Framework
-
-1. **Is there historical lift data for this SKU-promo type combination?** → Use own-item lift with recency weighting (most recent 3 promos weighted 50/30/20).
-2. **No own-item data but same category has been promoted?** → Use analogous item lift adjusted for price point and brand tier.
-3. **Brand-new category or promo type?** → Use conservative category-average lift discounted 20%. Build in a wider safety stock buffer for the promo period.
-4. **Cross-promoted with another category?** → Model the traffic driver separately from the cross-promo beneficiary. Apply cross-elasticity coefficient if available; default 0.15 lift for cross-category halo.
-5. **Always model the post-promo dip.** Default to 40% of incremental lift, concentrated 60/30/10 across the three post-promo weeks.
-
-### Markdown Timing Decision
-
-| Sell-Through at Season Midpoint | Action | Expected Margin Recovery |
-|---|---|---|
-| ≥ 80% of plan | Hold price. Reorder cautiously if weeks of supply < 3. | Full margin |
-| 60–79% of plan | Take 20–25% markdown. No reorder. | 70–80% of original margin |
-| 40–59% of plan | Take 30–40% markdown immediately. Cancel any open POs. | 50–65% of original margin |
-| < 40% of plan | Take 50%+ markdown. Explore liquidation channels. Flag buying error for post-mortem. | 30–45% of original margin |
-
-### Slow-Mover Kill Decision
-
-Evaluate quarterly. Flag for discontinuation when ALL of the following are true:
-- Weeks of supply > 26 at current sell-through rate
-- Last 13-week sales velocity < 50% of the item's first 13 weeks (lifecycle declining)
-- No promotional activity planned in the next 8 weeks
-- Item is not contractually obligated (planogram commitment, vendor agreement)
-- Replacement or substitution SKU exists or category can absorb the gap
-
-If flagged, initiate markdown at 30% off for 4 weeks. If still not moving, escalate to 50% off or liquidation. Set a hard exit date 8 weeks from first markdown. Do not allow slow movers to linger indefinitely in the assortment — they consume shelf space, warehouse slots, and working capital.
-
-## Key Edge Cases
-
-Brief summaries are included here so you can expand them into project-specific playbooks if needed.
-
-1. **New product launch with zero history:** Analogous item profiling is your only tool. Select analogs carefully — match on price point, category, brand tier, and target demographic, not just product type. Commit a conservative initial buy (60% of analog-based forecast) and build in weekly auto-replenishment triggers.
-
-2. **Viral social media spike:** Demand jumps 500–2,000% with no warning. Do not chase — by the time your supply chain responds (4–8 week lead times), the spike is over. Capture what you can from existing inventory, issue allocation rules to prevent a single location from hoarding, and let the wave pass. Revise the baseline only if sustained demand persists 4+ weeks post-spike.
-
-3. **Supplier lead time doubling overnight:** Recalculate safety stock immediately using the new lead time. If SS doubles, you likely cannot fill the gap from current inventory. Place an emergency order for the delta, negotiate partial shipments, and identify secondary suppliers. Communicate to merchandising that service levels will temporarily drop.
-
-4. **Cannibalization from an unplanned promotion:** A competitor or another department runs an unplanned promo that steals volume from your category. Your forecast will over-project. Detect early by monitoring daily POS for a pattern break, then manually override the forecast downward. Defer incoming orders if possible.
-
-5. **Demand pattern regime change:** An item that was stable-seasonal suddenly shifts to trending or erratic. Common after a reformulation, packaging change, or competitor entry/exit. The old model will fail silently. Monitor tracking signal weekly — when it exceeds ±4 for two consecutive periods, trigger a model re-selection.
-
-6. **Phantom inventory:** WMS says you have 200 units; physical count reveals 40. Every forecast and replenishment decision based on that phantom inventory is wrong. Suspect phantom inventory when service level drops despite "adequate" on-hand. Conduct cycle counts on any item with stockouts that the system says shouldn't have occurred.
-
-7. **Vendor MOQ conflicts:** Your EOQ says order 150 units; the vendor's minimum order quantity is 500. You either over-order (accepting weeks of excess inventory) or negotiate. Options: consolidate with other items from the same vendor to meet dollar minimums, negotiate a lower MOQ for this SKU, or accept the overage if holding cost is lower than ordering from an alternative supplier.
-
-8. **Holiday calendar shift effects:** When key selling holidays shift position in the calendar (e.g., Easter moves between March and April), week-over-week comparisons break. Align forecasts to "weeks relative to holiday" rather than calendar weeks. A failure to account for Easter shifting from Week 13 to Week 16 will create significant forecast error in both years.
-
-## Communication Patterns
-
-### Tone Calibration
-
-- **Vendor routine reorder:** Transactional, brief, PO-reference-driven. "PO #XXXX for delivery week of MM/DD per our agreed schedule."
-- **Vendor lead time escalation:** Firm, fact-based, quantifies business impact. "Our analysis shows your lead time has increased from 14 to 22 days over the past 8 weeks. This has resulted in X stockout events. We need a corrective plan by [date]."
-- **Internal stockout alert:** Urgent, actionable, includes estimated revenue at risk. Lead with the customer impact, not the inventory metric. "SKU X will stock out at 12 locations by Thursday. Estimated lost sales: $XX,000. Recommended action: [expedite/reallocate/substitute]."
-- **Markdown recommendation to merchandising:** Data-driven, includes margin impact analysis. Never frame it as "we bought too much" — frame as "sell-through pace requires price action to meet margin targets."
-- **Promotional forecast submission:** Structured, with baseline, lift, and post-promo dip called out separately. Include assumptions and confidence range. "Baseline: 500 units/week. Promotional lift estimate: 180% (900 incremental). Post-promo dip: −35% for 2 weeks. Confidence: ±25%."
-- **New product forecast assumptions:** Document every assumption explicitly so it can be audited at post-mortem. "Based on analogs [list], we project 200 units/week in weeks 1–4, declining to 120 units/week by week 8. Assumptions: price point $X, distribution to 80 doors, no competitive launch in window."
-
-Brief templates appear above. Adapt them to your supplier, sales, and operations planning workflows before using them in production.
-
-## Escalation Protocols
-
-### Automatic Escalation Triggers
-
-| Trigger | Action | Timeline |
-|---|---|---|
-| Projected stockout on A-item within 7 days | Alert demand planning manager + category merchant | Within 4 hours |
-| Vendor confirms lead time increase > 25% | Notify supply chain director; recalculate all open POs | Within 1 business day |
-| Promotional forecast miss > 40% (over or under) | Post-promo debrief with merchandising and vendor | Within 1 week of promo end |
-| Excess inventory > 26 weeks of supply on any A/B item | Markdown recommendation to merchandising VP | Within 1 week of detection |
-| Forecast bias exceeds ±10% for 4 consecutive weeks | Model review and re-parameterization | Within 2 weeks |
-| New product sell-through < 40% of plan after 4 weeks | Assortment review with merchandising | Within 1 week |
-| Service level drops below 90% for any category | Root cause analysis and corrective plan | Within 48 hours |
-
-### Escalation Chain
-
-Level 1 (Demand Planner) → Level 2 (Planning Manager, 24 hours) → Level 3 (Director of Supply Chain Planning, 48 hours) → Level 4 (VP Supply Chain, 72+ hours or any A-item stockout at enterprise customer)
-
-## Performance Indicators
-
-Track weekly and trend monthly:
-
-| Metric | Target | Red Flag |
-|---|---|---|
-| WMAPE (weighted mean absolute percentage error) | < 25% | > 35% |
-| Forecast bias | ±5% | > ±10% for 4+ weeks |
-| In-stock rate (A-items) | > 97% | < 94% |
-| In-stock rate (all items) | > 95% | < 92% |
-| Weeks of supply (aggregate) | 4–8 weeks | > 12 or < 3 |
-| Excess inventory (>26 weeks supply) | < 5% of SKUs | > 10% of SKUs |
-| Dead stock (zero sales, 13+ weeks) | < 2% of SKUs | > 5% of SKUs |
-| Purchase order fill rate from vendors | > 95% | < 90% |
-| Promotional forecast accuracy (WMAPE) | < 35% | > 50% |
-
-## Additional Resources
-
-- Pair this guide with your SKU segmentation model, service-level policy, and planner override audit log.
-- Store post-mortems for promotion misses, vendor delays, and forecast overrides next to the planning workflow so the edge cases stay actionable.
+@REF:inventory-demand-planning
+§CTX{role:sr_demand_planner(40-200_stores,reg_DCs,300-800_SKUs∈{grocery,gen_merch,seasonal,promo});sys:{BlueYonder,OracleDemantra,Kinaxis,ERP(SAP,Oracle),WMS(DC),POS(store),vendor_portals(PO)};stakeholders:{merch(assort/price),SC(wh_cap/transport),fin(inv_budget/GMROI)};obj:commercial_intent→POs∧min(stockout,excess)}
+§USE{fcst(existing|NPI);SS(d_var,SL);replen(seasonal|promo|NPI);acc_eval(adj|override);buy_dec(MOQ|ΔLT)}
+§FLOW{1:collect(POS_sellthrough,orders,ships)→cleanse_outliers→2:method(ABC/XYZ,pattern)→3:apply(promo_lift,cannib,causal)→4:calc_SS(d_var,LT_var,fill_rate)→5:gen_PO(MOQ/EOQ_round)→review→6:monitor(MAPE,bias)→adj_next_cycle}
+§EX{
+  seasonal_promo:3wk_BOGO_top20→est_lift(hist_elast)→fwd_buy→coord_vendor(adv_PO,log_cap)→plan_post_promo_dip;
+  NPI:∅_hist→analog_map(cat,price,brand)→init_SS=2wk_proj_sales→review_cadence(wk1..8);
+  LT_shift:LT=14d→21d(port_cong)→recalc_SS(affected)→id_stockout_pre_PO→bridge_PO∨sub_source
+}
+§PAT{
+  methods:{
+    MA(SMA,WMA,trailing):use(stable,low_var,recent_rel);4wk_SMA=staples;WMA(recent↑)=stable+slight_drift;¬seasonal(lags_trend_by_win/2);
+    exp_smooth:{SES(α∈[0.1,0.3]):stationary+noise;Holt(DES):trend(up|down);Holt-Winters(TES):seasonal(52wk|12mo);α>0.3→chase_noise;α<0.1→slow_regime_resp;opt(α,β,γ)∈holdout_data(¬fit_data)};
+    seasonal_decomp(STL,classical,X-13ARIMA-SEATS):isolate(trend,seasonal,resid);STL(Loess)=outlier_robust;use(YoY_shift_season∨pre_model_deseason∨promo_lift_on_clean_base);
+    causal_reg:ext_drivers(price_elast,promo_flags,weather,comp,local_events);promo_flags={%off_depth,display,circular,cross_cat_promo};pitfall=overfit(sparse_promo)⇒Lasso|Ridge∧validate(out-of-time¬out-of-sample);
+    ML(GBDT/NN,LightGBM/XGBoost):req(≥1000_SKUs×≥2yr_wkly,multi_ext_reg,ML_eng);+10-20%_WAPE_vs_simple(promo/intermittent);req(cont_monitor∧≥qtr_retrain_for_drift)
+  };
+  metrics:{
+    MAPE:breaks_low_vol(÷~0)⇒use_iff≥50u/wk;
+    WMAPE:Σ|err|/Σactual(no_low_vol_skew,$-weighted_fin_metric);
+    Bias:avg(signed_err);+bias→overstock;-bias→stockout;healthy<±5%;|bias|>10%⇒structural_issue(¬noise);
+    TS:cum_err/MAD;|TS|>4⇒drift→reparam∨switch_method
+  };
+  SS:{
+    basic:`SS = Z * σ_d * √(LT + RP)`(normal,stationary_only);
+    SL:{A:95%(Z=1.65);crit/A+:99%(Z=2.33,stockout>>hold);C:90%(Z=1.28);95%→99%≈2×SS⇒quantify_inv_cost_Δ_first};
+    LT_var:`SS = Z * √(LT_avg * σ_d² + d_avg² * σ_LT²)`;CV_LT>0.3⇒SS+40-60%_vs_d_only;
+    lumpy:normal_SS_fails⇒Croston(interval+size)+bootstrap_dist;
+    NPI:∅_σ_d⇒3-5_analogs(same_lifecycle)σ_d_proxy+(20-30%_buffer,wk1..8)→taper
+  };
+  reorder:{
+    IP:`IP = OnHand + OnOrder - Backorders - Committed`;¬reorder(OnHand_only)⇒double_order;
+    min_max:stable+const_LT;Min=d_avg_LT+SS;Max=Min+EOQ;IP≤Min→order(Max-IP);¬auto_adapt;
+    ROP_EOQ:`ROP = d_avg_LT + SS`;`EOQ = √(2DS/H)`(D=ann_d,S=order_$,H=hold_$/u/yr);round→case_pack|layer|pallet(e.g.847→case_24);
+    periodic(R,S):review_qR(vendor_sched,e.g.Tue_ord/Thu_pick);`S = d_avg_(R+LT) + SS_(R+LT)`;
+    vendor_tier_freq:{A(top10_spend):wkly;B(next20):biwkly;C(rest):monthly}
+  };
+  promo:{
+    clean_base:strip_promo_vol_from_hist;apply_multiplicative_promo_lift_layer;
+    lift_est:{1:YoY_promo_vs_non;2:cross_elast(depth,display,media);3:analog_cat_lift};typ_lift:{TPR:15-40%;TPR+disp+circ:80-200%;doorbuster/loss-lead:300-500%+};
+    cannib:10-30%_lifted_vol(close_subs_same_cat_sim_price);ignore_cross_cat_unless_traffic_driver_shifts_basket;
+    fwd_buy_dip:corr(shelf_life,depth)(e.g.30%off_12mo_pantry→2-4wk_dip;15%off_perish→~0);post_promo_dip=1-3wk,30-50%_inc_lift(conc_wk+1);¬fcst_dip⇒excess+MD
+  };
+  ABC_XYZ:{
+    ABC(margin_contrib¬rev):{A:top20%SKUs→80%;B:next30%→15%;C:bot50%→5%};
+    XYZ(CV_deseason_depromo):{X:<0.5;Y:0.5-1.0;Z:>1.0};
+    matrix:{AX:auto+tight_SS;AZ:human_rev_qcycle;CX:auto+gen_R;CZ:disco∨MTO}
+  };
+  seasonal:{
+    buy:commit_12-20wk_pre;init=60-70%_exp;OTB_reserve=30-40%(early_sellthrough_reord);
+    MD:start@mid_sellthrough<60%_plan;early_shallow(20-30%off)>late_deep(50-70%off);1wk_delay=-3-5pp_margin_rem_inv;
+    liq:hard_cutoff=2-3wk_pre_next_season→outlet|liq|donate;¬hold_next_yr(dating+wh_cost)
+  }
+}
+§D{
+  fcst_select:{
+    stable_high_¬seas⇒prim:WMA(4-8wk)|fb:SES|rev:WMAPE>25%×4wk;
+    trending⇒prim:Holt_DES|fb:LinReg(26wk)|rev:|TS|>4;
+    seasonal_rep⇒prim:Holt-Winters(mult=grow,add=stable)|fb:STL+SES(resid)|rev:SoS_corr<0.7;
+    intermittent(>30%_0)⇒prim:Croston∨SBA|fb:bootstrap(intervals)|rev:Δmean_int>30%;
+    promo_driven⇒prim:causal_reg(base+lift)|fb:analog_lift+base|rev:post_promo_dev>40%;
+    NPI(0-12wk)⇒prim:analog_profile+lifecycle|fb:cat_avg(decay→actual)|rev:own_WMAPE<analog_WMAPE;
+    event(weather,local)⇒prim:reg(ext_reg)|fb:manual_override(doc_rationale)|rev:corr<0.6∨err>30%×2_events
+  };
+  SS_SL:{
+    AX⇒97.5%(Z=1.96);AY⇒95%(Z=1.65);AZ⇒92-95%(Z=1.41-1.65)+expedite;
+    BX|BY⇒95%(Z=1.65);BZ⇒90%(Z=1.28);CX|CY⇒90-92%(Z=1.28-1.41);CZ⇒85%(Z=1.04,disco_cand)
+  };
+  promo_lift:{
+    1:own_SKU_promo_hist⇒recency_wt(last3=50/30/20);
+    2:¬own∧cat_hist⇒analog_lift(adj_price,brand_tier);
+    3:new_cat|promo⇒cat_avg×0.8+wider_SS;
+    4:cross_promo⇒model(driver≠beneficiary)+cross_elast(def:+0.15_halo);
+    5:post_promo_dip⇒40%_inc_lift(60/30/10_wk+1/2/3)
+  };
+  MD_timing(mid_sellthrough):{
+    ≥80%⇒hold_price,cautious_reord_if_WOS<3(100%_margin);
+    60-79%⇒20-25%off,¬reord(70-80%_margin);
+    40-59%⇒30-40%off_imm,cancel_open_POs(50-65%_margin);
+    <40%⇒50%+off,liq_chan,buying_postmortem(30-45%_margin)
+  };
+  slow_mover_kill(eval_qtr):flag⇔(WOS>26∧last13wk_vel<0.5×first13wk∧∅_promo_8wk∧¬contract_oblig(planogram|vendor)∧(sub_SKU∨cat_absorbs))→30%off×4wk→(¬moving⇒50%off∨liq)→hard_exit@wk8
+}
+§EDGE{
+  1_NPI_0_hist:analog(price,cat,brand,demo,¬just_type);init_buy=60%_analog;wkly_auto_replen;
+  2_viral_spike(+500-2000%):¬chase(4-8wk_LT);sell_OH,allocate(anti-hoard),revise_base_iff_sustained≥4wk_post;
+  3_LT_doubles:recalc_SS_imm;emerg_PO(Δ),partial_ships,2nd_suppliers;warn_merch(SL↓);
+  4_unplanned_promo_cannib(comp|other_dept):daily_POS_break→manual_down_override→defer_inbound_POs;
+  5_regime_change(reformul|pkg|comp):|TS|>4×2_periods→model_reselect;
+  6_phantom_inv(WMS=200,phys=40):SL↓_despite_OK_OH→cycle_count_unexpected_stockouts;
+  7_MOQ_conflict(EOQ=150,MOQ=500):consolidate_vendor_SKUs($)∨neg_MOQ∨accept_overage(iff_hold$<alt_supp);
+  8_holiday_shift(Easter_wk13↔16):align_weeks_relative_to_holiday(¬calendar_wk)
+}
+§COM{
+  tone:{
+    vendor_reord:transactional,PO_ref("PO #XXXX for delivery week of MM/DD per our agreed schedule.");
+    vendor_LT_esc:firm,fact,impact("Our analysis shows your lead time has increased from 14 to 22 days over the past 8 weeks. This has resulted in X stockout events. We need a corrective plan by [date].");
+    int_stockout:urgent,cust_impact_first("SKU X will stock out at 12 locations by Thursday. Estimated lost sales: $XX,000. Recommended action: [expedite/reallocate/substitute].");
+    MD_rec:data+margin,¬blame("sell-through pace requires price action to meet margin targets"¬"bought too much");
+    promo_fcst:base+lift+dip+CI("Baseline: 500 units/week. Promotional lift estimate: 180% (900 incremental). Post-promo dip: −35% for 2 weeks. Confidence: ±25%.");
+    NPI_fcst:auditable_assump("Based on analogs [list], we project 200 units/week in weeks 1–4, declining to 120 units/week by week 8. Assumptions: price point $X, distribution to 80 doors, no competitive launch in window.")
+  }
+}
+§ESC{
+  triggers:{
+    A_stockout≤7d⇒alert(plan_mgr+cat_merch)≤4h;
+    vendor_LT↑>25%⇒notify(SC_dir)+recalc_open_POs≤1bd;
+    promo_miss>40%⇒debrief(merch+vendor)≤1wk_post;
+    excess>26_WOS(A/B)⇒MD_rec(merch_VP)≤1wk;
+    |bias|>10%×4wk⇒model_rev+reparam≤2wk;
+    NPI_sellthrough<40%@4wk⇒assort_rev(merch)≤1wk;
+    cat_SL<90%⇒RCA+corr_plan≤48h
+  };
+  chain:L1(Demand_Planner)→L2(Planning_Mgr,24h)→L3(Dir_SC_Plan,48h)→L4(VP_SC,72h+∨A_stockout@ent_cust)
+}
+§KPI(wkly_track,mo_trend){
+  WMAPE:<25%|red>35%;Bias:±5%|red>±10%×4+wk;in_stock_A:>97%|red<94%;in_stock_all:>95%|red<92%;
+  WOS_agg:4-8wk|red>12∨<3;excess(>26wk):<5%_SKUs|red>10%;dead_stock(0_sales,13+wk):<2%_SKUs|red>5%;
+  vendor_PO_fill:>95%|red<90%;promo_WMAPE:<35%|red>50%
+}
+§REF{pair(SKU_seg_model,SL_policy,planner_override_audit_log);co-locate_postmortems(promo_misses,vendor_delays,fcst_overrides)}

@@ -1,128 +1,24 @@
-# Investor Materials and Outreach
-
-Build investor-facing documents (pitch decks, one-pagers, memos, models, accelerator applications) and investor communication (cold emails, warm intro blurbs, follow-ups, updates) that are consistent, concrete, and easy to defend.
-
-## When to use
-- You create or revise a pitch deck, investor memo, or one-pager.
-- You build a financial model, milestone plan, or use-of-funds table.
-- You answer accelerator or incubator application questions.
-- You align several fundraising documents around one source of truth.
-- You write a cold email to an angel, VC, strategic investor, or accelerator.
-- You draft a warm intro request, a follow-up after a meeting or no reply, or an investor update.
-
-## Golden rule
-
-All investor materials must agree with each other. Create or confirm one source of truth before you write:
-- Traction metrics
-- Pricing and revenue assumptions
-- Raise size and instrument
-- Use of funds
-- Team bios and titles
-- Milestones and timelines
-
-If numbers conflict, stop and resolve the conflict before you draft.
-
-## Materials
-
-### Workflow
-1. Make an inventory of the canonical facts.
-2. Identify missing assumptions.
-3. Choose the asset type.
-4. Draft the asset with explicit logic.
-5. Cross-check each number against the source of truth.
-
-### Pitch deck flow
-1. Company and wedge
-2. Problem
-3. Solution
-4. Product or demo
-5. Market
-6. Business model
-7. Traction
-8. Team
-9. Competition and differentiation
-10. Ask
-11. Use of funds and milestones
-12. Appendix
-
-For a web-native deck, use [design/references/html-slides.md](../../design/references/html-slides.md).
-
-### One-pager or memo
-- Say what the company does in one clean sentence.
-- Show why now.
-- Put traction and proof points early.
-- Make the ask precise.
-- Keep claims easy to verify.
-
-### Financial model
-- Explicit assumptions
-- Bear, base, and bull cases when useful
-- Clean revenue logic, layer by layer
-- Spending linked to milestones
-- Sensitivity analysis where the decision depends on assumptions
-
-### Accelerator applications
-- Answer the exact question.
-- Put traction, insight, and team advantage first.
-- No puffery.
-- Keep metrics consistent with the deck and model.
-
-### Red flags
-- Claims that nobody can verify
-- Market sizing without assumptions
-- Inconsistent team roles or titles
-- Revenue math that does not sum
-- High certainty where assumptions are fragile
-
-## Outreach
-
-### Core rules
-1. Personalize each outbound message.
-2. Keep the ask low-friction.
-3. Use proof instead of adjectives.
-4. Stay concise.
-5. Never send copy that could go to any investor.
-
-If the voice of the user is important, use the `VOICE PROFILE` from [brand-voice.md](brand-voice.md). Keep the investor structure and ask discipline here. Apply the shared hard bans, and also remove generic thesis praise, vague founder adjectives, begging language, and soft closing questions where a direct ask is clearer.
-
-### Cold email structure
-1. Subject line: short and specific.
-2. Opener: why this investor specifically.
-3. Pitch: what the company does, why now, and which proof matters.
-4. Ask: one concrete next step.
-5. Sign-off: name, role, and one credibility anchor if necessary.
-
-### Personalization sources
-- Relevant portfolio companies
-- A public thesis, talk, post, or article
-- A mutual connection (see [lead-intelligence.md](lead-intelligence.md) for warm paths)
-- A clear market or product fit with the focus of the investor
-
-If this context is missing, say that the draft still needs personalization. Do not present it as finished.
-
-### Follow-up cadence
-- Day 0: initial outbound
-- Day 4 or 5: short follow-up with one new data point
-- Day 10 to 12: final follow-up with a clean close
-
-Stop after that unless the user wants a longer sequence.
-
-### Warm intro requests
-- Explain why the intro is a fit.
-- Include a forwardable blurb of less than 100 words.
-
-### Post-meeting updates
-- The specific topic you discussed
-- The answer or update you promised
-- One new proof point, if available
-- The next step
-
-## Quality gate
-
-- Each number matches the current source of truth.
-- Use of funds and revenue layers sum correctly.
-- Assumptions are visible, not hidden.
-- The story is clear without hype language.
-- The asset is defensible in a partner meeting.
-- Each message is really personalized, the ask is explicit, and the proof point is concrete.
-- Filler praise and softeners are gone, and the word count is tight.
+@REF:investor-materials
+§USE{deck,1pager,memo,fin_model,milestones,use_of_funds,accel_app,doc_align,cold_email(angel|VC|strategic|accel),warm_intro,followup(post_mtg|no_reply),update}
+§R{
+  SSOT≺draft:{traction,pricing+rev_assump,raise+instr,use_of_funds,team(bios+titles),milestones+dates};
+  conflict(SSOT)⇒STOP∧resolve≺draft;
+  outreach:{personalize(∀msg),low_friction_ask,proof¬adj,concise,¬any_investor_copy};
+  voice⇒VOICE_PROFILE@[brand-voice.md](brand-voice.md)∧keep(inv_struct+ask_disc)∧shared_hard_bans∧¬{thesis_praise,vague_adj,begging,soft_Q(when_direct_clearer)};
+}
+§PAT{
+  flow:1:inv_SSOT→2:missing_assump→3:pick_asset→4:draft(explicit_logic)→5:xcheck(SSOT);
+  deck:1:co+wedge→2:prob→3:sol→4:prod/demo→5:mkt→6:biz_model→7:traction→8:team→9:comp+diff→10:ask→11:funds+milestones→12:appx;
+  web_deck⇒[../../design/references/html-slides.md](../../design/references/html-slides.md);
+  1pager|memo:{1_sent(what),why_now,early(traction+proof),exact_ask,verifiable};
+  model:{explicit_assump,{bear,base,bull}(if_useful),layer_rev_logic,spend→milestones,sensitivity(key_assump)};
+  accel:{exact_Q,lead(traction,insight,team_edge),¬puffery,metrics≡deck+model};
+  cold:1:subj(short,spec)→2:opener(why_this_inv)→3:pitch(what,why_now,proof)→4:ask(1_next_step)→5:sign(name,role,1_cred_if_need);
+  pers_src:{rel_port_cos,pub(thesis|talk|post|art),mutual@[lead-intelligence.md](lead-intelligence.md),mkt/prod_fit};
+  ∅pers_ctx⇒flag("needs_personalization")¬mark_done;
+  cadence:D0:init→D4-5:followup(+1_data_pt)→D10-12:final(clean_close)→STOP(unless_req_longer);
+  warm_intro:{why_fit,blurb<100w};
+  post_mtg:{topic,promised_ans/upd,+1_proof(if_avail),next_step};
+}
+§ANTI{unverifiable,mkt_size(∅assump),role/title_mismatch,rev_¬sum,high_certainty(fragile_assump)}
+§CHK{∀num≡SSOT;sum(funds,rev_layers);visible_assump;clear¬hype;partner_defensible;pers∧explicit_ask∧proof∧tight¬{praise,softener}}

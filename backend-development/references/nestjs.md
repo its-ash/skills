@@ -1,425 +1,57 @@
-# NestJS
-
-Provide concise, actionable advice for NestJS projects. Use this skill when you need to design or refactor module structure, resolve DI errors, set up middleware/guards/interceptors, write tests, integrate databases, configure authentication, manage environment variables, or improve performance.
-
-## When to use
-- New NestJS project or major feature addition.
-- Dependency‑injection errors such as "cannot resolve dependencies" or circular dependencies.
-- Missing or mis‑configured controllers, DTO validation, or response serialization.
-- Database connection or entity issues with TypeORM or Mongoose.
-- JWT/Passport authentication problems.
-- Need to write unit, integration, or e2e tests.
-- Performance bottlenecks, caching, or memory‑leak concerns.
-
----
-
-## Module Architecture & Dependency Injection
-- **Goal**: Keep modules small, focused, and loosely coupled.
-- **Pattern**:
-  ```typescript
-  @Module({
-    imports: [CommonModule, DatabaseModule],
-    controllers: [FeatureController],
-    providers: [FeatureService, FeatureRepository],
-    exports: [FeatureService], // expose to other modules
-  })
-  export class FeatureModule {}
-  ```
-- **Common errors**:
-  1. Provider not listed in `providers` → "cannot resolve dependencies".
-  2. Provider needed in another module but not exported → add to `exports`.
-  3. Circular dependency → use `forwardRef(() => OtherModule)` on both sides or extract shared logic to a third module.
-- **Tools**: `nest generate module <name>`, `nest generate service <name>`.
-
-## Controllers & Request Handling
-- Use decorators (`@Controller`, `@Get`, `@Post`, etc.) correctly.
-- Validate DTOs with **class‑validator** and **class‑transformer**.
-- Add global validation pipe in `main.ts`:
-  ```typescript
-  app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }));
-  ```
-- Common fixes:
-  - Route conflicts → ensure unique paths and HTTP methods.
-  - Missing validation → add `@Body()` DTOs with `@IsString()`, etc.
-  - Serialization issues → use `class-transformer` `@Exclude()` / `@Expose()`.
-
-## Middleware, Guards, Interceptors & Pipes
-- **Execution order**: Middleware → Guards → Interceptors (before) → Pipes → Handler → Interceptors (after).
-- **Guard example** (JWT auth):
-  ```typescript
-  @Injectable()
-  export class JwtAuthGuard extends AuthGuard('jwt') {}
-  ```
-- **Interceptor for logging**:
-  ```typescript
-  @Injectable()
-  export class LoggingInterceptor implements NestInterceptor {
-    intercept(context: ExecutionContext, next: CallHandler) {
-      const req = context.switchToHttp().getRequest();
-      console.log(`Incoming ${req.method} ${req.url}`);
-      return next.handle();
-    }
-  }
-  ```
-- Common pitfalls:
-  - Forget `await` in async guards/interceptors → request hangs.
-  - Incorrect `@UseGuards` placement → guard not applied.
-
-## Testing Strategies (Jest & Supertest)
-- **Unit test module**:
-  ```typescript
-  beforeEach(async () => {
-    const moduleRef = await Test.createTestingModule({
-      providers: [MyService, { provide: DepService, useValue: mockDep }],
-    }).compile();
-    service = moduleRef.get(MyService);
-  });
-  ```
-- **Mock TypeORM repository**:
-  ```typescript
-  { provide: getRepositoryToken(User), useValue: mockRepository }
-  ```
-- **Integration test** (e2e) with Supertest:
-  ```typescript
-  import * as request from 'supertest';
-  const app = module.createNestApplication();
-  await app.init();
-  await request(app.getHttpServer())
-    .post('/auth/login')
-    .send({ username, password })
-    .expect(201);
-  ```
-- Validation order before running tests: `npm run build` (typecheck) → `npm test` (unit) → `npm test:e2e` (e2e).
-
-## Database Integration
-### TypeORM
-- Register entities:
-  ```typescript
-  TypeOrmModule.forFeature([User, Post])
-  ```
-- Common errors:
-  - `@Column()` misuse → ensure correct decorator syntax.
-  - Connection failure → verify `ormconfig.json` or `TypeOrmModule.forRoot` options (host, port, credentials).
-  - Multiple DBs → use named connections:
-    ```typescript
-    TypeOrmModule.forRoot({ name: 'users', ... }),
-    TypeOrmModule.forFeature([User], 'users')
-    ```
-- Enable retry logic:
-  ```typescript
-  retryAttempts: 3,
-  retryDelay: 2000,
-  ```
-### Mongoose
-- Register schemas:
-  ```typescript
-  MongooseModule.forFeature([{ name: Cat.name, schema: CatSchema }])
-  ```
-- Ensure schema decorators (`@Prop()`) are present.
-
-## Authentication & Authorization (Passport JWT)
-- Install packages:
-  ```bash
-  npm i @nestjs/passport @nestjs/jwt passport-jwt
-  ```
-- **Strategy setup**:
-  ```typescript
-  @Injectable()
-  export class JwtStrategy extends PassportStrategy(Strategy) {
-    constructor(private readonly config: ConfigService) {
-      super({
-        jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-        secretOrKey: config.get('JWT_SECRET'),
-      });
-    }
-    validate(payload: any) {
-      return { userId: payload.sub, username: payload.username };
-    }
-  }
-  ```
-- **Guard usage**:
-  ```typescript
-  @UseGuards(JwtAuthGuard)
-  @Get('profile')
-  getProfile(@Request() req) { return req.user; }
-  ```
-- Common fixes:
-  - "Unknown authentication strategy 'jwt'" → import `Strategy` from `passport-jwt`.
-  - `secretOrPrivateKey must have a value` → set `JWT_SECRET` in `.env` and load with `ConfigModule` before `JwtModule`.
-  - 401 errors → verify `Authorization: Bearer <token>` header and token expiration.
-
-## Configuration & Environment Management
-- Load env variables with `@nestjs/config` and validate using **Joi**:
-  ```typescript
-  ConfigModule.forRoot({
-    isGlobal: true,
-    validationSchema: Joi.object({
-      DB_HOST: Joi.string().required(),
-      JWT_SECRET: Joi.string().required(),
-    }),
-  })
-  ```
-- Async configuration example (e.g., TypeORM):
-  ```typescript
-  TypeOrmModule.forRootAsync({
-    imports: [ConfigModule],
-    useFactory: (config: ConfigService) => ({
-      type: 'postgres',
-      host: config.get('DB_HOST'),
-      // ...other options
-    }),
-    inject: [ConfigService],
-  })
-  ```
-
-## Error Handling & Logging
-- **Exception filter** for HTTP errors:
-  ```typescript
-  @Catch(HttpException)
-  export class HttpExceptionFilter implements ExceptionFilter {
-    catch(exception: HttpException, host: ArgumentsHost) {
-      const ctx = host.switchToHttp();
-      const response = ctx.getResponse<Response>();
-      const status = exception.getStatus();
-      response.status(status).json({
-        statusCode: status,
-        message: exception.message,
-      });
-    }
-  }
-  ```
-- Register globally in `main.ts`:
-  ```typescript
-  app.useGlobalFilters(new HttpExceptionFilter());
-  ```
-- Use built‑in `Logger` or a custom logger (e.g., Winston) for structured logs.
-- Ensure all promises are awaited or have `.catch()` to avoid unhandled rejections.
-
-## Detection & Diagnostic Commands
-```bash
-# Verify Nest project
-test -f nest-cli.json && echo "Nest CLI detected"
-grep -q "@nestjs/core" package.json && echo "Nest core installed"
-# Show Nest version
-grep "@nestjs/core" package.json | sed -E 's/.*"([0-9\.]+)".*/Nest version: \1/'
-# List modules (first 5)
-find src -name "*.module.ts" | head -5 | xargs -n1 basename -s .module.ts
-# Check DB integration
-grep -q "@nestjs/typeorm" package.json && echo "TypeORM present"
-grep -q "@nestjs/mongoose" package.json && echo "Mongoose present"
-# Check auth packages
-grep -q "@nestjs/passport" package.json && echo "Passport present"
-grep -q "@nestjs/jwt" package.json && echo "JWT present"
-```
-- Run lint and build to catch circular dependencies:
-  ```bash
-  npm run lint
-  npm run build -- --watch=false
-  ```
-- Validation order after changes:
-  ```bash
-  npm run build   # typecheck
-  npm test        # unit tests
-  npm run test:e2e   # e2e tests (optional)
-  ```
-
-## Common Patterns & Solutions
-- **Custom decorator for role‑based auth**:
-  ```typescript
-  export const Roles = (...roles: string[]) => SetMetadata('roles', roles);
-  export const Auth = (...roles: string[]) =>
-    applyDecorators(UseGuards(JwtAuthGuard, RolesGuard), Roles(...roles));
-  ```
-- **Global module** (e.g., Config):
-  ```typescript
-  @Global()
-  @Module({ providers: [ConfigService], exports: [ConfigService] })
-  export class ConfigModule {}
-  ```
-- **Dynamic module** for optional features:
-  ```typescript
-  @Module({})
-  export class FeatureModule {
-    static forRoot(options: FeatureOptions): DynamicModule {
-      return {
-        module: FeatureModule,
-        providers: [{ provide: 'FEATURE_OPTIONS', useValue: options }],
-        exports: ['FEATURE_OPTIONS'],
-      };
-    }
-  }
-  ```
-
-## Production Structure & Defaults
-
-### Project layout
-
-```text
-src/
-├── app.module.ts
-├── main.ts
-├── common/            # Shared filters, guards, interceptors, pipes, decorators
-├── config/
-│   ├── configuration.ts
-│   └── validation.ts
-├── modules/
-│   ├── auth/          # controller, module, service, dto/, guards/, strategies/
-│   └── users/         # controller, module, service, dto/, entities/
-└── prisma/ or database/
-```
-
-- Keep domain code in feature modules. Keep DTOs near the module that owns them.
-- Put only cross-cutting code in `common/`.
-
-### Bootstrap
-
-```ts
-async function bootstrap() {
-  const app = await NestFactory.create(AppModule, { bufferLogs: true });
-  app.useGlobalPipes(new ValidationPipe({
-    whitelist: true,
-    forbidNonWhitelisted: true,
-    transform: true,
-    transformOptions: { enableImplicitConversion: true },
-  }));
-  app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
-  app.useGlobalFilters(new AllExceptionsFilter());
-  app.enableShutdownHooks();
-  await app.listen(process.env.PORT ?? 3000);
+@REF:nestjs
+§USE{new_project|feature,DI_err("cannot resolve dependencies"|circular),controllers/DTO_val/serialization,TypeORM|Mongoose,JWT/Passport,unit|int|e2e,perf/cache/mem_leaks}
+§PAT{Modules_DI
+- `@Module({imports:[CommonModule,DatabaseModule],controllers:[FeatureController],providers:[FeatureService,FeatureRepository],exports:[FeatureService]})`
+- small,feature-first,loosely_coupled;`@Injectable()` on services;export ONLY needed providers;custom tokens⇒`Symbol`∨unique_str∧match`@Inject()`
+- errs:¬`providers`→"cannot resolve dependencies";¬`exports`→unresolvable;circular→`forwardRef(()=>OtherModule)` both sides⊕3rd module
+- CLI:`nest generate module|service <name>`
+- `@Global() @Module({providers:[ConfigService],exports:[ConfigService]})`
+- dynamic:`static forRoot(o:FeatureOptions):DynamicModule=>({module:FeatureModule,providers:[{provide:'FEATURE_OPTIONS',useValue:o}],exports:['FEATURE_OPTIONS']})`
 }
-bootstrap();
-```
-
-Use one global validation pipe. Do not repeat the validation options on each route.
-
-### Thin controllers and response DTOs
-
-```ts
-@Controller('users')
-export class UsersController {
-  constructor(private readonly users: UsersService) {}
-
-  @Get(':id')
-  getById(@Param('id', ParseUUIDPipe) id: string): Promise<UserResponseDto> {
-    return this.users.getById(id);
-  }
-
-  @Post()
-  create(@Body() dto: CreateUserDto): Promise<UserResponseDto> {
-    return this.users.create(dto);
-  }
+§PAT{Controllers_Pipeline
+- thin:`@Controller('users')`,`@Get(':id')`,`@Post()`,`@Param('id',ParseUUIDPipe)`,`@Body() dto`;parse→provider→response DTO;¬return ORM entities(leaks hashes,tokens,audit_cols)
+- DTO:`class-validator`(`@IsEmail()`,`@IsString()`,`@Length(2,80)`,`@IsOptional()`,`@IsEnum(UserRole)`)+`class-transformer`(`@Exclude()`,`@Expose()`)
+- fixes:route_conflict→unique path+verb;missing_val→`@Body()` DTO;serialization→`@Exclude()`/`@Expose()`+`ClassSerializerInterceptor(app.get(Reflector))`
+- order:`Middleware→Guards→Interceptors(before)→Pipes→Handler→Interceptors(after)`
+- guard:`@Injectable() export class JwtAuthGuard extends AuthGuard('jwt'){}`;coarse(role,auth)⇒Guards(`@UseGuards(JwtAuthGuard,RolesGuard)`+`@Roles('admin')`);ownership⇒Service
+- decorator:`Roles=(...r:string[])=>SetMetadata('roles',r);Auth=(...r:string[])=>applyDecorators(UseGuards(JwtAuthGuard,RolesGuard),Roles(...r));`
+- interceptor:`@Injectable() implements NestInterceptor{intercept(ctx:ExecutionContext,next:CallHandler){return next.handle();}}`
+- pitfalls:¬`await` in async guard/interceptor→hangs;wrong `@UseGuards` placement→skipped
 }
-
-export class CreateUserDto {
-  @IsEmail() email!: string;
-  @IsString() @Length(2, 80) name!: string;
-  @IsOptional() @IsEnum(UserRole) role?: UserRole;
+§PAT{Testing_Persistence
+- unit:`Test.createTestingModule({providers:[MyService,{provide:DepService,useValue:mockDep}]}).compile()`→`moduleRef.get(MyService)`;TypeORM:`{provide:getRepositoryToken(User),useValue:mockRepository}`
+- e2e:`import * as request from 'supertest';const app=module.createNestApplication();configureApp(app);await app.init();await request(app.getHttpServer()).post('/auth/login').send({username,password}).expect(201);`
+- rules:share `configureApp(app)`(pipes,interceptors,filters) across `main.ts`∧e2e;int_tests use in-memory∨test_DB;order:`npm run build&&npm test&&npm run test:e2e`
+- TypeORM:`TypeOrmModule.forFeature([User,Post])`;named_DBs:`forRoot({name:'users',...})`+`forFeature([User],'users')`;`retryAttempts:3,retryDelay:2000`;check`@Column()`&`ormconfig.json`/`forRoot`
+- Mongoose:`MongooseModule.forFeature([{name:Cat.name,schema:CatSchema}])`;check`@Prop()`
+- tx:ORM behind domain providers;unit-of-work service owns tx(Prisma `$transaction`,TypeORM `DataSource.transaction`);¬multi-write in controller
 }
-```
-
-- A controller parses HTTP input, calls a provider, and returns a response DTO.
-- Do not return ORM entities directly. Password hashes, tokens, and audit columns can leak.
-- Export only the providers that other modules need.
-
-### Guards and resource checks
-
-```ts
-@UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('admin')
-@Get('admin/report')
-getAdminReport(@Req() req: AuthenticatedRequest) {
-  return this.reports.getForUser(req.user.id);
+§PAT{Auth_Config_Errors
+- Passport_JWT:`npm i @nestjs/passport @nestjs/jwt passport-jwt`
+  - `JwtStrategy extends PassportStrategy(Strategy)`(`Strategy` from `'passport-jwt'`),`super({jwtFromRequest:ExtractJwt.fromAuthHeaderAsBearerToken(),secretOrKey:config.get('JWT_SECRET')})`,`validate(p)=>({userId:p.sub,username:p.username})`
+  - route:`@UseGuards(JwtAuthGuard) @Get('profile') getProfile(@Request() req){return req.user;}`
+  - fixes:`"Unknown authentication strategy 'jwt'"`→import `Strategy` from `passport-jwt`;`secretOrPrivateKey must have a value`→`JWT_SECRET` in `.env`∧`ConfigModule` before `JwtModule`;`401`→check `Authorization: Bearer <token>`∧expiry
+- Config(boot-validated,fail-fast):
+  - Joi:`ConfigModule.forRoot({isGlobal:true,validationSchema:Joi.object({DB_HOST:Joi.string().required(),JWT_SECRET:Joi.string().required()})})`
+  - typed:`ConfigModule.forRoot({isGlobal:true,load:[configuration],validate:validateEnv})`
+  - async_DI:`TypeOrmModule.forRootAsync({imports:[ConfigModule],useFactory:(c:ConfigService)=>({type:'postgres',host:c.get('DB_HOST')}),inject:[ConfigService]})`
+- Errors_Logging:`@Catch(HttpException)`⇒HTTP only;`@Catch()`⇒all(¬stack_trace leak)
+  - `AllExceptionsFilter implements ExceptionFilter`:`ctx=host.switchToHttp();res=ctx.getResponse<Response>();req=ctx.getRequest<Request>();` if `ex instanceof HttpException`→`res.status(ex.getStatus()).json({path:req.url,error:ex.getResponse()})`;else `this.logger.error(ex);res.status(500).json({path:req.url,error:'Internal server error'})`
+  - register:`app.useGlobalFilters(new AllExceptionsFilter())`;use `Logger`∨Winston(JSON prod+correlation_ID);await all promises∨`.catch()`
 }
-```
-
-Put coarse access rules (role, authenticated) in guards. Put checks for one resource (for example "is this the owner?") in the service.
-
-### One error envelope for all errors
-
-```ts
-@Catch()
-export class AllExceptionsFilter implements ExceptionFilter {
-  private readonly logger = new Logger(AllExceptionsFilter.name);
-
-  catch(exception: unknown, host: ArgumentsHost) {
-    const ctx = host.switchToHttp();
-    const res = ctx.getResponse<Response>();
-    const req = ctx.getRequest<Request>();
-    if (exception instanceof HttpException) {
-      return res.status(exception.getStatus()).json({ path: req.url, error: exception.getResponse() });
-    }
-    this.logger.error(exception);
-    return res.status(500).json({ path: req.url, error: 'Internal server error' });
-  }
+§CFG{Prod_Layout_Bootstrap
+- layout:`src/{app.module.ts,main.ts,common/(filters,guards,interceptors,pipes,decorators),config/{configuration.ts,validation.ts},modules/{auth/(controller,module,service,dto/,guards/,strategies/),users/(controller,module,service,dto/,entities/)},prisma/|database/}`
+- scope:domain in feature modules,DTOs near owning module,cross-cutting only in `common/`
+- bootstrap:`NestFactory.create(AppModule,{bufferLogs:true})`→`app.useGlobalPipes(new ValidationPipe({whitelist:true,forbidNonWhitelisted:true,transform:true,transformOptions:{enableImplicitConversion:true}}))`(1 global pipe,¬repeat)→`app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)))`→`app.useGlobalFilters(new AllExceptionsFilter())`→`app.enableShutdownHooks()`→`await app.listen(process.env.PORT??3000)`
+- defaults:async DB/cache+`@nestjs/terminus` healthchecks;bg_jobs/consumers in own modules(¬HTTP controllers);`@nestjs/throttler`+auth+audit_logs on public endpoints;`CacheInterceptor`/Redis;¬N+1(DataLoader/query_builder);clean listeners in `onModuleDestroy`
 }
-```
-
-`@Catch(HttpException)` catches only HTTP errors. `@Catch()` also catches unexpected errors, so no stack trace goes to the client.
-
-### Config validated at boot
-
-```ts
-ConfigModule.forRoot({ isGlobal: true, load: [configuration], validate: validateEnv });
-```
-
-- Validate the environment at startup, not at the first request. Stop the app if the config is not valid.
-- Read config through typed helpers or a config service.
-
-### Persistence and tests
-
-- Put ORM code behind providers that use domain terms. The service that owns the unit of work also owns the transaction (Prisma `$transaction`, TypeORM `DataSource.transaction`). Controllers must not coordinate many writes.
-- In e2e tests, use the same global pipes, interceptors, and filters as in `main.ts`. Put them in a shared `configureApp(app)` function and call it in both places.
-
-### Production defaults
-
-- Structured logs with a request correlation ID.
-- Async provider setup for database and cache clients, with health checks (`@nestjs/terminus`).
-- Background jobs and event consumers in their own modules, not in HTTP controllers.
-- Explicit rate limiting (`@nestjs/throttler`), auth, and audit logs on public endpoints.
-
-## Checklist for Review
-- **Modules**
-  - [ ] All services have `@Injectable()`.
-  - [ ] Providers are listed in `providers` and exported when needed.
-  - [ ] No circular dependencies (use `forwardRef` only if unavoidable).
-  - [ ] Module names follow feature‑first convention.
-- **Controllers**
-  - [ ] Routes are unique and use proper HTTP verbs.
-  - [ ] DTOs validated with `class-validator`.
-  - [ ] Response objects are serialized (`class-transformer`).
-- **DI & Tokens**
-  - [ ] Custom tokens use `Symbol` or unique strings.
-  - [ ] `@Inject()` matches provider token.
-- **Database**
-  - [ ] Entities/schemas have correct decorators.
-  - [ ] Connection options are validated.
-  - [ ] Multiple DBs use named connections.
-- **Auth**
-  - [ ] JWT strategy imports from `passport-jwt`.
-  - [ ] `JwtModule` secret matches environment variable.
-  - [ ] Guards applied to protected routes.
-- **Testing**
-  - [ ] Unit tests mock external providers.
-  - [ ] Integration tests use an in‑memory or test DB.
-  - [ ] E2E tests run with Supertest against a real server.
-- **Performance**
-  - [ ] Caching applied where appropriate (CacheInterceptor, Redis).
-  - [ ] No N+1 queries (use DataLoader or query builder).
-  - [ ] Memory leaks checked (`onModuleDestroy` cleans listeners).
-- **Error Handling & Logging**
-  - [ ] Global exception filter registered.
-  - [ ] Logger outputs structured JSON in production.
-  - [ ] Unhandled promise rejections are caught.
-
----
-
-**Success criteria**: The application builds without type errors, all tests pass, no circular dependencies exist, authentication works with valid JWTs, database connections are stable, and performance metrics meet the project’s SLA.
-
-## Related skills
-
-Load these when the task spans more than this skill.
-
-- [`backend-development`](../SKILL.md) — Guidance for designing, building, and operating scalable backend services and APIs. Covers REST GraphQL gRPC A…
-- [`typescript`](../../typescript/SKILL.md) — Provides expert guidance for TypeScript projects, covering setup analysis, migration, monorepo configuration,…
-- [`node`](../../node/SKILL.md) — Node.js project conventions and setup rules. Load when creating, configuring, or working on any Node.js projec…
-- [`database-design`](../../database-design/SKILL.md) — Expert database architect for data layer design, technology selection, and schema modeling. Use for selecting…
+§CMD{Diagnostic_Verify
+- detect:`test -f nest-cli.json`;`grep -q "@nestjs/core" package.json`;`grep "@nestjs/core" package.json|sed -E 's/.*"([0-9\.]+)".*/Nest version: \1/'`
+- modules:`find src -name "*.module.ts"|head -5|xargs -n1 basename -s .module.ts`
+- deps:`grep -q` `@nestjs/typeorm|@nestjs/mongoose|@nestjs/passport|@nestjs/jwt` in `package.json`
+- check:`npm run lint&&npm run build -- --watch=false`;verify:`npm run build&&npm test&&npm run test:e2e`
+}
+§CHK{Done_Gate
+0_type_errors∧all_tests_pass(unit+int+e2e)∧¬circular_deps∧valid_JWT_auth∧stable_DB∧JSON_logs∧¬N+1∧cache+shutdown_cleanup∧SLA_met
+}
+§REL{[`backend-development`](../SKILL.md),[`typescript`](../../typescript/SKILL.md),[`node`](../../node/SKILL.md),[`database-design`](../../database-design/SKILL.md)}

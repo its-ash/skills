@@ -1,88 +1,34 @@
 ---
-description: Sync documentation from source-of-truth files such as scripts, schemas, routes, and exports.
+description: "Sync docs from SSOT files (scripts, env, routes, exports, infra)."
 ---
-
-# Update Documentation
-
-Sync documentation with the codebase, generating from source-of-truth files.
-
-## Step 1: Identify Sources of Truth
-
-| Source | Generates |
-|--------|-----------|
-| `package.json` scripts | Available commands reference |
-| `.env.example` | Environment variable documentation |
-| `openapi.yaml` / route files | API endpoint reference |
-| Source code exports | Public API documentation |
-| `Dockerfile` / `compose.yaml` | Infrastructure setup docs |
-
-## Step 2: Generate Script Reference
-
-1. Read `package.json` (or `Makefile`, `Cargo.toml`, `pyproject.toml`)
-2. Extract all scripts/commands with their descriptions
-3. Generate a reference table:
-
-```markdown
-| Command | Description |
-|---------|-------------|
-| `npm run dev` | Start development server with hot reload |
-| `npm run build` | Production build with type checking |
-| `npm test` | Run test suite with coverage |
-```
-
-## Step 3: Generate Environment Documentation
-
-1. Read `.env.example` (or `.env.template`, `.env.sample`)
-2. Extract all variables with their purposes
-3. Categorize as required vs optional
-4. Document expected format and valid values
-
-```markdown
-| Variable | Required | Description | Example |
-|----------|----------|-------------|---------|
-| `DATABASE_URL` | Yes | PostgreSQL connection string | `postgres://user:pass@host:5432/db` |
-| `LOG_LEVEL` | No | Logging verbosity (default: info) | `debug`, `info`, `warn`, `error` |
-```
-
-## Step 4: Update Contributing Guide
-
-Generate or update `docs/CONTRIBUTING.md` with:
-- Development environment setup (prerequisites, install steps)
-- Available scripts and their purposes
-- Testing procedures (how to run, how to write new tests)
-- Code style enforcement (linter, formatter, pre-commit hooks)
-- PR submission checklist
-
-## Step 5: Update Runbook
-
-Generate or update `docs/RUNBOOK.md` with:
-- Deployment procedures (step-by-step)
-- Health check endpoints and monitoring
-- Common issues and their fixes
-- Rollback procedures
-- Alerting and escalation paths
-
-## Step 6: Staleness Check
-
-1. Find documentation files not modified in 90+ days
-2. Cross-reference with recent source code changes
-3. Flag potentially outdated docs for manual review
-
-## Step 7: Show Summary
-
-```
+@CMD:update-docs
+§SRC{
+`package.json`∨`Makefile`∨`Cargo.toml`∨`pyproject.toml`⇒cmd_ref
+`.env.example`∨`.env.template`∨`.env.sample`⇒env_docs
+`openapi.yaml`∨routes⇒API_ref
+src_exports⇒public_API_docs
+`Dockerfile`∨`compose.yaml`⇒infra_docs
+}
+§FLOW{
+1:scan(§SRC)
+2:scripts→extract(cmds,desc)→table(`Command | Description`)
+3:env→extract(vars,purpose)→classify(required/optional)∧doc(fmt,valid_vals)→table(`Variable | Required | Description | Example`)
+4:upd(`docs/CONTRIBUTING.md`,{dev_setup(prereqs,install),scripts+purpose,test_proc(run,write),code_style(lint,fmt,pre-commit),PR_checklist})
+5:upd(`docs/RUNBOOK.md`,{deploy_steps,health_checks+monitoring,common_issues+fixes,rollback,alerting+escalation})
+6:stale→find(docs≥90d)→xref(recent_src_Δ)→flag(manual_review)
+}
+§R{
+SSOT:gen_from_code∧¬manual_edit(gen_sections)
+preserve:hand_written_prose∧only_upd(gen_sections)
+mark:`<!-- AUTO-GENERATED -->`
+¬create_new_docs_unprompted(only_if_cmd_explicit)
+}
+§OUT{
+```text
 Documentation Update
-──────────────────────────────
-Updated:  docs/CONTRIBUTING.md (scripts table)
-Updated:  docs/ENV.md (3 new variables)
-Flagged:  docs/DEPLOY.md (142 days stale)
-Skipped:  docs/API.md (no changes detected)
-──────────────────────────────
+---
+Updated: <path> (<what>)
+Flagged: <path> (<N> days stale)
+Skipped: <path> (no changes detected)
 ```
-
-## Rules
-
-- **Single source of truth**: Always generate from code, never manually edit generated sections
-- **Preserve manual sections**: Only update generated sections; leave hand-written prose intact
-- **Mark generated content**: Use `<!-- AUTO-GENERATED -->` markers around generated sections
-- **Don't create docs unprompted**: Only create new doc files if the command explicitly requests it
+}

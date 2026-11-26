@@ -1,132 +1,43 @@
-# TypeScript Tooling, Config, and Debugging
+@REF:tooling-and-config
 
-## Project analysis workflow
-```bash
-npx tsc --version && node -v
-node -e "const p=require('./package.json');console.log(Object.keys({...p.devDependencies,...p.dependencies}).join('\n'))" | grep -E 'biome|eslint|prettier|vitest|jest|turborepo|nx' || echo 'No tooling detected'
-ls pnpm-workspace.yaml lerna.json nx.json turbo.json 2>/dev/null   # any hit = monorepo
-npm run -s typecheck || npx tsc --noEmit
-npm test -s || npx vitest run --reporter=basic --no-watch
-npm run -s build   # only if the change affects output
-```
-
-## Strict compiler configuration
-Recommended base. Adjust flags per project. Extra flags: see [typescript-patterns.md](typescript-patterns.md#1-strict-mode-is-the-baseline).
-```json
-{
-  "compilerOptions": {
-    "strict": true,
-    "noUncheckedIndexedAccess": true,
-    "noImplicitOverride": true,
-    "exactOptionalPropertyTypes": true,
-    "noPropertyAccessFromIndexSignature": true,
-    "skipLibCheck": true,
-    "incremental": true
-  }
+§CMD{
+analyze:`npx tsc --version && node -v`;
+`node -e "const p=require('./package.json');console.log(Object.keys({...p.devDependencies,...p.dependencies}).join('\n'))" | grep -E 'biome|eslint|prettier|vitest|jest|turborepo|nx' || echo 'No tooling detected'`;
+`ls pnpm-workspace.yaml lerna.json nx.json turbo.json 2>/dev/null`#⇒monorepo;
+`npm run -s typecheck || npx tsc --noEmit`;`npm test -s || npx vitest run --reporter=basic --no-watch`;`npm run -s build`#iff Δ⇒out;
+perf:`npx tsc --extendedDiagnostics --incremental false | grep -E "Check time|Files:|Lines:|Nodes:"`;
+migrate:`npx ts-migrate migrate . --sources 'src/**/*.js'`;`npx typesync`#+@types;
+debug:`npx ts-node --inspect-brk src/file.ts`;`npx tsc --traceResolution > resolution.log && grep "Module resolution" resolution.log`;`npx tsc --generateTrace trace --incremental false && npx @typescript/analyze-trace trace`;`node --max-old-space-size=8192 node_modules/typescript/lib/tsc.js`
 }
-```
 
-## Type patterns not in typescript-patterns
-Brands and `satisfies`: see [typescript-patterns.md](typescript-patterns.md).
-```typescript
-// Recursive conditional type. Keep recursion depth ≤ 10 to avoid compiler errors.
-type DeepReadonly<T> = T extends (...args: any[]) => any ? T
-  : T extends object ? { readonly [K in keyof T]: DeepReadonly<T[K]> } : T;
-
-// Const assertion → literal union
-const routes = ['/home', '/about', '/contact'] as const;
-type Route = typeof routes[number];
-```
-
-## Performance optimization
-### Type-check speed
-```bash
-npx tsc --extendedDiagnostics --incremental false | grep -E "Check time|Files:|Lines:|Nodes:"
-```
-"Type instantiation is excessively deep":
-- Replace large intersections with `interface`.
-- Split unions > 100 members.
-- Remove circular generic constraints.
-- Break recursion with intermediate type aliases.
-
-### Build speed
-- `skipLibCheck: true` when library type errors are acceptable.
-- `incremental: true`; keep the `.tsbuildinfo` cache.
-- Precise `include`/`exclude`.
-- Monorepo: project references with `composite: true`.
-
-## Migration (JS → TS, incremental)
-1. Set `"allowJs": true, "checkJs": true`.
-2. Rename `.js` → `.ts` one file at a time; add explicit types.
-3. Turn on `strict` options step by step.
-4. Optional helpers: `npx ts-migrate migrate . --sources 'src/**/*.js'`, `npx typesync` (installs missing `@types`).
-
-## Monorepo root tsconfig
-Project references limit recompilation to changed packages.
-```json
-{
-  "references": [{ "path": "./packages/core" }, { "path": "./packages/ui" }, { "path": "./apps/web" }],
-  "compilerOptions": { "composite": true, "declaration": true, "declarationMap": true }
+§CFG{
+strict([typescript-patterns.md](typescript-patterns.md#1-strict-mode-is-the-baseline)):`compilerOptions:{strict,noUncheckedIndexedAccess,noImplicitOverride,exactOptionalPropertyTypes,noPropertyAccessFromIndexSignature,skipLibCheck,incremental}:true`;
+monorepo_root(proj_refs⇒Δ_pkg_only):`references:[{path:"./packages/core"},...],compilerOptions:{composite:true,declaration:true,declarationMap:true}`
 }
-```
 
-## Tooling choices
-| Need | Pick |
-|---|---|
-| Fast lint + format, coarse rules OK | Biome |
-| Custom rules, Vue/Angular, type-aware lint | ESLint + `@typescript-eslint` |
-| Type tests (`expectTypeOf`) | Vitest |
-| Simple monorepo (< 20 packages) | Turborepo |
-| Complex graph (> 50 packages), visualization | Nx |
-
-## Type testing with Vitest
-Use for published libraries, generic utilities, and API contracts.
-```typescript
-import { expectTypeOf } from 'vitest';
-import type { Avatar } from './avatar';
-
-test('Avatar props are typed', () => {
-  expectTypeOf<Avatar>().toHaveProperty('size');
-  expectTypeOf<Avatar['size']>().toEqualTypeOf<'sm' | 'md' | 'lg'>();
-});
-```
-
-## Debugging
-```bash
-npx ts-node --inspect-brk src/file.ts                       # debug one file
-npx tsc --traceResolution > resolution.log && grep "Module resolution" resolution.log
-npx tsc --generateTrace trace --incremental false && npx @typescript/analyze-trace trace
-node --max-old-space-size=8192 node_modules/typescript/lib/tsc.js   # large projects
-```
-
-## Common error fixes
-| Error | Fix |
-|---|---|
-| "The inferred type of X cannot be named" | Export the type; use `ReturnType<typeof fn>`; use `import type` to break circular deps |
-| Missing declarations for a package | Add an ambient module (below) |
-| Excessive stack depth | Limit recursion; replace recursive intersections with interfaces |
-| "Cannot find module" at runtime | Match `moduleResolution` to the bundler; align `baseUrl`/`paths` with the runtime loader; `ts-node -r tsconfig-paths/register`; `rm -rf node_modules/.cache .tsbuildinfo` |
-
-```typescript
-// types/ambient.d.ts
-declare module 'some-untyped-package' {
-  const value: unknown;
-  export default value;
-  export = value; // CJS interop
+§PAT{
+brands∧`satisfies`⇒[typescript-patterns.md](typescript-patterns.md);
+deep_readonly(depth≤10):`type DeepReadonly<T>=T extends(...a:any[])=>any?T:T extends object?{readonly[K in keyof T]:DeepReadonly<T[K]>}:T`;
+const_union:`const r=[...]as const;type R=typeof r[number]`;
+vitest_type_test(libs,generics,APIs):`import{expectTypeOf}from'vitest';expectTypeOf<T>().toHaveProperty('k');expectTypeOf<T['k']>().toEqualTypeOf<'a'|'b'>()`;
+ambient(`types/ambient.d.ts`):`declare module 'pkg'{const v:unknown;export default v;export=v;}`#CJS
 }
-```
 
-## Review / migration checklist
-- [ ] No implicit `any`; use `unknown` or explicit types.
-- [ ] `strict` flags on.
-- [ ] Public APIs declare return types.
-- [ ] `interface` for object shapes.
-- [ ] Brands for domain primitives.
-- [ ] No circular type imports.
-- [ ] `skipLibCheck` only when library issues are acceptable.
-- [ ] Project references per monorepo package.
-- [ ] Linter config matches the chosen tool.
-- [ ] Type tests for exported types of published libraries.
-- [ ] CI runs build and tests without watch mode.
-- [ ] Runtime path mapping handled.
-- [ ] Custom error classes extend `Error` and capture the stack trace.
+§D{
+lint_fmt(fast,coarse_OK)⇒Biome;lint(custom|Vue|Angular|type_aware)⇒ESLint+`@typescript-eslint`;type_tests(`expectTypeOf`)⇒Vitest;
+monorepo(<20)⇒Turborepo;(>50∨graph_viz)⇒Nx;
+excessive_instantiation_depth⇒{intersections→`interface`;split_unions(>100);rm_circular_generics;intermediate_aliases};
+build_speed⇒{`skipLibCheck:true`(lib_OK);`incremental:true`+`.tsbuildinfo`;precise(`include`,`exclude`);monorepo⇒proj_refs(`composite:true`)};
+js→ts⇒[1:`allowJs:true,checkJs:true`,2:`.js`→`.ts`(1/step,+types),3:gradual_`strict`,4:`ts-migrate`∨`typesync`]
+}
+
+§R{
+err("The inferred type of X cannot be named")⇒export_type∨`ReturnType<typeof fn>`∨`import type`(break_circular);
+err(missing_decls)⇒ambient_module;
+err(excessive_stack_depth)⇒limit_recursion∧recursive_intersections→`interface`;
+err("Cannot find module"@runtime)⇒match(`moduleResolution`,bundler)∧align(`baseUrl`/`paths`,loader)∧`ts-node -r tsconfig-paths/register`∧`rm -rf node_modules/.cache .tsbuildinfo`
+}
+
+§CHK{
+¬implicit_any(`unknown`∨explicit);public_API_return_types;`interface`@shapes;brands@primitives;¬circular_type_imports;linter_cfg_match;published_lib_type_tests;CI_build_test(¬watch);runtime_path_mapping;custom_errors(`extends Error`+stack)
+}

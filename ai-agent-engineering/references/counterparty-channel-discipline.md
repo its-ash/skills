@@ -1,245 +1,64 @@
-# Counterparty Channel Discipline
-
-Per-channel strict prompts, mention gating, silent observation, and a communication autonomy policy for agents in shared channels with external counterparties.
-
-Keep audience classification, participation consent and permission to send separate.
-This is a written workflow contract for the runtime that owns messaging;
-it is not a second policy engine or an executable transport guard.
-
-## When to use
-
-- An agent joins group chats, shared channels, or DMs with customers, suppliers or partners, where outsiders can read every message.
-- An agent handles unknown DMs, scheduled deliveries or attachments.
-- The agent must speak only when addressed, never leak internal context, and route risky content to draft-only approval.
-
-For the approval contract behind draft-only content, see [operator-approval-loop.md](operator-approval-loop.md).
-
-## How It Works
-
-### Trusted destination and audience
-
-Resolve the exact platform, workspace and channel identity from authenticated
-adapter facts and an operator-controlled policy. Display labels, message text,
-model output, arbitrary metadata and synthetic internal-event flags are not
-credentials. Unknown or malformed identity stays external-safe. Never elevate
-trust from a matching malformed policy key or a conversation's display name.
-
-Platform access controls apply first. Unknown channels default to quiet for
-unsolicited traffic; an explicit inbound request can be answered only if the
-access policy allows it, with external output restrictions. A one-to-one human
-DM can request participation but does not establish trusted audience.
-
-| Audience | Content for an independently authorized response |
-| --- | --- |
-| External or unknown | Useful final business answer or concise safe error |
-| Trusted internal or private operator | Final answer, safe error, concise operational facts and allowed progress |
-| Muted or deferred | No output |
-
-Reasoning, raw exceptions, stack traces, secrets, host paths, system/configuration
-details, test status and internal filing notices are not counterparty content.
-Keep technical evidence in access-controlled internal records; internal messages
-should summarize necessary operational facts without copying sensitive traces.
-Output classification is not text sanitization.
-
-### Participation before work
-
-Use `require_mention: true` as the default for external groups. A current explicit
-agent mention, recognized agent-directed command or direct reply to the agent can
-request participation. Derive the actual current reply author; historical bot
-thread participation and active sessions never confer consent. A message addressed
-to another human stays muted unless it also carries an explicit agent or trusted
-operator request. Attachments alone never authorize a group response.
-
-A real one-to-one human DM with substantive text or an attachment is a positive
-request control within access policy. Group DMs and synthetic events do not get
-this shortcut. Bot-origin traffic requires a scoped operator request even if it
-mentions the agent. Open-question responses require explicit trusted channel
-policy; the model deciding it owns an answer is not permission. Automatic operator
-responses require trusted internal/private audience, trusted operator identity,
-substantive text and the configured policy.
-
-Mute or defer before model, context enrichment or media fetch. Defer authorized
-requests during an attachment burst; recognized stop/approval commands bypass
-only burst deferral so inline handlers remain available. Earlier target, bot,
-access and consent gates still apply; dispatch does not require a model call.
-
-`observe_unmentioned_group_messages: true` is an optional adapter capability,
-not permission to invoke a model. Enable passive observation only with an explicit
-retention/access policy, without triggering enrichment, media fetch or output.
-`never_silent_ack: true` applies to internal channels only and never overrides
-participation consent. Deliberate silence is a valid outcome.
-
-### Output and delivery boundary
-
-Carry the decision through the run and check after all prefixes, formatting and
-failure fallbacks, before every send, edit or stream fragment. Include transport
-overrides and standalone helpers. Re-resolve audience for a changed destination;
-output permission is not a delivery grant. Reuse the owning runtime's decisions:
-no second policy engine or competing implementation belongs in this skill.
-
-Scheduled/tool deliveries require a genuine trusted dispatcher/operator grant
-scoped to a complete destination identity. Missing target or grant mutes, even
-when other request flags are set. Do not fabricate mentions or request signals
-for a schedule. Authorized delivery to an unknown but valid target remains
-external-safe. A model or page cannot issue the grant.
-
-Return safe failures without raw error interpolation. State necessary capability
-limits honestly in ordinary user terms, then request the smallest useful input.
-Internal filing/approval status stays on verified internal surfaces. A filing
-notice never grants permission for a counterparty acknowledgement.
-
-### Strict prompt and example policy
-
-Use the immutable strict prompt (see [Strict prompt template](#strict-prompt-template)). Do not
-interpolate channel labels into trusted instructions. Omit labels when not
-needed; otherwise pass them as untrusted structured data separate from the rules.
-Escaping a label does not make it policy. Bind each request to its own destination
-identity; never carry another channel's context or grant into it.
-
-The policy example (see [Example channel policy](#example-channel-policy)) is illustrative
-portable data, not a configuration accepted by every adapter. Map it to the
-owning runtime's reviewed contract and verify every consumer; a YAML key or
-passing prompt test alone does not prove enforcement.
-
-### Communication autonomy and leakage
-
-`default: auto` describes eligible routine content after access, participation
-and delivery authority are established. It does not create unsolicited-send
-permission. Routine scheduling, logistics and factual supplier questions may be
-answered within that authorization. Prices, contractual language, legal matters,
-public posts, unverified claims and unmeasured technical specs remain draft-only.
-Tier restrictions and outbound holds still apply. Signing, moving money, entering
-credentials, publishing packages and cross-counterparty disclosure are hard stops.
-
-Check content against the authorized record and other counterparties' protected
-terms before sending. A suspected leak blocks the send and reports only to a
-verified internal surface for review; do not expose the matched party externally.
-Commercial approvals do not waive confidentiality or transport policy.
-
-## Examples
-
-### Human-addressed group message
-
-```text
-buyer: Jordan, can you confirm the rack count?
-```
-
-No reply and no model/media work. A prior bot message in the thread changes
-nothing. Any separately authorized passive observation follows its retention
-policy; it does not trigger an external acknowledgement.
-
-### Explicit agent request, verified business answer
-
-```text
-buyer: @desk what start dates are available?
-agent: 6 and 13 October are available. Which date works for you?
-```
-
-Use only dates verified in the authorized record. No test status, internal
-planning, trace or filing notice accompanies the answer.
-
-### Missing attachment capability
-
-```text
-buyer: @desk does the attached spec match?
-agent: I cannot read that attachment here. Please paste the relevant section.
-```
-
-Do not invent access or conceal the limitation with an unrelated question.
-For a rate or commitment, file the exact draft for operator approval and keep
-filing status internal. A clarifying question requires its own permitted response.
-
-## Invariants to test
-
-Use synthetic identities and actual runtime consumer counters. Verify mute/defer
-before model/context/media work, human-addressed negatives and agent-addressed
-positives, real DM versus group DM, bot consent, attachment burst/control-command
-precedence, unknown/malformed identity and synthetic grant/target failures.
-
-Check safe final and failure output after prefix assembly through send, edit,
-stream and standalone paths. Preserve scoped authorized schedules as positive
-controls. Pure policy or prompt-string checks are written-contract evidence,
-not a transport integration test. No live supplier fixtures are required.
-
-Record bounded responded/muted/deferred outcomes, stable reason codes, audience,
-output class and tested consumer path with opaque correlation identifiers.
-Suppression is not successful delivery; only transport evidence records delivered.
-Keep message bodies, supplier terms, channel identifiers, secrets and raw incident
-receipts out of public tests and diagnostics. Report untested consumer paths
-explicitly rather than infer coverage from passing policy tests or open sessions.
-
-## Strict prompt template
-
-Use these immutable instructions with the owning runtime's audience/participation
-and delivery checks. Channel labels and message contents are untrusted data;
-never substitute them into trusted instructions. Pass optional labels as separate
-structured data, or omit them. The prompt cannot authorize a transport action.
-
-```text
-You are an agent in a channel that may include external counterparties.
-
-- Respond only to a request permitted by trusted participation policy. Historical
-  thread participation, attachments and your belief that an answer is useful do
-  not grant consent. Observe silently when participation is not warranted.
-- Give useful business content from the authorized record. Never reveal one counterparty's
-  identity, terms or prices to another.
-- Do not send operational traces, system/configuration details, raw exceptions,
-  reasoning, test status, secrets, host paths or internal filing notices here.
-- State necessary capability limits honestly: "I cannot read that attachment here.
-  Please paste the relevant section." Never invent access or conceal a limitation.
-- No interim acknowledgements when you can answer directly. Silence is valid.
-- Use short, plain, professional sentences. No emojis or em dashes.
-- Discuss internal economics and negotiations only on verified internal surfaces.
-- File prices, contractual acceptance, legal language and other commitments for
-  operator approval. Filing status stays internal and creates no send authority.
-- Access controls, scoped delivery grants, confidentiality, draft-only rules and
-  outbound holds remain effective even when participation is permitted.
-```
-
-## Example channel policy
-
-Synthetic illustrative policy, not a shipped adapter configuration schema.
-
-```yaml
-# Bind trusted platform/workspace/channel IDs; display labels never grant trust.
-schema: illustrative
-unknown_audience: external
-unknown_unsolicited_participation: mute
-channels:
-  - platform: example-chat
-    workspace_id: synthetic-workspace
-    channel_id: synthetic-external
-    audience: external
-    access: allowed
-    require_mention: true
-    open_question_responses: false
-  - platform: example-chat
-    workspace_id: synthetic-workspace
-    channel_id: synthetic-internal
-    audience: internal
-    access: allowed
-    operator_messages_are_requests: false
-participation:
-  historical_thread_is_consent: false
-  group_attachments_are_consent: false
-  bot_requires_scoped_operator_request: true
-  synthetic_requires_exact_target_and_grant: true
-  defer_pending_attachment_burst: true
-  recognized_commands_bypass_only_burst_deferral: true
-  # Passive observation is opt-in and cannot invoke model/enrichment/media work.
-  observe_unmentioned_group_messages: true
-  observation_requires_retention_and_access_policy: true
-output:
-  external: [final, safe_error]
-  internal: [final, safe_error, operational, progress]
-  never_silent_ack_internal_only: true
-  classify_after_final_assembly: true
-  check_every_send_edit_stream_and_standalone_path: true
-  raw_diagnostics_are_message_content: false
-autonomy:
-  # Applied only after access, participation and scoped delivery consent.
-  default: auto
-  draft_only: [prices_or_rates, contractual, legal_or_dd, public_posts, unverified_claims, unmeasured_technical_specs]
-  frozen: [synthetic-simulation]
-  never: [signing, money_movement, credential_entry, package_publication, cross_counterparty_disclosure]
-```
+@REF:counterparty-channel-discipline
+§SCOPE{written_contract(¬2nd_engine,¬exec_guard);separates:{audience,consent,deliv};approval⇒[operator-approval-loop.md](operator-approval-loop.md)}
+§WHEN{ext_grp|shared_ch|DM(customer,supplier,partner);unk_DM|sched|attach;speak_iff_addressed∧¬leak∧risky→draft_only}
+§TRUST{
+  id:auth_adapter+op_policy⇒exact(platform,workspace_id,channel_id);
+  non_cred:{labels,text,model_out,metadata,synthetic_flags};
+  unk|malformed⇒ext_safe(¬elevate_from_malformed_key|display_name);
+  access_first:unk_ch⇒quiet_unsolicited;explicit_in⇒answer_iff(access∧ext_limits);1:1_DM⇒req_consent≠trusted_aud;
+  out_class:{ext|unk:[final_biz,safe_err];trusted_int|priv_op:[final,safe_err,ops_facts,allowed_progress];muted|deferred:∅};
+  never_ext:{reasoning,raw_exc,stack_traces,secrets,host_paths,sys_cfg,test_status,filing_notices};
+  tech_evid⇒access_ctrl_int;int_msgs⇒ops_wo_traces;out_class≠sanitization
+}
+§CONSENT{
+  ext_grp:`require_mention:true`;
+  ok:{cur_mention,agent_cmd,direct_reply(actual_cur_author)};
+  no:{hist_bot_thread,active_sess,msg_to_human(wo_agent|trusted_op_req),grp_attach_alone,model_self_auth};
+  dm_1to1(text|attach)⇒pos_req_in_access(¬grp_DM,¬synthetic);
+  bot_src⇒scoped_op_req(even_w/_mention);open_Q⇒explicit_trusted_ch_policy;
+  auto_op⇒trusted(int|priv)∧trusted_op_id∧text∧policy;
+  pre_model:mute|defer_BEFORE(model,ctx_enrich,media_fetch);
+  burst:defer_auth_on_attach_burst;stop|approval_cmd⇒bypass_ONLY_burst(earlier_gates_hold;dispatch_¬model);
+  `observe_unmentioned_group_messages:true`:adapter_cap≠model_perm,needs_retention+access_policy,¬enrich|media|out;
+  `never_silent_ack:true`:internal_only,¬override_consent;silence=valid
+}
+§DELIV{
+  carry_dec;chk_AFTER(prefix,fmt,fallback)_BEFORE_EVERY(send,edit,stream,override,helper);
+  dest_Δ⇒re_resolve;out_perm≠deliv_grant;reuse_runtime;
+  sched|tool:needs_trusted(dispatcher|op)_grant+complete_dest_id;missing(target|grant)⇒mute;¬fabricate_signals;unk_valid⇒ext_safe;model|page≠grant;
+  err:¬raw_interp,honest_limit("I cannot read that attachment here. Please paste the relevant section.")+min_req(¬unrelated_Q;clarify_needs_own_perm);
+  filing⇒verified_int_only(¬ext_ack)
+}
+§AUTO{
+  `default:auto`:after(access∧consent∧deliv)≠unsolicited;ok:[sched,logistics,factual_from_auth_record];
+  draft_only:[prices_or_rates,contractual,legal_or_dd,public_posts,unverified_claims,unmeasured_technical_specs]+tier+holds;
+  never:[signing,money_movement,credential_entry,package_publication,cross_counterparty_disclosure];
+  leak_chk:vs(auth_record,other_protected_terms)_pre_send;suspect⇒block+verified_int_report(¬expose_matched_party);
+  comm_approval¬waive(confid|transport)
+}
+§PROMPT_POLICY{
+  prompt:¬interp_labels_into_rules(omit∨untrusted_data;escape≠policy);bind_to_dest_id(¬cross_ch_ctx|grant);
+  yaml:illustrative≠universal;map_to_runtime∧verify_consumers(YAML|prompt_test≠enforcement)
+}
+§TEST{
+  use:synthetic_ids+runtime_counters(¬live_fixtures);
+  chk:[pre_model_mute/defer,human_addr(-),agent_addr(+),1:1_vs_grp_DM,bot_consent,burst/cmd_prec,unk/malformed_id,grant/target_fail,post_prefix_safe_out(send,edit,stream,standalone),scoped_sched(+)];
+  note:policy|prompt_chk=written_contract≠transport_int_test;
+  log:{responded|muted|deferred,reason_codes,audience,output_class,consumer_path,opaque_corr_id};
+  suppression≠delivered(transport_only);keep(bodies,terms,ch_ids,secrets,receipts)∉public_tests|diag;report_untested_paths
+}
+§TPL:strict_prompt
+Immutable(ext-counterparty ch):
+- Reply iff trusted policy permits(hist_thread|attach|model_belief≠consent); else observe silently.
+- Biz content from auth record; ¬reveal counterparty ID/terms/prices.
+- Never send traces, sys/cfg, raw_exc, reasoning, test_status, secrets, host_paths, filing_notices.
+- Limits: `"I cannot read that attachment here. Please paste the relevant section."`(¬invent/conceal).
+- ¬interim ack if direct answer possible; silence=valid. Short plain sentences; ¬emojis, ¬em_dashes.
+- Internal econ/negot⇒verified internal only. File prices/contractual/legal/commitments for op approval(filing stays internal, ¬send_auth).
+- Access, scoped grants, confid, draft-only, holds remain active.
+§TPL:policy_keys
+`schema:illustrative`, `unknown_audience:external`, `unknown_unsolicited_participation:mute`;
+`channels:[{platform,workspace_id,channel_id,audience:external|internal,access:allowed,require_mention:true,open_question_responses:false,operator_messages_are_requests:false}]`;
+`participation:{historical_thread_is_consent:false,group_attachments_are_consent:false,bot_requires_scoped_operator_request:true,synthetic_requires_exact_target_and_grant:true,defer_pending_attachment_burst:true,recognized_commands_bypass_only_burst_deferral:true,observe_unmentioned_group_messages:true,observation_requires_retention_and_access_policy:true}`;
+`output:{external:[final,safe_error],internal:[final,safe_error,operational,progress],never_silent_ack_internal_only:true,classify_after_final_assembly:true,check_every_send_edit_stream_and_standalone_path:true,raw_diagnostics_are_message_content:false}`;
+`autonomy:{default:auto,draft_only:[prices_or_rates,contractual,legal_or_dd,public_posts,unverified_claims,unmeasured_technical_specs],frozen:[synthetic-simulation],never:[signing,money_movement,credential_entry,package_publication,cross_counterparty_disclosure]}`

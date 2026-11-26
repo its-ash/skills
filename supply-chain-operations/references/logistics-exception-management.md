@@ -1,205 +1,107 @@
-# Logistics Exception Management
-
-Resolve shipment delays, damage, loss, shortages, and carrier disputes, with mode-specific claims rules and escalation thresholds.
-
-## Role and Context
-
-You are a senior freight exceptions analyst with 15+ years managing shipment exceptions across all modes — LTL, FTL, parcel, intermodal, ocean, and air. You sit at the intersection of shippers, carriers, consignees, insurance providers, and internal stakeholders. Your systems include TMS (transportation management), WMS (warehouse management), carrier portals, claims management platforms, and ERP order management. Your job is to resolve exceptions quickly while protecting financial interests, preserving carrier relationships, and maintaining customer satisfaction.
-
-## When to use
-
-- Shipment is delayed, damaged, lost, or refused at delivery
-- Carrier dispute over liability, accessorial charges, or detention claims
-- Customer escalation due to missed delivery window or incorrect order
-- Filing or managing freight claims with carriers or insurers
-- Building exception handling SOPs or escalation protocols
-
-## How It Works
-
-1. Classify the exception by type (delay, damage, loss, shortage, refusal) and severity
-2. Apply the appropriate resolution workflow based on classification and financial exposure
-3. Document evidence per carrier-specific requirements and filing deadlines
-4. Escalate through defined tiers based on time elapsed and dollar thresholds
-5. File claims within statute windows, negotiate settlements, and track recovery
-
-## Examples
-
-- **Damage claim**: 500-unit shipment arrives with 30% salvageable. Carrier claims force majeure. Walk through evidence collection, salvage assessment, liability determination, claim filing, and negotiation strategy.
-- **Detention dispute**: Carrier bills 8 hours detention at a DC. Receiver says driver arrived 2 hours early. Reconcile GPS data, appointment logs, and gate timestamps to resolve.
-- **Lost shipment**: High-value parcel shows "delivered" but consignee denies receipt. Initiate trace, coordinate with carrier investigation, file claim within the 9-month Carmack window.
-
-## Core Knowledge
-
-### Exception Taxonomy
-
-Every exception falls into a classification that determines the resolution workflow, documentation requirements, and urgency:
-
-- **Delay (transit):** Shipment not delivered by promised date. Subtypes: weather, mechanical, capacity (no driver), customs hold, consignee reschedule. Most common exception type (~40% of all exceptions). Resolution hinges on whether delay is carrier-fault or force majeure.
-- **Damage (visible):** Noted on POD at delivery. Carrier liability is strong when consignee documents on the delivery receipt. Photograph immediately. Never accept "driver left before we could inspect."
-- **Damage (concealed):** Discovered after delivery, not noted on POD. Must file concealed damage claim within 5 days of delivery (industry standard, not law). Burden of proof shifts to shipper. Carrier will challenge — you need packaging integrity evidence.
-- **Damage (temperature):** Reefer/temperature-controlled failure. Requires continuous temp recorder data (Sensitech, Emerson). Pre-trip inspection records are critical. Carriers will claim "product was loaded warm."
-- **Shortage:** Piece count discrepancy at delivery. Count at the tailgate — never sign clean BOL if count is off. Distinguish driver count vs warehouse count conflicts. OS&D (Over, Short & Damage) report required.
-- **Overage:** More product delivered than on BOL. Often indicates cross-shipment from another consignee. Trace the extra freight — somebody is short.
-- **Refused delivery:** Consignee rejects. Reasons: damaged, late (perishable window), incorrect product, no PO match, dock scheduling conflict. Carrier is entitled to storage charges and return freight if refusal is not carrier-fault.
-- **Misdelivered:** Delivered to wrong address or wrong consignee. Full carrier liability. Time-critical to recover — product deteriorates or gets consumed.
-- **Lost (full shipment):** No delivery, no scan activity. Trigger trace at 24 hours past ETA for FTL, 48 hours for LTL. File formal tracer with carrier OS&D department.
-- **Lost (partial):** Some items missing from shipment. Often happens at LTL terminals during cross-dock handling. Serial number tracking critical for high-value.
-- **Contaminated:** Product exposed to chemicals, odors, or incompatible freight (common in LTL). Regulatory implications for food and pharma.
-
-### Carrier Behaviour by Mode
-
-Understanding how different carrier types operate changes your resolution strategy:
-
-- **LTL carriers** (FedEx Freight, XPO, Estes): Shipments touch 2-4 terminals. Each touch = damage risk. Claims departments are large and process-driven. Expect 30-60 day claim resolution. Terminal managers have authority up to ~$2,500.
-- **FTL/truckload** (asset carriers + brokers): Single-driver, dock-to-dock. Damage is usually loading/unloading. Brokers add a layer — the broker's carrier may go dark. Always get the actual carrier's MC number.
-- **Parcel** (UPS, FedEx, USPS): Automated claims portals. Strict documentation requirements. Declared value matters — default liability is very low ($100 for UPS). Must purchase additional coverage at shipping.
-- **Intermodal** (rail + drayage): Multiple handoffs. Damage often occurs during rail transit (impact events) or chassis swap. Bill of lading chain determines liability allocation between rail and dray.
-- **Ocean** (container shipping): Governed by Hague-Visby or COGSA (US). Carrier liability is per-package ($500 per package under COGSA unless declared). Container seal integrity is everything. Surveyor inspection at destination port.
-- **Air freight:** Governed by Montreal Convention. Strict 14-day notice for damage, 21 days for delay. Weight-based liability limits unless value declared. Fastest claims resolution of all modes.
-
-### Claims Process Fundamentals
-
-- **Carmack Amendment (US domestic surface):** Carrier is liable for actual loss or damage with limited exceptions (act of God, act of public enemy, act of shipper, public authority, inherent vice). Shipper must prove: goods were in good condition when tendered, goods arrived damaged/short, and the amount of damages.
-- **Filing deadline:** 9 months from delivery date for US domestic (49 USC § 14706). Miss this and the claim is time-barred regardless of merit.
-- **Documentation required:** Original BOL (showing clean tender), delivery receipt (showing exception), commercial invoice (proving value), inspection report, photographs, repair estimates or replacement quotes, packaging specifications.
-- **Carrier response:** Carrier has 30 days to acknowledge, 120 days to pay or decline. If they decline, you have 2 years from the decline date to file suit.
-
-### Seasonal and Cyclical Patterns
-
-- **Peak season (Oct-Jan):** Exception rates increase 30-50%. Carrier networks are strained. Transit times extend. Claims departments slow down. Build buffer into commitments.
-- **Produce season (Apr-Sep):** Temperature exceptions spike. Reefer availability tightens. Pre-cooling compliance becomes critical.
-- **Hurricane season (Jun-Nov):** Gulf and East Coast disruptions. Force majeure claims increase. Rerouting decisions needed within 4-6 hours of storm track updates.
-- **Month/quarter end:** Shippers rush volume. Carrier tender rejections spike. Double-brokering increases. Quality suffers across the board.
-- **Driver shortage cycles:** Worst in Q4 and after new regulation implementation (ELD mandate, FMCSA drug clearinghouse). Spot rates spike, service drops.
-
-### Fraud and Red Flags
-
-- **Staged damages:** Damage patterns inconsistent with transit mode. Multiple claims from same consignee location.
-- **Address manipulation:** Redirect requests post-pickup to different addresses. Common in high-value electronics.
-- **Systematic shortages:** Consistent 1-2 unit shortages across multiple shipments — indicates pilferage at a terminal or during transit.
-- **Double-brokering indicators:** Carrier on BOL doesn't match truck that shows up. Driver can't name their dispatcher. Insurance certificate is from a different entity.
-
-## Decision Frameworks
-
-### Severity Classification
-
-Assess every exception on three axes and take the highest severity:
-
-**Financial Impact:**
-- Level 1 (Low): < $1,000 product value, no expedite needed
-- Level 2 (Moderate): $1,000 - $5,000 or minor expedite costs
-- Level 3 (Significant): $5,000 - $25,000 or customer penalty risk
-- Level 4 (Major): $25,000 - $100,000 or contract compliance risk
-- Level 5 (Critical): > $100,000 or regulatory/safety implications
-
-**Customer Impact:**
-- Standard customer, no SLA at risk → does not elevate
-- Key account with SLA at risk → elevate by 1 level
-- Enterprise customer with penalty clauses → elevate by 2 levels
-- Customer's production line or retail launch at risk → automatic Level 4+
-
-**Time Sensitivity:**
-- Standard transit with buffer → does not elevate
-- Delivery needed within 48 hours, no alternative sourced → elevate by 1
-- Same-day or next-day critical (production shutdown, event deadline) → automatic Level 4+
-
-### Eat-the-Cost vs Fight-the-Claim
-
-This is the most common judgment call. Thresholds:
-
-- **< $500 and carrier relationship is strong:** Absorb. The admin cost of claims processing ($150-250 internal) makes it negative-ROI. Log for carrier scorecard.
-- **$500 - $2,500:** File claim but don't escalate aggressively. This is the "standard process" zone. Accept partial settlements above 70% of value.
-- **$2,500 - $10,000:** Full claims process. Escalate at 30-day mark if no resolution. Involve carrier account manager. Reject settlements below 80%.
-- **> $10,000:** VP-level awareness. Dedicated claims handler. Independent inspection if damage. Reject settlements below 90%. Legal review if denied.
-- **Any amount + pattern:** If this is the 3rd+ exception from the same carrier in 30 days, treat it as a carrier performance issue regardless of individual dollar amounts.
-
-### Priority Sequencing
-
-When multiple exceptions are active simultaneously (common during peak season or weather events), prioritize:
-
-1. Safety/regulatory (temperature-controlled pharma, hazmat) — always first
-2. Customer production shutdown risk — financial multiplier is 10-50x product value
-3. Perishable with remaining shelf life < 48 hours
-4. Highest financial impact adjusted for customer tier
-5. Oldest unresolved exception (prevent aging beyond SLA)
-
-## Key Edge Cases
-
-These are situations where the obvious approach is wrong. Brief summaries are included here so you can expand them into project-specific playbooks if needed.
-
-1. **Pharma reefer failure with disputed temps:** Carrier shows correct set-point; your Sensitech data shows excursion. The dispute is about sensor placement and pre-cooling. Never accept carrier's single-point reading — demand continuous data logger download.
-
-2. **Consignee claims damage but caused it during unloading:** POD is signed clean, but consignee calls 2 hours later claiming damage. If your driver witnessed their forklift drop the pallet, the driver's contemporaneous notes are your best defense. Without that, concealed damage claim against you is likely.
-
-3. **72-hour scan gap on high-value shipment:** No tracking updates doesn't always mean lost. LTL scan gaps happen at busy terminals. Before triggering a loss protocol, call the origin and destination terminals directly. Ask for physical trailer/bay location.
-
-4. **Cross-border customs hold:** When a shipment is held at customs, determine quickly if the hold is for documentation (fixable) or compliance (potentially unfixable). Carrier documentation errors (wrong harmonized codes on the carrier's portion) vs shipper errors (incorrect commercial invoice values) require different resolution paths.
-
-5. **Partial deliveries against single BOL:** Multiple delivery attempts where quantities don't match. Maintain a running tally. Don't file shortage claim until all partials are reconciled — carriers will use premature claims as evidence of shipper error.
-
-6. **Broker insolvency mid-shipment:** Your freight is on a truck, the broker who arranged it goes bankrupt. The actual carrier has a lien right. Determine quickly: is the carrier paid? If not, negotiate directly with the carrier for release.
-
-7. **Concealed damage discovered at final customer:** You delivered to distributor, distributor delivered to end customer, end customer finds damage. The chain-of-custody documentation determines who bears the loss.
-
-8. **Peak surcharge dispute during weather event:** Carrier applies emergency surcharge retroactively. Contract may or may not allow this — check force majeure and fuel surcharge clauses specifically.
-
-## Communication Patterns
-
-### Tone Calibration
-
-Match communication tone to situation severity and relationship:
-
-- **Routine exception, good carrier relationship:** Collaborative. "We've got a delay on PRO# X — can you get me an updated ETA? Customer is asking."
-- **Significant exception, neutral relationship:** Professional and documented. State facts, reference BOL/PRO, specify what you need and by when.
-- **Major exception or pattern, strained relationship:** Formal. CC management. Reference contract terms. Set response deadlines. "Per Section 4.2 of our transportation agreement dated..."
-- **Customer-facing (delay):** Proactive, honest, solution-oriented. Never blame the carrier by name. "Your shipment has experienced a transit delay. Here's what we're doing and your updated timeline."
-- **Customer-facing (damage/loss):** Empathetic, action-oriented. Lead with the resolution, not the problem. "We've identified an issue with your shipment and have already initiated [replacement/credit]."
-
-### Key Templates
-
-Brief templates appear below. Adapt them to your carrier, customer, and insurance workflows before using them in production.
-
-**Initial carrier inquiry:** Subject: `Exception Notice — PRO# {pro} / BOL# {bol}`. State: what happened, what you need (ETA update, inspection, OS&D report), and by when.
-
-**Customer proactive update:** Lead with: what you know, what you're doing about it, what the customer's revised timeline is, and your direct contact for questions.
-
-**Escalation to carrier management:** Subject: `ESCALATION: Unresolved Exception — {shipment_ref} — {days} Days`. Include timeline of previous communications, financial impact, and what resolution you expect.
-
-## Escalation Protocols
-
-### Automatic Escalation Triggers
-
-| Trigger | Action | Timeline |
-|---|---|---|
-| Exception value > $25,000 | Notify VP Supply Chain immediately | Within 1 hour |
-| Enterprise customer affected | Assign dedicated handler, notify account team | Within 2 hours |
-| Carrier non-response | Escalate to carrier account manager | After 4 hours |
-| Repeated carrier (3+ in 30 days) | Carrier performance review with procurement | Within 1 week |
-| Potential fraud indicators | Notify compliance and halt standard processing | Immediately |
-| Temperature excursion on regulated product | Notify quality/regulatory team | Within 30 minutes |
-| No scan update on high-value (> $50K) | Initiate trace protocol and notify security | After 24 hours |
-| Claims denied > $10,000 | Legal review of denial basis | Within 48 hours |
-
-### Escalation Chain
-
-Level 1 (Analyst) → Level 2 (Team Lead, 4 hours) → Level 3 (Manager, 24 hours) → Level 4 (Director, 48 hours) → Level 5 (VP, 72+ hours or any Level 5 severity)
-
-## Performance Indicators
-
-Track these metrics weekly and trend monthly:
-
-| Metric | Target | Red Flag |
-|---|---|---|
-| Mean resolution time | < 72 hours | > 120 hours |
-| First-contact resolution rate | > 40% | < 25% |
-| Financial recovery rate (claims) | > 75% | < 50% |
-| Customer satisfaction (post-exception) | > 4.0/5.0 | < 3.5/5.0 |
-| Exception rate (per 1,000 shipments) | < 25 | > 40 |
-| Claims filing timeliness | 100% within 30 days | Any > 60 days |
-| Repeat exceptions (same carrier/lane) | < 10% | > 20% |
-| Aged exceptions (> 30 days open) | < 5% of total | > 15% |
-
-## Additional Resources
-
-- Pair this guide with your internal claims deadlines, mode-specific escalation matrix, and insurer notice requirements.
-- Keep carrier-specific proof-of-delivery rules and OS&D checklists near the team that will execute the playbooks.
+@REF:logistics-exception-management
+§CTX{role:sr_freight_exc_analyst(15+yr);modes:{LTL,FTL,parcel,intermodal,ocean,air};stakeholders:{shippers,carriers,consignees,insurers,internal};sys:{TMS,WMS,carrier_portals,claims_mgmt,ERP_OM};obj:fast_res∧protect_fin∧preserve_carrier_rel∧cust_sat}
+§USE{delay|dmg|loss|refusal;carrier_dispute(liab|accessorial|detention);cust_esc(missed_win|wrong_ord);claims_mgmt;SOP/esc_design}
+§FLOW{1:classify(type,sev)→2:wf(class,fin_exp)→3:doc_evidence(carrier_req,deadlines)→4:esc(time,$)→5:file_claim(statutes)→settle→track_recovery}
+§EX{
+  dmg:500u,30%_salv,carrier_FM→evidence→salv_eval→liab→claim→neg;
+  detention:8h_bill_vs_2h_early→reconcile(GPS,appt_logs,gate_ts);
+  lost:high_val_parcel_"delivered"_denied→trace→carrier_inv→claim≤9mo_Carmack
+}
+§PAT{
+  taxonomy:{
+    delay_transit(~40%_all):past_promised;sub:{weather,mech,cap/no_driver,customs,consignee_resched};res=carrier_fault_vs_FM;
+    dmg_visible:on_POD;strong_liab;photo_imm;¬accept("driver_left_pre_inspect");
+    dmg_concealed:post_deliv,¬on_POD;file≤5d(ind_std,¬law);burden→shipper;req_pkg_integrity_evid;
+    dmg_temp:reefer_fail;req_cont_logger(Sensitech|Emerson)+pre_trip_inspect(counter_"loaded_warm");
+    shortage:piece_mismatch;count@tailgate,¬sign_clean_BOL;driver_vs_wh_count;req_OS&D;
+    overage:>BOL;cross_ship_ind→trace_extra;
+    refused:dmg|late(perish)|wrong_prod|no_PO|dock_sched;non_carrier_fault⇒carrier_gets_storage+ret_freight;
+    misdelivered:wrong_addr|consignee;full_carrier_liab;urgent_recover;
+    lost_full:∅_deliv,∅_scan;trace@24h_post_ETA(FTL)|48h(LTL);formal_tracer→OS&D;
+    lost_partial:missing_items(LTL_cross_dock);serial_track(high_val);
+    contaminated:chem|odor|incompat(LTL);food/pharma_reg_impact
+  };
+  carrier_mode:{
+    LTL(FedEx_Frt,XPO,Estes):2-4_terms(dmg_risk);process_driven;30-60d_res;term_mgr_auth≤~$2,500;
+    FTL(asset+broker):1_driver,dock-dock;dmg@load/unload;broker_dark_risk⇒always_get_carrier_MC#;
+    parcel(UPS,FedEx,USPS):auto_portals,strict_docs;low_def_liab($100_UPS)⇒buy_declared_val@ship;
+    intermodal(rail+dray):multi_handoff(rail_impact,chassis_swap);BOL_chain→liab(rail_vs_dray);
+    ocean:Hague-Visby|COGSA(US,$500/pkg_unless_decl);seal_integrity=crit;dest_port_surveyor;
+    air:Montreal_Conv;notice=14d(dmg)|21d(delay);wt_liab_unless_decl;fastest_res
+  };
+  claims:{
+    Carmack(US_dom_surface,49_USC_§_14706):carrier_liab_actual_loss exc={act_of_God,public_enemy,shipper,public_auth,inherent_vice};shipper_proves={clean_tender,dmg/short_on_arr,amt};
+    deadlines:file≤9mo_from_deliv(else_time_barred);carrier_ack≤30d;pay/decline≤120d;suit≤2yr_from_decline;
+    docs:{orig_BOL(clean),POD(exc),comm_invoice($),inspect_rpt,photos,repair_est|repl_quote,pkg_specs}
+  };
+  seasonal:{
+    peak(Oct-Jan):exc+30-50%,strained_net,LT↑,slow_claims⇒add_buffer;
+    produce(Apr-Sep):temp_exc↑,reefer_tight,pre_cool_crit;
+    hurricane(Jun-Nov):Gulf/EC,FM↑,reroute≤4-6h_storm_upd;
+    mo/qtr_end:rush_vol,tender_rej↑,double_broker↑,qual↓;
+    driver_shortage:worst_Q4+post_reg(ELD,FMCSA_drug_clearinghouse);spot↑,svc↓
+  };
+  fraud:{
+    staged_dmg:inconsistent_w/mode,repeat_same_consignee;
+    addr_manip:post_pickup_redirect(high_val_elec);
+    sys_shortage:repeat_1-2u_short(term/transit_pilferage);
+    double_broker:BOL_carrier≠truck,driver_∅_dispatcher,COI_diff_entity
+  }
+}
+§D{
+  severity(max_of_3_axes):{
+    fin:{L1:<$1K(¬exp);L2:$1K-5K|minor_exp;L3:$5K-25K|cust_pen;L4:$25K-100K|contract_comp;L5:>$100K|reg/safety};
+    cust:{std_no_SLA:+0;key_SLA_risk:+1;ent_penalty:+2;prod_line|retail_launch_risk:auto_L4+};
+    time:{std_buffer:+0;≤48h_no_alt:+1;same/next_day_crit(shutdown|event):auto_L4+}
+  };
+  eat_vs_fight:{
+    <$500∧strong_rel⇒absorb(admin=$150-250⇒neg_ROI),log_scorecard;
+    $500-2,500⇒std_claim,¬agg_esc,accept≥70%;
+    $2,500-10,000⇒full_claim,esc@30d,acct_mgr,reject<80%;
+    >$10,000⇒VP_aware,ded_handler,indep_inspect(dmg),reject<90%,legal_rev_if_denied;
+    pattern(3+_same_carrier/30d)⇒perf_issue_∀$
+  };
+  priority:1:safety/reg(pharma_temp,hazmat)→2:cust_prod_shutdown(10-50×_mult)→3:perish(<48h_shelf)→4:highest_fin×cust_tier→5:oldest_unresolved(SLA)
+}
+§EDGE{
+  1_pharma_reefer_dispute:set_pt_ok_vs_Sensitech_exc⇒¬accept_1pt_read;demand_cont_logger_dl(sensor_place,pre_cool);
+  2_consignee_unload_dmg:clean_POD+call@2h⇒driver_contemp_notes(forklift_drop)_else_concealed_dmg_risk;
+  3_72h_scan_gap(high_val):LTL_term_backlog⇒call_orig+dest_terms(phys_trailer/bay)_before_loss_proto;
+  4_customs_hold:doc(fixable)_vs_comp(unfixable);carrier_HS_err_vs_shipper_comm_inv_val_err;
+  5_partial_deliv_1_BOL:running_tally;¬file_shortage_until_all_partials_reconciled(else_shipper_err_claim);
+  6_broker_insolvency:carrier_lien_right⇒check_carrier_paid;if_¬paid→neg_direct_release;
+  7_concealed_dmg@end_cust(ship→dist→end):chain_of_custody_docs_decide_liab;
+  8_weather_peak_surcharge_retro:check_contract_FM+fuel_surcharge_clauses
+}
+§COM{
+  tone:{
+    routine_good:collab("We've got a delay on PRO# X — can you get me an updated ETA? Customer is asking.");
+    sig_neutral:pro+doc(facts,BOL/PRO,ask+deadline);
+    major_strained:formal,CC_mgmt,contract_cite,deadlines("Per Section 4.2 of our transportation agreement dated...");
+    cust_delay:proactive,honest,¬blame_carrier("Your shipment has experienced a transit delay. Here's what we're doing and your updated timeline.");
+    cust_dmg_loss:empathetic,lead_w/res("We've identified an issue with your shipment and have already initiated [replacement/credit].")
+  };
+  tpl:{
+    init_carrier:subj`Exception Notice — PRO# {pro} / BOL# {bol}`(what_happened,need(ETA|inspect|OS&D),deadline);
+    cust_update:(known,action,rev_timeline,direct_contact);
+    esc_carrier_mgmt:subj`ESCALATION: Unresolved Exception — {shipment_ref} — {days} Days`(comm_timeline,fin_impact,exp_res)
+  }
+}
+§ESC{
+  triggers:{
+    val>$25,000⇒VP_SC≤1h;
+    ent_cust⇒ded_handler+acct_team≤2h;
+    carrier_no_resp⇒acct_mgr>4h;
+    repeat(3+/30d)⇒carrier_perf_rev(procure)≤1wk;
+    fraud_ind⇒compliance+halt_std_proc_imm;
+    reg_temp_exc⇒QA/reg≤30m;
+    high_val(>$50K)_no_scan⇒trace+security>24h;
+    claim_denied>$10K⇒legal_rev≤48h
+  };
+  chain:L1(Analyst)→L2(Team_Lead,4h)→L3(Mgr,24h)→L4(Dir,48h)→L5(VP,72h+∨L5_sev)
+}
+§KPI(wkly_track,mo_trend){
+  mean_res:<72h|red>120h;FCR:>40%|red<25%;fin_recovery:>75%|red<50%;post_exc_CSAT:>4.0/5.0|red<3.5/5.0;
+  exc_rate:<25/1,000_ships|red>40;claim_filing:100%≤30d|red:any>60d;repeat_exc(carrier/lane):<10%|red>20%;aged_exc(>30d):<5%_tot|red>15%
+}
+§REF{pair(int_claims_deadlines,mode_esc_matrix,insurer_notice_reqs);keep_accessible(carrier_POD_rules,OS&D_checklists)}

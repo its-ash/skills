@@ -1,170 +1,35 @@
-# USPTO Database
+@REF:uspto
+§R{scope}
+lookup(granted/pre-grant_pat,app_status/wrapper/assign/pros_hist,tm_status/docs/assign),repro_IP_log,cross_chk(Google_Pat|Lens.org|Sem_Scholar|co_pgs)
+¬legal_advice;flow≡data_gather+rec_verif
 
-Look up official United States patent and trademark records: PatentSearch queries, TSDR checks, file wrapper and assignment data, and reproducible IP research logs.
+§CFG{src_auth}
+official_1st:{ODP(migrated_data/APIs),Patent_File_Wrapper(app_bib+wrapper),PatentSearch_API(PatentsView:granted+pre-grant),TSDR_Data_API(tm_stat+docs),Assignment_Search(pat/tm_transfers),PTAB_in_ODP}
+secondary(Google_Pat|Lens.org|Sem_Scholar)≡conv_idx⇒cross_chk_official_if_mat
+keys∈env∨sec_mgr(¬files,¬trans,¬sh_hist):USPTO_API_KEY,PATENTSVIEW_API_KEY;PatentSearch⇒hdr:X-Api-Key;TSDR⇒API_Mgr_instr+rate_lim
 
-## When to use
-
-- Searching granted patents or pre-grant publications.
-- Checking patent application status, file-wrapper data, assignments, or
-  public prosecution history.
-- Looking up trademark status, documents, or assignment history.
-- Building reproducible prior-art, portfolio, or IP landscape research logs.
-- Comparing USPTO records with secondary tools such as Google Patents,
-  Lens.org, Semantic Scholar, or company patent pages.
-
-Do not use this workflow to give legal advice. Treat it as a data-gathering and
-record-verification workflow.
-
-## Source Selection
-
-Prefer official USPTO or USPTO-supported surfaces first:
-
-- Open Data Portal (ODP): current home for migrated USPTO datasets and APIs.
-- Patent File Wrapper: public patent application bibliographic data and file
-  wrapper records.
-- PatentSearch API: PatentsView search API for granted patents and pre-grant
-  publication datasets.
-- TSDR Data API: trademark status and document retrieval.
-- Patent and Trademark Assignment Search: ownership transfer records.
-- PTAB data in ODP: Patent Trial and Appeal Board proceedings.
-
-Use secondary sources only as convenience indexes. When the answer matters,
-cross-check the official record.
-
-## Authentication and Secrets
-
-Many USPTO API flows require an API key. Store keys in environment variables or
-a secret manager, never in committed files or pasted transcripts.
-
-Common environment names:
-
-```bash
-export USPTO_API_KEY="..."
-export PATENTSVIEW_API_KEY="..."
-```
-
-For PatentSearch, send the key with the `X-Api-Key` header. For TSDR, follow
-the current USPTO API Manager instructions and rate-limit guidance.
-
-## PatentSearch Workflow
-
-Use PatentSearch for broad patent and pre-grant publication search when the
-question is about trends, inventors, assignees, classifications, dates, or
-portfolio slices.
-
-Workflow:
-
-1. Identify the endpoint from the current PatentSearch reference or Swagger UI.
-2. Build a JSON query with explicit filters.
-3. Request only the fields needed for the analysis.
-4. Sort and paginate deterministically.
-5. Record the endpoint, query body, date, data currency note, and result count.
-
-Python request skeleton:
-
+§CMD{patentsearch}
+use:{trends,inventors,assignees,classif,dates,portfolio}
+flow:1_chk_live_docs/Swagger(ep,fields,params,key)→2_JSON_q(filt)→3_min_fields(f)→4_det_sort/page→5_log(ep,body,date,curr,cnt)
 ```python
-import os
-import requests
-
-API_KEY = os.environ["PATENTSVIEW_API_KEY"]
-BASE = "https://search.patentsview.org/api/v1"
-
-payload = {
-    "q": {
-        "_and": [
-            {"patent_date": {"_gte": "2024-01-01"}},
-            {"assignees.assignee_organization": {"_text_any": ["Google", "Alphabet"]}},
-        ]
-    },
-    "f": ["patent_id", "patent_title", "patent_date"],
-    "s": [{"patent_date": "desc"}],
-    "o": {"per_page": 100, "page": 1},
-}
-
-response = requests.post(
-    f"{BASE}/patent/",
-    headers={"X-Api-Key": API_KEY, "Content-Type": "application/json"},
-    json=payload,
-    timeout=30,
-)
-response.raise_for_status()
-print(response.json())
+import os,requests
+BASE="https://search.patentsview.org/api/v1"
+p={"q":{"_and":[{"patent_date":{"_gte":"2024-01-01"}},{"assignees.assignee_organization":{"_text_any":["Google","Alphabet"]}}]},"f":["patent_id","patent_title","patent_date"],"s":[{"patent_date":"desc"}],"o":{"per_page":100,"page":1}}
+r=requests.post(f"{BASE}/patent/",headers={"X-Api-Key":os.environ["PATENTSVIEW_API_KEY"],"Content-Type":"application/json"},json=p,timeout=30)
+r.raise_for_status();print(r.json())
 ```
 
-Before reusing a query, verify current endpoint names, field paths, request
-parameters, and API-key availability in the live PatentSearch docs.
+§PAT{tsdr_wrap_assign}
+TSDR(stat,docs,img,owner_hist,pros):1_norm(ser|reg)→2_chk(API_Mgr,hdr)→3_get(stat_1st;docs_if_req)→4_low_rate_lim(PDF/ZIP/multi)→5_log(date,ID);bulk_pull⇒bulk_flow(¬scrape)
+Wrapper(app_stat,tx,pros_docs):ODP_File_Wrapper;exact(app|pub|pat|party);tag(granted|pre-grant|pending);cross_chk(doc_dates+stat↔detail_pg)_pre_cite
+Assign(owner):1_srch(pat/app/reg|assignor|assignee|reel/frame)→2_rec(convey_txt,exec_d,rec_d,parties)→3_assign_rec≠curr_legal_owner→4_mat⇒flag(atty/SME)
 
-## Trademark/TSDR Workflow
+§FMT{log}
+cols:Source|Date|ID/query|Filters|Results|Notes
+ex:`PatentSearch|2026-05-11|assignee=Alphabet AND date>=2024|patent ep|118|docs chk pre-run`;`TSDR|2026-05-11|serial=90000000|stat only|1|key flow,no bulk`
+writeup_sep:{official_facts,inferred,secondary_matches,gaps/legal_flags}
 
-Use TSDR when the task needs trademark case status, documents, images, owner
-history, or prosecution events.
+§CHK{official_1st∧verif_ep/fields_pre∧keys∉{file,hist,log}∧log(date+q_shape)∧rate_lim∧¬legal_concl/escalate∧sec_labeled}
 
-Workflow:
-
-1. Normalize the serial number or registration number.
-2. Check the current TSDR API instructions and required API-key header.
-3. Fetch status first, then documents only if needed.
-4. Respect the lower rate limit for PDF, ZIP, and multi-case downloads.
-5. Capture retrieval date and serial/registration identifier in the output.
-
-For large trademark pulls, prefer documented bulk-data flows rather than
-screen-scraping public pages.
-
-## File Wrapper and Prosecution History
-
-For application status, transaction history, and prosecution documents:
-
-- Start with ODP Patent File Wrapper search.
-- Use exact identifiers when available: application number, publication number,
-  patent number, or party name.
-- Record whether the record is a granted patent, pre-grant publication, or
-  pending application.
-- Cross-check document dates and status against the record detail page before
-  citing them.
-
-## Assignment Workflow
-
-For patent or trademark ownership:
-
-1. Search official assignment data by patent/application/registration number,
-   assignor, assignee, or reel/frame when available.
-2. Record conveyance text, execution date, recordation date, and parties.
-3. Distinguish assignment records from current legal ownership conclusions.
-4. If ownership is material, flag the result for attorney or subject-matter
-   review.
-
-## Reproducible Output
-
-Every USPTO research pass should include a log table:
-
-```markdown
-| Source | Date searched | Identifier/query | Filters | Results | Notes |
-| --- | --- | --- | --- | ---: | --- |
-| PatentSearch | 2026-05-11 | `assignee=Alphabet AND date>=2024` | patent endpoint | 118 | API docs checked before run |
-| TSDR | 2026-05-11 | `serial=90000000` | status only | 1 | API-key flow, no document bulk pull |
-```
-
-For final writeups, separate:
-
-- official record facts
-- inferred analysis
-- secondary-source convenience matches
-- unresolved gaps or records that require legal review
-
-## Review Checklist
-
-- Did you use an official USPTO or USPTO-supported source first?
-- Did you verify current endpoint and field names before running code?
-- Are API keys kept out of files, shell history, and output logs?
-- Does the query log include the date searched and exact request shape?
-- Are rate limits respected?
-- Are legal conclusions avoided or explicitly escalated?
-- Are secondary sources labeled as secondary?
-
-## References
-
-- [USPTO APIs catalog](https://developer.uspto.gov/api-catalog)
-- [USPTO Open Data Portal](https://data.uspto.gov/)
-- [PatentSearch API reference](https://search.patentsview.org/docs/docs/Search%20API/SearchAPIReference/)
-- [PatentSearch API updates](https://search.patentsview.org/docs/)
-- [TSDR API bulk download FAQ](https://developer.uspto.gov/faq/tsdr-api-bulk-download)
+§REF
+cat:https://developer.uspto.gov/api-catalog;ODP:https://data.uspto.gov/;PS_ref:https://search.patentsview.org/docs/docs/Search%20API/SearchAPIReference/;PS_upd:https://search.patentsview.org/docs/;TSDR_FAQ:https://developer.uspto.gov/faq/tsdr-api-bulk-download

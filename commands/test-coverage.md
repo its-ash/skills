@@ -1,73 +1,35 @@
 ---
-description: Analyze coverage, identify gaps, and generate missing tests toward the target threshold.
+description: "Coverage analysis, gap detection, test gen to >=80%."
 ---
-
-# Test Coverage
-
-Analyze test coverage, identify gaps, and generate missing tests to reach 80%+ coverage.
-
-## Step 1: Detect Test Framework
-
-| Indicator | Coverage Command |
-|-----------|-----------------|
-| `vitest.config.*` (default) | `npx vitest run --coverage` |
-| `jest.config.*` or `package.json` jest (legacy) | `npx jest --coverage --coverageReporters=json-summary` |
-| `pyproject.toml` pytest | `uv run pytest --cov=src --cov-report=json` |
-| `Cargo.toml` | `cargo llvm-cov --json` |
-| `pom.xml` with JaCoCo | `mvn test jacoco:report` |
-| `go.mod` | `go test -coverprofile=coverage.out ./...` |
-
-## Step 2: Analyze Coverage Report
-
-1. Run the coverage command
-2. Parse the output (JSON summary or terminal output)
-3. List files **below 80% coverage**, sorted worst-first
-4. For each under-covered file, identify:
-   - Untested functions or methods
-   - Missing branch coverage (if/else, switch, error paths)
-   - Dead code that inflates the denominator
-
-## Step 3: Generate Missing Tests
-
-For each under-covered file, generate tests following this priority:
-
-1. **Happy path** — Core functionality with valid inputs
-2. **Error handling** — Invalid inputs, missing data, network failures
-3. **Edge cases** — Empty arrays, null/undefined, boundary values (0, -1, MAX_INT)
-4. **Branch coverage** — Each if/else, switch case, ternary
-
-### Test Generation Rules
-
-- Place tests adjacent to source: `foo.ts` → `foo.test.ts` (or project convention)
-- Use existing test patterns from the project (import style, assertion library, mocking approach)
-- Mock external dependencies (database, APIs, file system)
-- Each test should be independent — no shared mutable state between tests
-- Name tests descriptively: `test_create_user_with_duplicate_email_returns_409`
-
-## Step 4: Verify
-
-1. Run the full test suite — all tests must pass
-2. Re-run coverage — verify improvement
-3. If still below 80%, repeat Step 3 for remaining gaps
-
-## Step 5: Report
-
-Show before/after comparison:
-
-```
+@CMD:test-coverage
+§DETECT{
+`vitest.config.*`(default)⇒`npx vitest run --coverage`
+`jest.config.*`∨`package.json` jest(legacy)⇒`npx jest --coverage --coverageReporters=json-summary`
+`pyproject.toml` pytest⇒`uv run pytest --cov=src --cov-report=json`
+`Cargo.toml`⇒`cargo llvm-cov --json`
+`pom.xml`+JaCoCo⇒`mvn test jacoco:report`
+`go.mod`⇒`go test -coverprofile=coverage.out ./...`
+}
+§FLOW{
+1:run(cmd∈§DETECT)→parse(JSON_summary∨stdout)
+2:list(files<80%,worst_first)→∀f:find(untested_fns,missing_branches(if/else,switch,err),dead_code_denom)
+3:∀gap→gen(1:happy_path(valid_in)→2:err_handle(invalid_in,missing_data,net_fail)→3:edges([],null/undefined,0,-1,MAX_INT)→4:branches(if/else,switch,ternary))
+4:verify:run(full_suite,all_pass)→rerun(cov,Δ↑)→(<80%⇒goto:3)
+}
+§R{
+place:adjacent(`foo.ts`→`foo.test.ts`∨proj_conv)
+style:match_proj(imports,asserts,mocks)
+isolate:mock_ext(DB,API,FS)∧¬shared_mutable_state
+name:descriptive(`test_create_user_with_duplicate_email_returns_409`)
+focus:{complex_branch,err/catch,shared_utils,API(req→res),edges(null,undefined,"",[],0,<0)}
+}
+§OUT{
+```text
 Coverage Report
-──────────────────────────────
-File                   Before  After
-src/services/auth.ts   45%     88%
-src/utils/validation.ts 32%    82%
-──────────────────────────────
-Overall:               67%     84%  PASS:
+---
+File | Before | After
+<path> | <N%> | <N%>
+---
+Overall: <N%> | <N%> PASS:
 ```
-
-## Focus Areas
-
-- Functions with complex branching (high cyclomatic complexity)
-- Error handlers and catch blocks
-- Utility functions used across the codebase
-- API endpoint handlers (request → response flow)
-- Edge cases: null, undefined, empty string, empty array, zero, negative numbers
+}

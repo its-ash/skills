@@ -1,185 +1,56 @@
-# Rust Idioms
+@REF:idioms
+§REL{../SKILL.md:rules}
 
-Examples for the rules in [`../SKILL.md`](../SKILL.md).
+§OWN{read_only⇒&[u8](fn process(data:&[u8])->usize); store|consume⇒Vec<u8>(fn store(data:Vec<u8>)->Record); ¬(&Vec<u8>+clone); cond_alloc⇒std::borrow::Cow<'_,str>(if s.contains(' '){Cow::Owned(s.replace(' ',"_"))}else{Cow::Borrowed(s)})}
 
-## Ownership
-
-```rust
-fn process(data: &[u8]) -> usize { data.len() }          // borrow when you only read
-fn store(data: Vec<u8>) -> Record { Record { payload: data } } // own when you store/consume
-// Bad: fn f(d: &Vec<u8>) { let c = d.clone(); c.len() }  (needless clone; take &[u8])
-
-use std::borrow::Cow;
-fn normalize(s: &str) -> Cow<'_, str> {
-    if s.contains(' ') { Cow::Owned(s.replace(' ', "_")) } else { Cow::Borrowed(s) } // zero-cost path
-}
-```
-
-## Errors
-
-```rust
-use anyhow::{bail, Context, Result};   // application
-fn load_config(path: &str) -> Result<Config> {
-    let s = std::fs::read_to_string(path).with_context(|| format!("failed to read config from {path}"))?;
-    toml::from_str(&s).with_context(|| format!("failed to parse config from {path}"))
-}
-fn run() -> Result<()> {
-    let cfg = load_config("app.toml")?;
-    if cfg.workers == 0 { bail!("worker count must be > 0"); }
-    Ok(())
-}
-// Bad: std::fs::read_to_string(path).unwrap()
-
-use thiserror::Error;                  // library
-#[derive(Debug, Error)]
-pub enum StorageError {
-    #[error("record not found: {id}")] NotFound { id: String },
-    #[error("connection failed")]      Connection(#[from] std::io::Error),
-    #[error("invalid data: {0}")]      InvalidData(String),
+§ERR{
+  app⇒anyhow::{bail,Context,Result}(.with_context(||format!(..))?∧bail!(..)); ¬.unwrap();
+  lib⇒thiserror::Error(#[derive(Debug,Error)] pub enum StorageError{#[error("record not found: {id}")]NotFound{id:String},#[error("connection failed")]Connection(#[from]std::io::Error),#[error("invalid data: {0}")]InvalidData(String)});
+  opt⇒users.iter().find(|u|u.id==id).map(|u|u.email.clone()) ¬nested_match
 }
 
-fn email(users: &[User], id: u64) -> Option<String> {   // Option combinators, not nested match
-    users.iter().find(|u| u.id == id).map(|u| u.email.clone())
+§ENUM{rich_variants(Disconnected|Connecting{attempt:u32}|Connected{session_id:String}|Failed{reason:String,retries:u32}); guards(if *attempt>3|if *retries<5); destructure(..); ¬wildcard(_=>{})_hiding_new_variants}
+
+§API{
+  generic_in_concrete_out:fn read_all(r:&mut impl Read)->std::io::Result<Vec<u8>>;
+  bounds:T:Display+Send+'static;
+  dyn_vs_mono:trait Handler:Send+Sync{fn handle(&self,req:&Request)->Response;} ⇒ Vec<Box<dyn Handler>>(heterogeneous|plugins) ⊕ fn fast<H:Handler>(h:&H,..)(monomorphized);
+  newtype:struct UserId(u64);struct OrderId(u64); // prevents arg swap
+  builder:ServerConfig::builder(host:impl Into<String>,port:u16)->ServerConfigBuilder{..,max_connections:100}; fn max_connections(mut self,n:usize)->Self; fn build(self)->ServerConfig
 }
-```
 
-## Enums and matching
-
-```rust
-enum ConnectionState {
-    Disconnected,
-    Connecting { attempt: u32 },
-    Connected { session_id: String },
-    Failed { reason: String, retries: u32 },
+§ITER{
+  filter_map:users.iter().filter(|u|u.is_active).map(|u|u.email.clone()).collect::<Vec<String>>();
+  map_lookup:items.iter().map(|i|(i.id,i)).collect::<HashMap<_,_>>();
+  join:parts.iter().copied().collect::<String>();
+  short_circuit_err:strs.iter().map(|s|s.parse()).collect::<Result<Vec<i32>,_>>()
 }
-match state {
-    ConnectionState::Disconnected => connect(),
-    ConnectionState::Connecting { attempt } if *attempt > 3 => abort(),
-    ConnectionState::Connecting { .. } => wait(),
-    ConnectionState::Connected { session_id } => use_session(session_id),
-    ConnectionState::Failed { retries, .. } if *retries < 5 => retry(),
-    ConnectionState::Failed { reason, .. } => log_failure(reason),
+
+§CONC{
+  shared_mut:Arc<Mutex<T>>+Arc::clone+std::thread::spawn(move||*c.lock().expect("mutex poisoned")+=1)+h.join().expect("worker thread panicked");
+  bounded_chan:std::sync::mpsc::sync_channel(16)(backpressure)+tx.send(..).expect("receiver disconnected")+drop(tx)_before_for_msg_in_rx;
+  async_timeout:tokio::time::timeout(Duration::from_secs(5),reqwest::get(url)).await.context(..)?.context(..)?.text().await;
+  async_fanout:tokio::spawn→Vec::with_capacity→h.await.unwrap_or_else(|e|panic!("spawned task panicked: {e}"))
 }
-// Bad: match cmd { Command::Start => start(), _ => {} }  (hides new variants)
-```
 
-## Traits, generics, newtypes, builders
-
-```rust
-fn read_all(r: &mut impl Read) -> std::io::Result<Vec<u8>> {   // generic in, concrete out
-    let mut buf = Vec::new(); r.read_to_end(&mut buf)?; Ok(buf)
+§UNSAFE{
+  req:doc(/// # Safety)∧cmt(// SAFETY:)∧Rust2024(unsafe{&*ptr} inside unsafe fn);
+  ex:unsafe{slice.get_unchecked(index)};
+  ¬{bypass_borrow_chk,convenience,missing_SAFETY,transmute(unrelated_types)}
 }
-fn process<T: Display + Send + 'static>(item: T) -> String { format!("processed: {item}") }
 
-trait Handler: Send + Sync { fn handle(&self, req: &Request) -> Response; }
-struct Router { handlers: Vec<Box<dyn Handler>> }               // heterogeneous / plugins
-fn fast<H: Handler>(h: &H, req: &Request) -> Response { h.handle(req) } // monomorphized
-
-struct UserId(u64);
-struct OrderId(u64);
-fn get_order(user: UserId, order: OrderId) -> Result<Order> { ... } // cannot swap args
-
-impl ServerConfig {
-    fn builder(host: impl Into<String>, port: u16) -> ServerConfigBuilder {
-        ServerConfigBuilder { host: host.into(), port, max_connections: 100 }
-    }
+§LAY{
+  my_app/{Cargo.toml,src/{main.rs,lib.rs,auth/{mod.rs,token.rs,middleware.rs},orders/{mod.rs,model.rs,service.rs},db/{mod.rs,pool.rs}},tests/,benches/};
+  vis:pub(crate) fn; pub mod auth; pub use auth::AuthMiddleware; // re-export from lib.rs
 }
-impl ServerConfigBuilder {
-    fn max_connections(mut self, n: usize) -> Self { self.max_connections = n; self }
-    fn build(self) -> ServerConfig { ServerConfig { host: self.host, port: self.port, max_connections: self.max_connections } }
+
+§CMD{cargo check(type_chk¬codegen); cargo clippy|fmt(lint|fmt); cargo test -- --nocapture(println!); cargo test --lib(unit)|--test integration(1_file); cargo audit(sec); cargo tree|update; cargo bench}
+
+§ANTI{
+  map.get("k").unwrap()_prod⇒?|ok_or|context;
+  .clone()_borrow_chk⇒restructure_borrows;
+  fn greet(name:String)_read⇒fn greet(name:&str);
+  Box<dyn Error>_lib_API⇒thiserror_enum;
+  let _=validate(x)_Result⇒handle∨propagate;
+  std::thread::sleep_async⇒tokio::time::sleep(..).await
 }
-// ServerConfig::builder("localhost", 8080).max_connections(200).build()
-```
-
-## Iterators
-
-```rust
-let active: Vec<String> = users.iter().filter(|u| u.is_active).map(|u| u.email.clone()).collect();
-let names: Vec<_> = items.iter().map(|i| &i.name).collect();
-let lookup: HashMap<_, _> = items.iter().map(|i| (i.id, i)).collect();
-let joined: String = parts.iter().copied().collect();
-let parsed: Result<Vec<i32>, _> = strs.iter().map(|s| s.parse()).collect(); // stops at first error
-```
-
-## Concurrency
-
-```rust
-let counter = Arc::new(Mutex::new(0));
-let hs: Vec<_> = (0..10).map(|_| {
-    let c = Arc::clone(&counter);
-    std::thread::spawn(move || { *c.lock().expect("mutex poisoned") += 1; })
-}).collect();
-for h in hs { h.join().expect("worker thread panicked"); }
-
-let (tx, rx) = std::sync::mpsc::sync_channel(16);   // bounded = backpressure
-for i in 0..5 { let tx = tx.clone(); std::thread::spawn(move || tx.send(format!("message {i}")).expect("receiver disconnected")); }
-drop(tx);                                           // else `for msg in rx` never ends
-for msg in rx { println!("{msg}"); }
-
-async fn fetch_with_timeout(url: &str) -> Result<String> {
-    let res = tokio::time::timeout(Duration::from_secs(5), reqwest::get(url))
-        .await.context("request timed out")?.context("request failed")?;
-    res.text().await.context("failed to read body")
-}
-async fn fetch_all(urls: Vec<String>) -> Vec<Result<String>> {
-    let hs: Vec<_> = urls.into_iter().map(|u| tokio::spawn(async move { fetch_with_timeout(&u).await })).collect();
-    let mut out = Vec::with_capacity(hs.len());
-    for h in hs { out.push(h.await.unwrap_or_else(|e| panic!("spawned task panicked: {e}"))); }
-    out
-}
-```
-
-## Unsafe
-
-```rust
-/// # Safety
-/// `ptr` must be a valid, aligned pointer to an initialized `Widget`.
-unsafe fn widget_from_raw<'a>(ptr: *const Widget) -> &'a Widget {
-    // SAFETY: caller guarantees ptr is valid and aligned
-    unsafe { &*ptr }   // Rust 2024: unsafe block required inside unsafe fn
-}
-// SAFETY: index < len due to loop bound
-unsafe { slice.get_unchecked(index) }
-```
-Reject: unsafe to bypass the borrow checker, unsafe for convenience, unsafe without `SAFETY`, `transmute` between unrelated types.
-
-## Crate layout and visibility
-
-```text
-my_app/
-├── src/{main.rs, lib.rs}
-├── src/auth/{mod.rs, token.rs, middleware.rs}    # domain
-├── src/orders/{mod.rs, model.rs, service.rs}     # domain
-├── src/db/{mod.rs, pool.rs}                      # infrastructure
-├── tests/     # integration
-├── benches/
-└── Cargo.toml
-```
-```rust
-pub(crate) fn validate_input(s: &str) -> bool { !s.is_empty() }
-pub mod auth;
-pub use auth::AuthMiddleware;   // re-export public API from lib.rs
-```
-
-## Cargo commands
-
-| Command | Use |
-|---|---|
-| `cargo check` | fast type check, no codegen |
-| `cargo clippy` / `cargo fmt` | lint / format |
-| `cargo test -- --nocapture` | show `println!` output |
-| `cargo test --lib` / `--test integration` | unit only / one integration file |
-| `cargo audit` | security audit of deps |
-| `cargo tree` / `cargo update` | dependency tree / update |
-| `cargo bench` | benchmarks |
-
-## Anti-patterns
-
-| Bad | Good |
-|---|---|
-| `map.get("k").unwrap()` in production | `?`, `ok_or`, `context` |
-| `.clone()` only to silence the borrow checker | restructure borrows |
-| `fn greet(name: String)` that only reads | `fn greet(name: &str)` |
-| `Box<dyn Error>` in a library API | `thiserror` enum |
-| `let _ = validate(x);` on a `Result` | handle or propagate |
-| `std::thread::sleep` in async | `tokio::time::sleep(..).await` |

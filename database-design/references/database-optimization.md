@@ -1,89 +1,26 @@
-# Database Optimization
+@REF:database-optimization
 
-Expert guidance for modern database performance tuning, query optimization, and scalable architecture design across OLTP and OLAP environments.
+§USE{slow_queries|`EXPLAIN ANALYZE`∨indexing(high_traffic)∨N+1(ORM/GraphQL)∨scaling(partition/shard/read_replicas)∨prod_tuning∨cloud_native/HTAP_schemas∨multi_tier_cache}
 
-## When to use
+§WF{
+  1:assess(slow_qry_logs,`pg_stat_statements`[PG],Performance_Schema[MySQL],Cloud_Insights[AWS/Azure/GCP]);
+  2:plan(`EXPLAIN ANALYZE`→check_scan[Seq_vs_Index]+join[Hash_vs_NestedLoop]+cost_bottlenecks);
+  3:rewrite(subquery→JOIN|CTE,opt_window/recursive,keyset_pagination>`OFFSET`);
+  4:index(B-tree[range/eq],GIN|GiST[FTS/JSONB],BRIN[huge_seq_tbl],composite[selectivity+qry_order],partial[↓size,↑write_perf]);
+  5:validate(benchmark_old_vs_new@realistic_volume+concurrent_load)
+}
 
-- Optimizing slow queries or analyzing execution plans (EXPLAIN ANALYZE).
-- Designing indexing strategies for high-traffic applications.
-- Resolving N+1 query patterns in ORMs or GraphQL APIs.
-- Scaling databases via partitioning, sharding, or read replicas.
-- Tuning database configurations for production environments.
-- Designing schemas for cloud-native or hybrid HTAP systems.
-- Implementing multi-tier caching architectures.
+§PAT{
+  index_storage:{selectivity_first_in_composite,covering_indexes(avoid_heap_fetches),¬over_index(read_vs_write_overhead;drop_unused/redundant),smallest_sufficient_types(↓I/O+RAM)};
+  app:{N+1_fix(eager_load:`JOIN FETCH`|`select_related`|`prefetch_related`∨GraphQL_`DataLoader`),conn_pool(tune_size+timeouts→¬exhaustion),short_tx(↓lock_contention,¬deadlocks)};
+  scale_cache:{read_replicas(manage_eventual_consistency),write_scale(batch,async_writes,sharding),partitioning(range|hash|list→maintainability+pruning),cache_tiers:{L1:app_in_memory,L2:Redis|Memcached(Cache-Aside|Write-Through),L3:DB_buffer_pool}}
+}
 
-## Query Optimization Workflow
+§DB{
+  PG:{tune(`shared_buffers`,`work_mem`,`effective_cache_size`∝RAM),`autovacuum`(¬bloat,fresh_stats),`ANALYZE`(regular_planner_stats)};
+  Cloud(Aurora,Snowflake,BigQuery):{columnar_storage(OLAP),auto_scale(elastic_pools|serverless),cost_ctrl(track_resource_metrics)}
+}
 
-1. **Performance Assessment**: Identify bottlenecks using slow query logs, `pg_stat_statements` (Postgres), Performance Schema (MySQL), or Cloud Insights (AWS/Azure/GCP).
-2. **Execution Plan Analysis**: Run `EXPLAIN ANALYZE` to identify scan types (Seq Scan vs Index Scan), join strategies (Hash vs Nested Loop), and cost-based bottlenecks.
-3. **Query Rewriting**: 
-    - Replace inefficient subqueries with JOINs or CTEs.
-    - Optimize window functions and recursive queries.
-    - Implement efficient pagination (keyset pagination over OFFSET).
-4. **Indexing Strategy**: 
-    - Apply B-tree for range/equality, GIN/GiST for full-text/JSONB, and BRIN for very large sequential tables.
-    - Create composite indexes based on column selectivity and query order.
-    - Use partial indexes to reduce index size and improve write performance.
-5. **Validation**: Benchmark the optimized query against the original using realistic data volumes and concurrent load.
-
-## Optimization Rules & Patterns
-
-### Indexing & Storage
-- **Selectivity First**: Place the most selective columns first in composite indexes.
-- **Covering Indexes**: Include frequently accessed columns in the index to avoid heap fetches.
-- **Avoid Over-indexing**: Balance read performance with write overhead; remove unused or redundant indexes.
-- **Data Types**: Use the smallest sufficient data type to reduce I/O and memory usage.
-
-### Application Integration
-- **N+1 Resolution**: Use eager loading (JOIN FETCH, `select_related`, `prefetch_related`) or DataLoader patterns for GraphQL.
-- **Connection Management**: Optimize pool sizing and timeouts to prevent connection exhaustion.
-- **Transaction Scope**: Keep transactions short to minimize lock contention and prevent deadlocks.
-
-### Scaling & Caching
-- **Read Scaling**: Implement read replicas and manage eventual consistency.
-- **Write Scaling**: Use batch processing, asynchronous writes, or sharding for write-heavy workloads.
-- **Partitioning**: Use range, hash, or list partitioning for massive tables to improve maintainability and query pruning.
-- **Caching Tiers**: 
-    - L1: Application-level/In-memory.
-    - L2: Distributed cache (Redis/Memcached) using Cache-Aside or Write-Through patterns.
-    - L3: Database buffer pool tuning.
-
-## Database-Specific Tuning
-
-### PostgreSQL
-- **Memory Tuning**: Adjust `shared_buffers`, `work_mem`, and `effective_cache_size` based on available RAM.
-- **Vacuum Management**: Configure `autovacuum` to prevent table bloat and maintain statistics.
-- **Maintenance**: Regularly run `ANALYZE` to update the query planner's statistics.
-
-### Cloud-Native (Aurora, Snowflake, BigQuery)
-- **Storage Tiering**: Use columnar storage for analytical (OLAP) workloads.
-- **Auto-scaling**: Configure elastic pools or serverless tiers for variable workloads.
-- **Cost Control**: Identify expensive queries via resource usage metrics to reduce cloud spend.
-
-## Common Pitfalls
-
-- **Indexing Every Column**: Increases write latency and storage costs without guaranteed read gains.
-- **Ignoring Statistics**: Relying on theoretical optimization without checking actual execution plans.
-- **Over-Normalization**: Excessive JOINs in read-heavy systems; consider strategic denormalization.
-- **Production Testing**: Running heavy analytical queries on production without limits or read replicas.
-
-## Checklist
-
-- [ ] Slow queries identified via profiling tools.
-- [ ] Execution plans analyzed for scan and join efficiency.
-- [ ] Indexing strategy aligned with actual query patterns.
-- [ ] N+1 queries eliminated in the application layer.
-- [ ] Database configuration tuned for the specific hardware/instance size.
-- [ ] Maintenance tasks (Vacuum/Analyze) automated.
-- [ ] Monitoring and alerting configured for performance regressions.
-- [ ] Scalability plan (Partitioning/Sharding) documented for future growth.
-
-## Related skills
-
-Load these when the task spans more than this skill.
-
-- [`database-design`](../SKILL.md) — Expert database architect for data layer design, technology selection, and schema modeling. Use for selecting…
-- [`database-migration`](database-migration.md) — Provides step‑by‑step guidance for database schema and data migrations using Sequelize, TypeORM, and Prisma, c…
-- [`performance`](../../web-quality-audit/references/performance.md) — Analyzes web performance using Chrome DevTools MCP. Measures Core Web Vitals (LCP, INP, CLS) and supplementary…
-- [`django`](../../backend-development/references/django.md) — Provides concise, production‑ready guidance for Django 5.x projects, covering async views, DRF, Celery, Channe…
-- [`prisma`](prisma.md) — Provides expert guidance for Prisma ORM tasks such as schema design, migrations, query optimization, relation…
+§ANTI{index_every_col(↑write_latency+storage)|ignore_stats_or_actual_plans|over_normalize(excessive_JOINs→strategic_denormalize)|heavy_OLAP_on_prod(use_limits|read_replicas)}
+§CHK{slow_queries_profiled;plans_analyzed;indexes_match_queries;N+1_eliminated;DB_config_tuned_to_instance;Vacuum/Analyze_automated;regression_alerts_configured;partition/shard_plan_documented}
+§REL{[database-design](../SKILL.md)|[database-migration](database-migration.md)|[performance](../../web-quality-audit/references/performance.md)|[django](../../backend-development/references/django.md)|[prisma](prisma.md)}

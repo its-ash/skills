@@ -1,142 +1,45 @@
 ---
-description: Comprehensive Rust code review for ownership, lifetimes, error handling, unsafe usage, and idiomatic patterns. Invokes the rust-reviewer agent.
+description: "Rust code review via rust-reviewer: ownership, lifetimes, errors, unsafe, idioms"
 ---
-
-# Rust Code Review
-
-This command invokes the **rust-reviewer** agent for comprehensive Rust-specific code review.
-
-## What This Command Does
-
-1. **Verify Automated Checks**: Run `cargo check`, `cargo clippy -- -D warnings`, `cargo fmt --check`, and `cargo test` — stop if any fail
-2. **Identify Rust Changes**: Find modified `.rs` files via `git diff HEAD~1` (or `git diff main...HEAD` for PRs)
-3. **Run Security Audit**: Execute `cargo audit` if available
-4. **Security Scan**: Check for unsafe usage, command injection, hardcoded secrets
-5. **Ownership Review**: Analyze unnecessary clones, lifetime issues, borrowing patterns
-6. **Generate Report**: Categorize issues by severity
-
-## When to Use
-
-Use `/rust-review` when:
-- After writing or modifying Rust code
-- Before committing Rust changes
-- Reviewing pull requests with Rust code
-- Onboarding to a new Rust codebase
-- Learning idiomatic Rust patterns
-
-## Review Categories
-
-### CRITICAL (Must Fix)
-- Unchecked `unwrap()`/`expect()` in production code paths
-- `unsafe` without `// SAFETY:` comment documenting invariants
-- SQL injection via string interpolation in queries
-- Command injection via unvalidated input in `std::process::Command`
-- Hardcoded credentials
-- Use-after-free via raw pointers
-
-### HIGH (Should Fix)
-- Unnecessary `.clone()` to satisfy borrow checker
-- `String` parameter where `&str` or `impl AsRef<str>` suffices
-- Blocking in async context (`std::thread::sleep`, `std::fs`)
-- Missing `Send`/`Sync` bounds on shared types
-- Wildcard `_ =>` match on business-critical enums
-- Large functions (>50 lines)
-
-### MEDIUM (Consider)
-- Unnecessary allocation in hot paths
-- Missing `with_capacity` when size is known
-- Suppressed clippy warnings without justification
-- Public API without `///` documentation
-- Consider `#[must_use]` on non-`must_use` return types where ignoring values is likely a bug
-
-## Automated Checks Run
-
-```bash
-# Build gate (must pass before review)
-cargo check
-
-# Lints and suggestions
-cargo clippy -- -D warnings
-
-# Formatting
-cargo fmt --check
-
-# Tests
-cargo test
-
-# Security audit (if available)
-if command -v cargo-audit >/dev/null; then cargo audit; else echo "cargo-audit not installed"; fi
-```
-
-## Example Usage
-
-````text
-User: /rust-review
-
-Agent:
-# Rust Code Review Report
-
-## Files Reviewed
-- src/service/user.rs (modified)
-- src/handler/api.rs (modified)
-
-## Static Analysis Results
-- Build: Successful
-- Clippy: No warnings
-- Formatting: Passed
-- Tests: All passing
-
-## Issues Found
-
-[CRITICAL] Unchecked unwrap in Production Path
-File: src/service/user.rs:28
-Issue: Using `.unwrap()` on database query result
-```rust
-let user = db.find_by_id(id).unwrap();  // Panics on missing user
-```
-Fix: Propagate error with context
-```rust
-let user = db.find_by_id(id)
-    .context("failed to fetch user")?;
-```
-
-[HIGH] Unnecessary Clone
-File: src/handler/api.rs:45
-Issue: Cloning String to satisfy borrow checker
-```rust
-let name = user.name.clone();
-process(&user, &name);
-```
-Fix: Restructure to avoid clone
-```rust
-let result = process_name(&user.name);
-use_user(&user, result);
-```
-
-## Summary
-- CRITICAL: 1
-- HIGH: 1
-- MEDIUM: 0
-
-Recommendation: Block merge until CRITICAL issue is fixed
-````
-
-## Approval Criteria
-
-| Status | Condition |
-|--------|-----------|
-| Approve | No CRITICAL or HIGH issues |
-| Warning | Only MEDIUM issues (merge with caution) |
-| Block | CRITICAL or HIGH issues found |
-
-## Integration with Other Commands
-
-- Use `/rust-test` first to ensure tests pass
-- Use `/rust-build` if build errors occur
-- Use `/rust-review` before committing
-- Use `/code-review` for non-Rust-specific concerns
-
-## Related
-
-- Agent: `rust-reviewer`
-- Skills: `rust/SKILL.md`, `rust/references/rust-testing.md`
+@CMD:rust-review
+§META{agent:rust-reviewer;skills:[rust/SKILL.md,rust/references/rust-testing.md];rel:[/rust-test,/rust-build,/code-review]}
+§WHEN{post_edit/new_Rust;pre_commit;PR;onboarding;idioms}
+§GATE_PRE{
+  must_pass(STOP_on_fail):
+  `cargo check`
+  `cargo clippy -- -D warnings`
+  `cargo fmt --check`
+  `cargo test`
+  `if command -v cargo-audit >/dev/null; then cargo audit; else echo "cargo-audit not installed"; fi`
+}
+§FLOW{
+  1:run(§GATE_PRE)
+  2:diff_rs:`git diff HEAD~1`∨`git diff main...HEAD`(PR)
+  3:sec_scan:unsafe,cmd_inj,hardcoded_secrets
+  4:ownership:clones,lifetimes,borrowing
+  5:emit(§OUT)
+}
+§R{
+  CRITICAL(must_fix):
+  - unchecked `.unwrap()`/`.expect()` in prod(fix:`?`+`.context(...)`)
+  - `unsafe`¬`// SAFETY:` invariant_cmt
+  - SQLi(string_interp in queries)
+  - cmd_inj(unvalidated_in in `std::process::Command`)
+  - hardcoded_creds
+  - UAF(raw_ptrs)
+  HIGH(should_fix):
+  - unnecessary `.clone()` for borrow_checker(restructure)
+  - `String` param where `&str`∨`impl AsRef<str>` suffices
+  - blocking in async(`std::thread::sleep`,`std::fs`)
+  - missing `Send`/`Sync` bounds on shared_types
+  - wildcard `_ =>` on biz-critical enums
+  - fn>50L
+  MEDIUM(consider):
+  - unnecessary_alloc(hot_path)
+  - missing `with_capacity`(known_size)
+  - suppressed clippy_warns¬justif
+  - pub_API¬`///` doc
+  - `#[must_use]` on ret_types(ignore≈bug)
+}
+§GATE{Approve⇔CRITICAL≡0∧HIGH≡0;Warning⇔CRITICAL≡0∧HIGH≡0∧MEDIUM>0;Block⇔CRITICAL>0∨HIGH>0}
+§OUT{files:[path(status)];checks:[Build,Clippy,Fmt,Tests];issues:[`[SEV]` title,file:line,bad,fix];counts:[CRITICAL,HIGH,MEDIUM];rec:Approve|Warning|Block}

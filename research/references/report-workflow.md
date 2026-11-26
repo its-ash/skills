@@ -1,53 +1,23 @@
-# Research report workflow
+@REF:report-workflow
+§CFG{tools}
+req≥1_MCP:{firecrawl(firecrawl_search,firecrawl_scrape,firecrawl_crawl),exa(web_search_exa,web_search_advanced_exa,crawling_exa)};both⇒best
+pre_promise⇒chk(tools,live_docs)(names/quotas/shapes_drift);¬MCP⇒../../web-scraping-apis/SKILL.md∨builtin(search/fetch)
 
-## Tools
+§PAT{steps}
+1_Goal:1-2_Q(learn|decide|write?angle/depth?);"Just research it"⇒defaults
+2_Plan:3-5_subQ(ex_AI_hc:apps,outcomes,reg,leaders,mkt_size)
+3_Search:2-3_kw/subQ(gen+news);tgt=15-30_uniq:firecrawl_search(query,limit:8)|web_search_exa(query,numResults:8)|web_search_advanced_exa(query,numResults:5,startPublishedDate:"2025-01-01")
+4_DeepRead:3-5_full(¬snippets):firecrawl_scrape(url)|crawling_exa(url,tokensNum:5000)
+5_Write:tpl;6_Deliver:short⇒chat;long⇒exec_sum+takeaways_chat∧full→file
 
-Need at least one MCP: **firecrawl** (`firecrawl_search`, `firecrawl_scrape`, `firecrawl_crawl`) or **exa** (`web_search_exa`, `web_search_advanced_exa`, `crawling_exa`). Both together give best coverage. Tool names, quotas, and result shapes change: check configured tools and current API docs before you promise coverage. No MCP: use [web-scraping-apis](../../web-scraping-apis/SKILL.md) HTTP APIs or built-in web search/fetch.
+§PAT{par}
+broad⇒3_agents:{A:1-2,B:3-4,C:5+cross};each(srch,read,ret);main⇒synth
 
-## Steps
-
-1. **Goal**: ask 1–2 questions (learn, decide, or write? angle/depth?). "Just research it" → use defaults.
-2. **Plan**: split topic into 3–5 sub-questions. Example "AI in healthcare": applications today; measured clinical outcomes; regulatory challenges; leading companies; market size and growth.
-3. **Search** each sub-question with 2–3 keyword variants, general + news:
-   ```
-   firecrawl_search(query: "<keywords>", limit: 8)
-   web_search_exa(query: "<keywords>", numResults: 8)
-   web_search_advanced_exa(query: "<keywords>", numResults: 5, startPublishedDate: "2025-01-01")
-   ```
-   Target 15–30 unique sources.
-4. **Deep-read** 3–5 key sources in full; do not rely on snippets:
-   ```
-   firecrawl_scrape(url: "<url>")
-   crawling_exa(url: "<url>", tokensNum: 5000)
-   ```
-5. **Write** the report (template below).
-6. **Deliver**: short topic → full report in chat. Long → executive summary + takeaways in chat, full report to a file.
-
-## Parallel subagents (broad topics)
-
-Launch 3 agents: A → sub-questions 1–2; B → 3–4; C → 5 + cross-cutting themes. Each searches, reads, returns findings. Main session synthesizes.
-
-## Report template
-
-```markdown
-# [Topic]: Research Report
-*Generated: [date] | Sources: [N] | Confidence: [High/Medium/Low]*
-
-## Executive Summary
-[3-5 sentences]
-
-## 1. [Theme]
-- Key point ([Source](url))
-- Supporting data ([Source](url))
-
-## 2. [Theme] ...
-
-## Key Takeaways
-- [Actionable insight]
-
-## Sources
-1. [Title](url) — [one-line summary]
-
-## Methodology
-Searched [N] queries across web and news. Analyzed [M] sources. Sub-questions: [list]
-```
+§FMT{tpl}
+`# [Topic]: Research Report`
+`*Generated:[date]|Sources:[N]|Confidence:[High/Medium/Low]*`
+`## Executive Summary`:[3-5 sent]
+`## [N]. [Theme]`:- Key point([Source](url)) | Supporting data([Source](url))
+`## Key Takeaways`:- [Actionable insight]
+`## Sources`:1.[Title](url)—[1-line sum]
+`## Methodology`:Searched [N] queries(web+news). Analyzed [M] sources. Sub-questions:[list]

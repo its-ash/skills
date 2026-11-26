@@ -1,66 +1,28 @@
 ---
-description: Detect the project build system and incrementally fix build/type errors with minimal safe changes.
+description: "Detect build system; fix build/type errors incrementally with minimal safe diffs."
 ---
-
-# Build and Fix
-
-Incrementally fix build and type errors with minimal, safe changes.
-
-## Step 1: Detect Build System
-
-Identify the project's build tool and run the build:
-
-| Indicator | Build Command |
-|-----------|---------------|
-| `package.json` with `build` script | `npm run build` or `pnpm build` |
-| `tsconfig.json` (TypeScript only) | `npx tsc --noEmit` |
-| `Cargo.toml` | `cargo build 2>&1` |
-| `pom.xml` | `mvn compile` |
-| `build.gradle.kts` | `./gradlew compileJava` |
-| `go.mod` | `go build ./...` |
-| `pyproject.toml` | `uv run ruff check .` then `uv run pyright` or `uv run mypy --strict .` |
-
-## Step 2: Parse and Group Errors
-
-1. Run the build command and capture stderr
-2. Group errors by file path
-3. Sort by dependency order (fix imports/types before logic errors)
-4. Count total errors for progress tracking
-
-## Step 3: Fix Loop (One Error at a Time)
-
-For each error:
-
-1. **Read the file** — Use Read tool to see error context (10 lines around the error)
-2. **Diagnose** — Identify root cause (missing import, wrong type, syntax error)
-3. **Fix minimally** — Use Edit tool for the smallest change that resolves the error
-4. **Re-run build** — Verify the error is gone and no new errors introduced
-5. **Move to next** — Continue with remaining errors
-
-## Step 4: Guardrails
-
-Stop and ask the user if:
-- A fix introduces **more errors than it resolves**
-- The **same error persists after 3 attempts** (likely a deeper issue)
-- The fix requires **architectural changes** (not just a build fix)
-- Build errors stem from **missing dependencies** (need `npm install`, `cargo add`, etc.)
-
-## Step 5: Summary
-
-Show results:
-- Errors fixed (with file paths)
-- Errors remaining (if any)
-- New errors introduced (should be zero)
-- Suggested next steps for unresolved issues
-
-## Recovery Strategies
-
-| Situation | Action |
-|-----------|--------|
-| Missing module/import | Check if package is installed; suggest install command |
-| Type mismatch | Read both type definitions; fix the narrower type |
-| Circular dependency | Identify cycle with import graph; suggest extraction |
-| Version conflict | Check `package.json` / `Cargo.toml` for version constraints |
-| Build tool misconfiguration | Read config file; compare with working defaults |
-
-Fix one error at a time for safety. Prefer minimal diffs over refactoring.
+@CMD:build-fix
+§DETECT{
+  `package.json`(w/`build`)⇒`npm run build`⊕`pnpm build`;
+  `tsconfig.json`(TS)⇒`npx tsc --noEmit`;
+  `Cargo.toml`⇒`cargo build 2>&1`;
+  `pom.xml`⇒`mvn compile`;
+  `build.gradle.kts`⇒`./gradlew compileJava`;
+  `go.mod`⇒`go build ./...`;
+  `pyproject.toml`⇒`uv run ruff check .`→(`uv run pyright`⊕`uv run mypy --strict .`)
+}
+§FLOW{
+  1:run(§DETECT)+stderr→group(file)→sort(imports/types→logic)→count;
+  2:∀err(1_at_a_time):read(±10L)→diagnose(import/type/syntax)→edit(min_diff,¬refactor)→rebuild(fixed∧0_new)→next
+}
+§GATE{
+  STOP+ask_user⇔(new_err>fixed_err)∨(same_err>3_tries)∨(needs_arch_Δ)∨(missing_deps:`npm install`/`cargo add`/etc)
+}
+§REC{
+  missing_import⇒chk_installed→suggest_install;
+  type_mismatch⇒read_defs→fix_narrower;
+  circular_dep⇒import_graph→suggest_extract;
+  ver_conflict⇒chk(`package.json`/`Cargo.toml`);
+  misconfig⇒read_cfg→diff_defaults
+}
+§OUT{fixed(w/paths),remaining,new_errors(target=0),next_steps}

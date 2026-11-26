@@ -1,71 +1,16 @@
-# Data Throughput Accelerator
+@REF:data-throughput-accelerator
+§CTX{Data movement(ingest|backfill|export|ETL|wh_load|manifest_catchup|sync)⇒max_speed∧correct(counts∧ts_agree+proof)}
 
-Find the true bottleneck in large data movement, benchmark variants, and keep the fastest path that stays correct.
+§D{
+  isolate:{src_extract,net_xfer,wh_load,transform,serving_freshness,live_tail_growth};
+  tail_trap:arrival_rate>catchup_win⇒fast_pipe_looks_behind;
+  fast:{compute→data_locality;wh_native(scans|joins|appends)_large_files;manifest|ckpt→skip_done;part+cluster∼read_append;batch(files|reqs|writes);idemp(uniq_keys|manifest|replace_stage);sep_acct(raw,derived,serving)}
+}
 
-## When to use
+§PAT:wf{
+  1:read_contracts(src,tgt,manifest)→2:measure_backlog(ext_files,manifest_rows,raw_rows,derived_rows,min_max_ts,unprocessed)→3:bench(catchup∨sample)→4:compare(batch,workers,wh_sql,file_grp,stage_shape,manifest_upd)→5:promote⇔(counts∧ts_coherent)→6:codify(CLI|sched|wf|runbook)→7:rerun_final_acct
+}
 
-- An ingestion, backfill, export, ETL, warehouse load, manifest catch-up, or table sync is too slow.
-- The job must go faster with no loss of data correctness.
-- You must prove that row counts and timestamps agree after the run.
+§CHK:acct{Data throughput result: Source files discovered:<N> | Files processed this run:<N> | Raw rows added:<N> | Derived rows added:<N> | Remaining tail:<N> files at readback time | Runtime:<t> | Correctness gate: manifest counts and table max timestamps match}
 
-The goal is not only speed. The goal is correct data in the correct place, faster, with proof.
-
-## First Distinction
-
-Separate these before optimizing:
-
-- source extraction speed;
-- network transfer speed;
-- warehouse/load speed;
-- transform speed;
-- serving-table freshness;
-- live tail growth while the job runs.
-
-A pipeline can be "fast" and still appear behind if new data arrives faster
-than the final catch-up window.
-
-## Fast Path Heuristics
-
-- Move compute to where the data already is.
-- Prefer warehouse-native scans, joins, and appends for large landed files.
-- Use manifests or checkpoints so completed files/partitions are skipped.
-- Use partitioning and clustering that match the read and append pattern.
-- Batch small files, requests, and writes.
-- Make writes idempotent through unique keys, manifests, or replaceable staging.
-- Keep raw, derived, and serving tables separately accountable.
-
-## Workflow
-
-1. Read the current source, target, and manifest contracts.
-2. Measure backlog: external files, manifest rows, raw rows, derived rows,
-   min/max timestamps, and unprocessed counts.
-3. Run a safe catch-up or sample benchmark.
-4. Compare variants: batch size, worker count, warehouse SQL, file grouping,
-   staging shape, and manifest update method.
-5. Promote only the fastest path that keeps counts and timestamps coherent.
-6. Codify the path as a CLI, scheduled job, workflow, or runbook.
-7. Rerun final accounting after the codified path executes.
-
-## Accounting Output
-
-Use a hard accounting block:
-
-```text
-Data throughput result:
-- Source files discovered: 294
-- Files processed this run: 294
-- Raw rows added: 9,683,598
-- Derived rows added: 8,917,585
-- Remaining tail: 24 files at readback time
-- Runtime: 38.7s
-- Correctness gate: manifest counts and table max timestamps match
-```
-
-## Guardrails
-
-- Do not delete raw data to make a metric look better.
-- Do not skip failed files silently.
-- Do not mix historical backfill status with live-tail freshness.
-- Do not call a pipeline complete until the target tables and manifest agree.
-- For finance, healthcare, regulated, or customer-impacting data, preserve
-  replay evidence and approval gates.
+§ANTI{¬del_raw_for_metrics;¬silent_skip_failed;¬mix(backfill,live_tail);¬done_until(tgt≡manifest);regulated∈{finance,healthcare,customer_impacting}⇒preserve(replay_evidence∧approval_gates)}

@@ -1,89 +1,52 @@
-# Architecture and Tooling
-
-Read when organizing CSS at scale: methodologies, design tokens, design systems, utility CSS / Tailwind, Sass, PostCSS / Lightning CSS, CSS-in-JS, CSS Modules, linting, and build setup.
-
-## Rules
-- Pick one primary approach per codebase (utility-first, component CSS with BEM/Modules, or CSS-in-JS) and document it. Mixing styles without rules causes specificity wars.
-- Control the cascade with `@layer` (reset → base → components → utilities). Keep specificity flat (single class) inside layers.
-- Store design decisions as tokens in custom properties. Use primitive tokens (`--blue-600`), semantic tokens (`--color-action`), and component tokens (`--btn-bg`). Components consume semantic or component tokens only.
-- Prefer native CSS over preprocessor features when targets allow: custom properties, nesting, `color-mix()`, `@layer`, `@scope`, math functions.
-- Use zero-runtime styling (CSS Modules, vanilla-extract, Tailwind, Panda, StyleX) for performance. Runtime CSS-in-JS (styled-components, Emotion) adds JS cost and conflicts with React Server Components.
-- Lint with Stylelint 16 (`stylelint-config-standard`) or Biome 2 CSS lint, and format with Biome 2 or Prettier. Fail CI on errors.
-- Target browsers through one `browserslist` config shared by Lightning CSS and the JS toolchain.
-
-## Methodologies
-- **BEM**: `.block`, `.block__element`, `.block--modifier`. Flat single-class selectors, no nesting by DOM. Good with plain CSS and Sass (`&__element`). Native CSS nesting cannot build `&__element`.
-- **Utility-first / Atomic** (Tailwind, Atomizer): one class per declaration. CSS size stays flat as the app grows. Extract components in your framework, not with many `@apply` rules.
-- **CUBE CSS**: Composition (layout primitives), Utility, Block, Exception (`[data-state]`). Lean on the cascade instead of fighting it.
-- **Layout primitives** (Every Layout): Stack, Cluster, Sidebar, Switcher, Grid, Center, and Cover components built with intrinsic CSS and no media queries.
-- **ITCSS** ordering (settings → tools → generic → elements → objects → components → utilities) maps directly to `@layer`.
-- State with attributes, not classes, when ARIA already holds it: `[aria-expanded="true"]`, `[data-state="open"]`.
-
-## Design tokens
-```css
-@layer tokens {
-  :root {
-    --blue-600: oklch(55% .2 260);
-    --color-action: var(--blue-600);
-    --space-1: .25rem; --space-2: .5rem; --space-4: 1rem;
-    --radius-m: .5rem;
-    --shadow-1: 0 1px 2px oklch(0% 0 0 / .12);
-  }
+@REF:architecture-tooling
+§R{
+1_sys/repo∈{utility,BEM|Modules,CSS-in-JS}∧doc(¬mix→spec_wars);
+cascade:@layer(reset→base→components→utilities)∧1-cls_spec;
+tokens:prim(--blue-600)→sem(--color-action)→comp(--btn-bg);comp∈{sem,comp};
+native>preproc(if_sup):vars,nesting,color-mix(),@layer,@scope,math_fns;
+0-rt(Modules,vanilla-extract,Tailwind,Panda,StyleX)>rt-CSS-in-JS(styled-components,Emotion⇒JS_cost∧RSC_conflict);
+lint:Stylelint16(stylelint-config-standard)|Biome2;fmt:Biome2|Prettier;CI:fail_err;
+targets:1_browserslist(LightningCSS∧JS)
 }
-.btn { --btn-bg: var(--color-action); background: var(--btn-bg); }
-```
-- Keep the source of truth in DTCG 2025 JSON (`$value`, `$type`), and generate CSS, iOS, and Android outputs with Style Dictionary 4 or 5.
-- Theming: swap semantic tokens under `[data-theme]` or with `light-dark()`. Never theme by overriding component internals.
-- Make tokens visible in docs (Storybook) and in DevTools-friendly names.
-
-## Tailwind CSS
-- Tailwind 4 (4.3) is CSS-first. Import with `@import "tailwindcss";`, define tokens in `@theme { --color-brand: …; }`, add custom utilities with `@utility`, variants with `@variant` or `@custom-variant`, and extra content paths with `@source`. There is no `tailwind.config.js`.
-- Output uses native cascade layers (`theme, base, components, utilities`). Unlayered custom CSS beats all Tailwind utilities.
-- Tailwind 4 runs on Lightning CSS. Do not add PostCSS or Autoprefixer for it.
-- Class names must appear whole in source for detection. `bg-${color}-500` built at runtime is not generated. Map values to full class strings.
-- Use the `!` important modifier (`bg-red-500!`) only as a last resort.
-- Merge conflicting classes in components with `tailwind-merge`, and organize variants with `cva` or `tailwind-variants`.
-- `@apply` is fine for third-party markup you cannot add classes to. Do not rebuild BEM with it.
-
-## Sass
-- Use the module system: `@use "tokens" as t;` and `@forward`. `@import` is deprecated.
-- Configurable libraries: `$radius: 4px !default;`, then `@use "lib" with ($radius: 8px);`.
-- Mixins for repeated declaration groups with parameters, `@content` for wrappers (media queries). Placeholder `%selectors` + `@extend` can produce surprising selector bloat; prefer mixins.
-- Use `math.div()` instead of `/`. Use `@each`/`@for` loops for generated utilities, and keep the output small.
-- Sass variables are compile-time. Use CSS custom properties for anything that changes at runtime (themes, states).
-
-## PostCSS and Lightning CSS
-- Lightning CSS (Rust) handles prefixing, nesting lowering, color-function fallbacks, minification, and CSS Modules much faster than PostCSS chains. Vite 8 and Tailwind 4 use it by default.
-- Add PostCSS only when you need a plugin (`postcss-preset-env` drafts, custom-media). Do not lower features the target browsers already support.
-
-## CSS Modules and scoping
-- CSS Modules (`.module.css`) hash class names per file. Compose with `composes: base from "./base.module.css";`.
-- Framework scoping: Vue `<style scoped>`, Svelte component styles, and Astro scoped styles (`:where(.astro-xyz)` keeps specificity low). Use `:global()` sparingly.
-- Native `@scope` covers many scoping needs without build tools.
-
-## CSS-in-JS
-- Zero-runtime (vanilla-extract, Linaria, Panda, StyleX) compiles to static CSS with typed tokens (`createTheme`, `style`, `recipe`, Sprinkles atomic props).
-- Runtime libraries generate styles in the browser. If used, avoid creating styled components inside render and prefer CSS variables for dynamic values.
-
-## Web components
-- Styles inside shadow DOM are fully scoped. Theme through inherited custom properties and `::part()`.
-- Share styles across many components with constructable stylesheets (`adoptedStyleSheets`).
-- Use light DOM (no shadow root) when the component must accept global styles or utility classes.
-
-## Linting and hygiene
-- Stylelint rules worth enforcing: `selector-max-id: 0`, `selector-max-specificity`, `declaration-no-important`, `color-no-hex` or token-only colors (via plugins), `selector-class-pattern` for naming, `no-descending-specificity`.
-- Find unused CSS with DevTools Coverage, PurgeCSS reports, or the CSS Stats / Project Wallace dashboards.
-- Track CSS size budgets in CI.
-- Visual regression tests (Playwright `toHaveScreenshot`, Chromatic) catch cascade regressions.
-
-## WordPress and CMS themes
-- Block themes: put tokens in `theme.json` (`settings.color.palette`, `settings.typography.fontSizes` with `fluid`, `settings.spacing`, `settings.custom`). WordPress outputs them as `--wp--preset--*` custom properties.
-- Style hierarchy: core defaults → theme `theme.json` → style variations (`/styles/*.json`) → user Global Styles.
-- Prefer `theme.json` `styles.elements` / `styles.blocks` over custom CSS that fights the editor.
-
-## Gotchas
-- Unlayered third-party CSS overrides all your layers. Import it into a layer: `@import url(lib.css) layer(vendor);`.
-- Runtime CSS-in-JS can inject styles in a different order on server and client and cause hydration flashes.
-- Barrel files and circular imports in large design-system packages slow builds and defeat tree-shaking.
-- Purge tools remove classes only referenced in CMS content or JSON. Safelist them.
-- Over-abstraction: a utility for every one-off value creates a second, worse CSS language. Use arbitrary values or inline styles for true one-offs.
+§PAT{
+BEM:.block,.block__element,.block--modifier;1-cls∧¬DOM_nest;Sass(&__el)✓,native(&__el)✗;
+Atomic(Tailwind,Atomizer):1_decl/cls⇒O(1)_size;extract∈FW(¬@apply_abuse);
+CUBE:Composition,Utility,Block,Exception([data-state]);use_cascade;
+EveryLayout:{Stack,Cluster,Sidebar,Switcher,Grid,Center,Cover}⇒intrinsic∧¬MQ;
+ITCSS:settings→tools→generic→elements→objects→components→utilities⇒@layer;
+state:[aria-expanded="true"],[data-state="open"]¬classes
+}
+§TOK{
+`@layer tokens{:root{--blue-600:oklch(55% .2 260);--color-action:var(--blue-600)}}` `.btn{--btn-bg:var(--color-action);background:var(--btn-bg)}`;
+SOT:DTCG2025($value,$type)→StyleDictionary4|5→{CSS,iOS,Android};
+theme:swap_sem([data-theme]|light-dark())∧¬override_internals;docs:Storybook∧DevTools_names
+}
+§TW{
+v4(4.3):CSS-first(¬tailwind.config.js);`@import "tailwindcss";`@theme{--color-brand:…}|@utility|@variant|@custom-variant|@source;
+layers:@layer(theme,base,components,utilities);unlayered>TW;
+engine:LightningCSS(¬PostCSS|Autoprefixer);
+scan:whole_cls_in_src;¬`bg-${color}-500`⇒map→full_str;
+`bg-red-500!`:last_resort;merge:tailwind-merge;variants:cva|tailwind-variants;@apply:3rd-party_HTML_only∧¬BEM
+}
+§TOOL{
+Sass:@use "tokens" as t;@forward;(¬@import);$radius:4px !default;→@use "lib" with($radius:8px);mixins(@content)>%extend(bloat);math.div()>/;@each/@for_small;compile=Sass_var,rt=CSS_var;
+LightningCSS(Rust):prefix,lower_nest,color_fb,minify,Modules(Vite8∧TW4_default)>PostCSS;
+PostCSS:plugins_only(postcss-preset-env_drafts,custom-media);¬lower_sup;
+Modules(.module.css):hash/file;`composes:base from "./base.module.css"`;
+FW:Vue(<style scoped>),Svelte,Astro(:where(.astro-xyz));:global()_rare;native:@scope;
+CSS-in-JS:0-rt(vanilla-extract,Linaria,Panda,StyleX⇒createTheme,style,recipe,Sprinkles);rt(¬in_render∧vars_dyn);
+WebComp:Shadow⇒vars∧::part();share:adoptedStyleSheets;Light⇒global/util_CSS
+}
+§LINT{
+Stylelint:{selector-max-id:0,selector-max-specificity,declaration-no-important,color-no-hex|token_plugin,selector-class-pattern,no-descending-specificity};
+unused:DevTools_Coverage,PurgeCSS,CSS_Stats,Project_Wallace;CI:size_budget;visual:Playwright(toHaveScreenshot),Chromatic
+}
+§CMS{
+WP:theme.json(settings.{color.palette,typography.fontSizes[fluid],spacing,custom})→--wp--preset--*;
+order:core→theme.json→/styles/*.json→Global_Styles;prefer:theme.json(styles.{elements,blocks})>custom_CSS
+}
+§ANTI{
+unlayered_vendor>layers⇒`@import url(lib.css) layer(vendor);`;
+rt_CSS-in-JS_order⇒hydration_flash;barrels∧circular⇒slow_DS∧¬tree-shake;
+purge_misses_CMS/JSON⇒safelist;over-abstract(1-off)⇒arbitrary_vals|inline
+}

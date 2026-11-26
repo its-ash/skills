@@ -1,97 +1,42 @@
-# Recsys Pipeline Architect
-
-A spec-and-scaffold guide for building composable recommendation, ranking, and feed pipelines. It encodes the **six-stage pattern** — Source → Hydrator → Filter → Scorer → Selector → SideEffect — popularized by xAI's open-sourced [For You algorithm](https://github.com/xai-org/x-algorithm) (Apache 2.0). This guide is an independent reimplementation of the pattern (MIT) — no code copied from the original.
-
-Upstream: <https://github.com/mturac/recsys-pipeline-architect>
-
-## When to use
-
-- User wants to build any system that picks "the top K items for a user/context"
-- User asks "how should I rank X" or describes a feed/personalization problem
-- User has a scoring function and needs the pipeline plumbing around it
-- User wants to migrate from a single relevance score to multi-action prediction with tunable weights
-- User is wrapping an LLM/ML scorer and needs filters, hydrators, side-effects, and a runnable scaffold in their stack (TypeScript / Go / Python)
-- Triggers: "recommendation system", "feed algorithm", "ranking pipeline", "for you feed", "candidate pipeline", "content recommender", "pipeline architecture for recsys", "RAG retrieval reranker"
-
-## When NOT to Use
-
-- Model architecture work (transformer design, two-tower retrieval, embedding training) — this guide is plumbing *around* the model, not the model itself
-- Pure ML training pipelines — the scoring function is the user's responsibility
-- Operating a deployed pipeline (monitoring, autoscaling) — out of scope
-
-## The six-stage framework
-
-| # | Stage | Job | Parallel? |
-|---|---|---|---|
-| 1 | **Source** | Fetch candidates from one or more origins | Yes — multiple sources run in parallel |
-| 2 | **Hydrator** | Enrich each candidate with metadata needed for filtering and scoring | Yes — independent hydrators run in parallel |
-| 3 | **Filter** | Drop candidates that should never be shown (blocked, expired, duplicate, ineligible) | Sequential — each filter sees fewer items |
-| 4 | **Scorer** | Assign each surviving candidate one or more scores | Sequential — later scorers see earlier scores |
-| 5 | **Selector** | Sort by final score, return top K | Single op |
-| 6 | **SideEffect** | Cache served IDs, log impressions, emit events, update counters | Async — must never block the response |
-
-### Why this exact order
-
-- Sources before hydration: know what candidates exist before paying to enrich them
-- Hydration before filtering: many filters need metadata the source did not provide
-- Filtering before scoring: scoring is the expensive stage; drop the ineligible first
-- Scorer chain (not single scorer): real systems compose ML scoring + diversity reranking + business rules
-- Selector after scoring: keeps scoring deterministic and cacheable
-- SideEffects last and async: side effects must never block the user response
-
-## Workflow when invoked
-
-Walk the user through these eight steps:
-
-1. **Clarify the use case** (one round, three questions): items being ranked? input context? language/runtime?
-2. **Identify the candidate sources**: usually in-network (followed/owned/subscribed) + out-of-network (ML retrieval / trending / similar-to-liked)
-3. **List required hydrations**: for each filter and scorer, what data does it need that the source did not provide?
-4. **List the filters**: duplicate, self, age, block/mute, previously-served, eligibility. Order matters — cheap before expensive.
-5. **Design the scorer chain**: primary (ML) → combiner (multi-action with weights) → diversity → business rules
-6. **Selector**: sort descending by final score, take top K (or stratified mix for in-network/out-of-network)
-7. **SideEffects**: cache served IDs, emit impression events, update counters, log analytics — all fire-and-forget
-8. **Generate the scaffold** in the user's stack
-
-## Key trade-offs to surface (don't default silently)
-
-### 1. Single score vs multi-action prediction
-
-- **Single score**: train one model to predict relevance. To change behavior → retrain.
-- **Multi-action**: predict `P(action)` for many actions (read, like, share, skip, report), combine with weights at serving time. To change behavior → change weights. No retraining.
-
-The X For You system uses multi-action with both positive and negative weights. Recommend multi-action when the user expects to tune frequently.
-
-### 2. Candidate isolation in scoring
-
-- **Isolated**: each candidate scored independently. Deterministic, cacheable.
-- **Joint**: candidates attend to each other during scoring (e.g., transformer over batch). More expressive but non-deterministic across batches.
-
-Default to isolation. Joint only when there's a specific reason (e.g., explicit batch-aware diversity).
-
-### 3. Online vs offline
-
-- **Request-time (online)**: pipeline runs on each request. Latency budget: 100–300ms. Default.
-- **Pre-computed (offline batch)**: pipeline runs periodically, results cached. Lower latency, lower freshness.
-- **Hybrid**: candidate retrieval offline, ranking online.
-
-## Hard rules
-
-1. **Do not invent benchmark numbers.** "How much faster?" → "depends on workload, run it yourself."
-2. **Attribution discipline.** When the pattern is referenced, attribute as "popularized by xAI's open-sourced For You algorithm" / `github.com/xai-org/x-algorithm` (Apache 2.0).
-3. **No trademark use.** Do not name the user's artifact "X-like" or use "For You" branding. Pattern is free; brand is not. Suggested naming: "candidate pipeline", "feed pipeline", "ranking pipeline", "recsys pipeline".
-4. **Surface trade-offs.** Multi-action vs single, isolation vs joint, online vs offline — never default silently.
-5. **The generated scaffold must run.** No pseudocode passing as code.
-6. **Filter order matters.** Cheap before expensive. Universal before user-specific.
-7. **Side effects never block.** Wrap in fire-and-forget patterns (goroutines / promises without await / asyncio tasks).
-
-## Anti-Patterns
-
-- Scoring before filtering (wastes compute on candidates that will be dropped anyway)
-- Synchronous side effects (cache writes / impression emits blocking the response)
-- A single "relevance" score when the product needs to tune for multiple objectives (engagement vs safety vs diversity vs ads)
-- Joint scoring as default (non-deterministic, harder to cache, doesn't compose with reranking stages)
-- Generating pseudocode "for illustration" — the scaffold must actually run
-
-## Upstream contents
-
-The upstream repository at <https://github.com/mturac/recsys-pipeline-architect> has stage interfaces in TypeScript, Go, Python, and Rust, a filter cookbook, a scorer cookbook (weighted sum, MMR, diversity penalty, position debiasing), and runnable example scaffolds. Read its source before you use it.
+@REF:recsys-pipeline-architect
+§META{
+  pipe:Source→Hydrator→Filter→Scorer→Selector→SideEffect;
+  attr:"popularized by xAI's open-sourced For You algorithm"|`https://github.com/xai-org/x-algorithm`(Apache-2.0);
+  up:`https://github.com/mturac/recsys-pipeline-architect`(MIT,¬copied;TS/Go/Py/Rust_ifaces,filter/scorer_cookbooks[weighted_sum,MMR,div_penalty,pos_debias],runnable_scaffolds;read_src≺use)
+}
+§USE{
+  top_K(user,ctx)|rank_X|feed/pers|plumbing_around_LLM/ML_scorer|single→multi_action_wt|stack∈{TS,Go,Py};
+  trig:{"recommendation system","feed algorithm","ranking pipeline","for you feed","candidate pipeline","content recommender","pipeline architecture for recsys","RAG retrieval reranker"}
+}
+§NOT{model_arch(transformer,two_tower,emb_train)|pure_ML_train_pipes|deployed_ops(mon,autoscale)}
+§STAGES[exact_order]{
+  1:Source[par]→fetch_cands;why:know_cands≺enrich_cost;
+  2:Hydrator[par_indep]→enrich_meta;why:filters_need_meta∉source;
+  3:Filter[seq]→drop(blocked,expired,dup,inelig);why:scoring_costly⇒drop_first;
+  4:Scorer[seq_chain]→ML+div_rerank+biz_rules;
+  5:Selector[single]→sort_desc(final_score)→top_K;why:deterministic∧cacheable_scoring;
+  6:SideEffect[async]→cache_IDs,log_imp,emit_evt,upd_cnt;¬block_resp
+}
+§WF{
+  1:clarify(1_rnd,3Q):items?,ctx?,lang/rt?;
+  2:sources:in_net(followed/owned/sub)+out_net(ML_retr/trending/sim_liked);
+  3:hydrate:meta_for(filters,scorers)∉source;
+  4:filters:dup,self,age,block/mute,prev_served,elig(cheap≺costly,univ≺user);
+  5:scorers:primary(ML)→combiner(multi_act_wt)→div→biz;
+  6:select:sort_desc→top_K(∨strat_mix_in/out_net);
+  7:side_fx:cache_IDs,imp,cnt,analytics(fire_forget);
+  8:gen_runnable_scaffold
+}
+§TRADEOFFS[never_silent_default]{
+  score:{single(1_rel_model;Δ⇒retrain) vs multi_action(P(act)∀{read,like,share,skip,report}+/-_wts;Δ⇒tune_wt,¬retrain;X_For_You=+/-;rec_freq_tune)};
+  iso:{isolated[def](indep_cand;det,cacheable) vs joint(batch_attn/tx;expr,non_det_batch;batch_div_only)};
+  exec:{online[def](req_time,100-300ms) vs offline(precomp_cache;low_lat/fresh) vs hybrid(retr_off,rank_on)}
+}
+§R{
+  ¬invent_bench("depends on workload, run it yourself");
+  attr:exact_§META.attr;¬tm("X-like"|"For You")⇒use("candidate|feed|ranking|recsys pipeline");
+  surface_3_tradeoffs;scaffold_MUST_run(¬pseudo);
+  filter_ord:cheap≺costly∧univ≺user;
+  side_fx:fire_forget(goroutines|unawaited_promises|asyncio_tasks)
+}
+§ANTI{score≺filter;sync_side_fx;single_score_multi_obj(eng,safety,div,ads);joint_default;pseudo_scaffold}

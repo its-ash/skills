@@ -1,214 +1,56 @@
-# Search First — Research Before You Code
-
-Search for existing packages, MCP servers, skills, and current docs before you write custom code, then adopt, extend, or build.
-
-## When to use
-
-- Starting a new feature that likely has existing solutions
-- Adding a dependency or integration
-- The user asks "add X functionality" and you're about to write code
-- Before creating a new utility, helper, or abstraction
-- The user wants to create, build, fork, or find a skill (see [Skill scouting](#skill-scouting))
-- The answer depends on current library, framework, or API behavior (see [Documentation lookup](#documentation-lookup-context7))
-
-## Workflow
-
-```
-┌─────────────────────────────────────────────┐
-│  0. TOOL AVAILABILITY PREFLIGHT             │
-│     Check search channels before relying on │
-│     them; report skipped channels honestly   │
-├─────────────────────────────────────────────┤
-│  1. NEED ANALYSIS                           │
-│     Define what functionality is needed      │
-│     Identify language/framework constraints  │
-├─────────────────────────────────────────────┤
-│  2. PARALLEL SEARCH (researcher agent)      │
-│     ┌──────────┐ ┌──────────┐ ┌──────────┐  │
-│     │  npm /   │ │  MCP /   │ │  GitHub / │  │
-│     │  PyPI    │ │  Skills  │ │  Web      │  │
-│     └──────────┘ └──────────┘ └──────────┘  │
-├─────────────────────────────────────────────┤
-│  3. EVALUATE                                │
-│     Score candidates (functionality, maint, │
-│     community, docs, license, deps)         │
-├─────────────────────────────────────────────┤
-│  4. DECIDE                                  │
-│     ┌─────────┐  ┌──────────┐  ┌─────────┐  │
-│     │  Adopt  │  │  Extend  │  │  Build   │  │
-│     │ as-is   │  │  /Wrap   │  │  Custom  │  │
-│     └─────────┘  └──────────┘  └─────────┘  │
-├─────────────────────────────────────────────┤
-│  5. IMPLEMENT                               │
-│     Install package / Configure MCP /       │
-│     Write minimal custom code               │
-└─────────────────────────────────────────────┘
-```
-
-## Decision Matrix
-
-| Signal | Action |
-|--------|--------|
-| Exact match, well-maintained, MIT/Apache | **Adopt** — install and use directly |
-| Partial match, good foundation | **Extend** — install + write thin wrapper |
-| Multiple weak matches | **Compose** — combine 2-3 small packages |
-| Nothing suitable found | **Build** — write custom, but informed by research |
-
-## How to Use
-
-### Step 0: Tool Availability Preflight
-
-This is agent guidance, not an executable setup script. Check only the channels
-that are relevant to the task and project in front of you.
-
-| Channel | Check | If missing |
-|---------|-------|------------|
-| Repository search | `rg --files` and targeted `rg` queries | State that only visible files were inspected |
-| Package registry | `npm --version`, `python -m pip --version`, or project package manager | Use web/docs search and avoid claiming registry coverage |
-| GitHub CLI | `gh auth status` | Use public web or local git history only |
-| MCP/docs tools | Available tool list or local MCP config | Fall back to official docs/web search |
-| Skills directory | `ls ~/.claude/skills ~/.codex/skills` where applicable | Say no local skill catalog was available |
-
-### Quick Mode (inline)
-
-Before writing a utility or adding functionality, mentally run through:
-
-0. Does this already exist in the repo? → `rg` through relevant modules/tests first
-1. Is this a common problem? → Search npm/PyPI
-2. Is there an MCP for this? → Check `~/.claude/settings.json` and search
-3. Is there a skill for this? → Check `~/.claude/skills/`
-4. Is there a GitHub implementation/template? → Run GitHub code search for maintained OSS before writing net-new code
-
-### Full Mode (agent)
-
-For non-trivial functionality, launch a research subagent:
-
-```
-Agent(subagent_type="general-purpose", prompt="
-  Research existing tools for: [DESCRIPTION]
-  Language/framework: [LANG]
-  Constraints: [ANY]
-
-  Search: npm/PyPI, MCP servers, Claude Code skills, GitHub
-  Return: Structured comparison with recommendation
-")
-```
-
-Older Claude Code docs may call this `Task(...)`; use the current agent/subagent
-tool name exposed by the active harness.
-
-## Search Shortcuts by Category
-
-### Development Tooling
-- Linting → `eslint`, `ruff`, `textlint`, `markdownlint`
-- Formatting → `prettier`, `black`, `gofmt`
-- Testing → `jest`, `pytest`, `go test`
-- Pre-commit → `husky`, `lint-staged`, `pre-commit`
-
-### AI/LLM Integration
-- Claude SDK → Context7 for latest docs
-- Prompt management → Check MCP servers
-- Document processing → `unstructured`, `pdfplumber`, `mammoth`
-
-### Data & APIs
-- HTTP clients → `httpx` (Python), `ky`/`undici` (Node)
-- Validation → `zod` (TS), `pydantic` (Python)
-- Database → Check for MCP servers first
-
-### Content & Publishing
-- Markdown processing → `remark`, `unified`, `markdown-it`
-- Image optimization → `sharp`, `imagemin`
-
-## Integration Points
-
-- **Planning**: run the research step before architecture review, so the plan uses available tools.
-- **Architecture**: use research for stack decisions, integration patterns, and reference architectures.
-- **Iterative retrieval** ([iterative-retrieval.md](iterative-retrieval.md)): combine for progressive discovery:
-- Cycle 1: Broad search (npm, PyPI, MCP)
-- Cycle 2: Evaluate top candidates in detail
-- Cycle 3: Test compatibility with project constraints
-
-## Examples
-
-### Example 1: "Add dead link checking"
-```
-Need: Check markdown files for broken links
-Search: npm "markdown dead link checker"
-Found: textlint-rule-no-dead-link (score: 9/10)
-Action: ADOPT — npm install textlint-rule-no-dead-link
-Result: Zero custom code, battle-tested solution
-```
-
-### Example 2: "Add HTTP client wrapper"
-```
-Need: Resilient HTTP client with retries and timeout handling
-Search: npm "http client retry", PyPI "httpx retry"
-Found: got (Node) with retry plugin, httpx (Python) with built-in retry
-Action: ADOPT — use got/httpx directly with retry config
-Result: Zero custom code, production-proven libraries
-```
-
-### Example 3: "Add config file linter"
-```
-Need: Validate project config files against a schema
-Search: npm "config linter schema", "json schema validator cli"
-Found: ajv-cli (score: 8/10)
-Action: ADOPT + EXTEND — install ajv-cli, write project-specific schema
-Result: 1 package + 1 schema file, no custom validation logic
-```
-
-## Anti-Patterns
-
-- **Jumping to code**: Writing a utility without checking if one exists
-- **Ignoring MCP**: Not checking if an MCP server already provides the capability
-- **Silent skipping**: Reporting "nothing found" when a search channel was unavailable
-- **Over-customizing**: Wrapping a library so heavily it loses its benefits
-- **Dependency bloat**: Installing a massive package for one small feature
-
-## Skill scouting
-
-Do this before you create a new skill. If the user explicitly says to skip search, do the creation workflow.
-
-1. **Capture intent** — the task, trigger conditions, domain/tools, and three to five keywords plus synonyms.
-2. **Search local sources first**:
-
-   ```bash
-   find ~/.claude/skills -maxdepth 2 -name SKILL.md 2>/dev/null | grep -iE "keyword|synonym"
-   find ~/.claude/plugins/marketplaces -path '*/skills/*/SKILL.md' 2>/dev/null | grep -iE "keyword|synonym"
-   grep -RilE "keyword|synonym" ~/.claude/skills ~/.claude/plugins/marketplaces 2>/dev/null
-   ```
-
-3. **Search remote sources** (at most three web queries):
-
-   ```bash
-   gh search repos "claude code skill keyword" --limit 10 --sort stars
-   gh search code "name: keyword" --filename SKILL.md --limit 10
-   ```
-
-4. **Vet external matches** — read the `SKILL.md`; look for unexpected shell commands, file writes, network calls, credential handling, or package installs; check maintenance. Copy into a fresh local branch and review the diff. Do not edit marketplace originals in place.
-5. **Rank** — exact name match, then description match, then local source, then maintained GitHub source, then web-only mention. Show 10 results or fewer.
-6. **Present options**:
-
-| Option | Meaning |
-| --- | --- |
-| Use existing | Invoke or install a matching skill as-is. |
-| Fork or extend | Copy the closest skill and modify it. |
-| Create fresh | Build a new skill after confirming no close match exists. |
-
-Create a new skill only when the user chooses that path or the search finds no close match. Do not treat web-only mentions as trusted sources.
-
-## Documentation lookup (Context7)
-
-When the request depends on current library, framework, or API behavior (React, Next.js, Prisma, Supabase, and so on), fetch current docs through the Context7 MCP instead of training data. If Context7 is not configured, use official docs or web search.
-
-1. **Resolve the library ID** — call `resolve-library-id` with `libraryName` (for example `Next.js`) and `query` (the full user question). You must get an ID in the form `/org/project` or `/org/project/version` before you query docs.
-2. **Select the best match** — prefer exact name match, higher benchmark score, High or Medium source reputation, and a version-specific ID when the user names a version.
-3. **Fetch the docs** — call `query-docs` with `libraryId` and a specific `query`.
-4. **Use the docs** — answer with the fetched information, include code examples from the docs, and cite the version when it matters.
-
-Rules:
-- Do not call `resolve-library-id` or `query-docs` more than 3 times per question. If the answer is still unclear, state the uncertainty.
-- Prefer official packages over community forks.
-- Remove API keys, passwords, tokens, and other secrets from every query you send to Context7.
-
-Example: `resolve-library-id(libraryName: "Prisma", query: "How do I query with relations?")` → select `/prisma/prisma` → `query-docs` → return the `include`/`select` pattern with a short snippet.
+@REF:search-first
+§CORE{research(packages,MCP,skills,docs)_before_coding→adopt|extend|compose|build}
+§WHEN{new_feature_w/_likely_OSS,add_dep/integration,"add X",before_new_util/helper/abstraction,skill_create/fork/find,current_lib/API_behavior}
+§FLOW{
+  0_Preflight(relevant_channels_only;report_skipped_honestly):{
+    repo:rg --files|targeted_rg(miss⇒state_visible_only);
+    pkg_reg:npm --version|python -m pip --version|proj_pm(miss⇒web/docs,¬claim_reg_cov);
+    gh_cli:gh auth status(miss⇒public_web|local_git);
+    mcp_docs:tool_list|local_MCP_cfg(miss⇒official_docs/web);
+    skills_dir:ls ~/.claude/skills ~/.codex/skills(miss⇒state_no_local_catalog)
+  };
+  1_Need:define_func+lang/fw_constraints;
+  2_ParallelSearch:{npm/PyPI,MCP/Skills,GitHub/Web};
+  3_Eval:{functionality,maint,community,docs,license,deps};
+  4_Decide:{
+    exact+maintained+MIT/Apache⇒Adopt(direct_use);
+    partial+good_base⇒Extend(thin_wrapper);
+    multi_weak⇒Compose(2-3_small_pkgs);
+    none⇒Build(research_informed)
+  };
+  5_Impl:install_pkg|cfg_MCP|minimal_custom_code
+}
+§MODES{
+  quick_inline:0.rg_repo→1.npm/PyPI→2.MCP(~/.claude/settings.json)→3.skills(~/.claude/skills/)→4.GitHub_OSS;
+  full_agent:`Agent(subagent_type="general-purpose",prompt="Research: [DESC]\nLang:[LANG]\nConstraints:[ANY]\nSearch: npm/PyPI,MCP,Claude skills,GitHub\nReturn: structured comparison + rec")`[legacy:`Task(...)`]
+}
+§SHORTCUTS{
+  dev:{lint:(eslint,ruff,textlint,markdownlint),fmt:(prettier,black,gofmt),test:(jest,pytest,go test),pre_commit:(husky,lint-staged,pre-commit)};
+  ai_llm:{claude_sdk:Context7,prompts:MCP,docs:(unstructured,pdfplumber,mammoth)};
+  data_api:{http:(httpx[Py],ky/undici[Node]),val:(zod[TS],pydantic[Py]),db:MCP_first};
+  content:{md:(remark,unified,markdown-it),img:(sharp,imagemin)}
+}
+§INT{
+  planning:research_before_arch_review;
+  arch:stack/integration/ref_decisions;
+  iter_retrieval([iterative-retrieval.md](iterative-retrieval.md)):C1_broad→C2_eval_top→C3_compat_check;
+  ex:{dead_link⇒textlint-rule-no-dead-link(9/10,ADOPT);http_retry⇒got/httpx(ADOPT);cfg_schema⇒ajv-cli(8/10,ADOPT+EXTEND)}
+}
+§ANTI{jump_to_code,ignore_MCP,silent_skip(report_"nothing found"_when_channel_down),over_customize(lose_lib_value),dep_bloat(huge_pkg_for_1_small_feat)}
+§SKILL_SCOUT{
+  gate:run_before_new_skill(unless_user_explicitly_skips);
+  1_intent:{task,triggers,domain/tools,3-5_kw+synonyms};
+  2_local:`find ~/.claude/skills -maxdepth 2 -name SKILL.md 2>/dev/null | grep -iE "kw|syn"` ∧ `find ~/.claude/plugins/marketplaces -path '*/skills/*/SKILL.md' 2>/dev/null | grep -iE "kw|syn"` ∧ `grep -RilE "kw|syn" ~/.claude/skills ~/.claude/plugins/marketplaces 2>/dev/null`;
+  3_remote(≤3_web_queries):`gh search repos "claude code skill kw" --limit 10 --sort stars` ∧ `gh search code "name: kw" --filename SKILL.md --limit 10`;
+  4_vet:read_SKILL.md;audit(shell_cmds,file_writes,net_calls,creds,pkg_installs,maint);copy_to_fresh_local_branch+review_diff;¬edit_marketplace_in_place;
+  5_rank(≤10):exact_name>desc>local>maintained_GH>web_only(untrusted);
+  6_options:Use_existing|Fork/extend|Create_fresh(only_if_chosen∨no_close_match)
+}
+§DOCS_CONTEXT7{
+  when:current_lib/fw/API_behavior(React,Next.js,Prisma,Supabase,...);fallback:official_docs|web_search;
+  1:`resolve-library-id(libraryName,query)`→`/org/project`∨`/org/project/version`;
+  2_select:exact_name>benchmark_score>High/Med_reputation>version_specific_ID_if_named;
+  3:`query-docs(libraryId,query)`→answer_w/_code_examples+cite_version;
+  rules:{≤3_calls(resolve/query)_per_Q(unclear⇒state_uncertainty),prefer_official_over_fork,strip_secrets(API_keys,passwords,tokens)_from_queries};
+  ex:`resolve-library-id(libraryName="Prisma",query="How do I query with relations?")`→`/prisma/prisma`→`query-docs`(include/select)
+}

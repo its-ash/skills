@@ -1,131 +1,55 @@
-# Motion, Modern Components, Performance, Accessibility
+@REF:motion
+§MAP{src:[design](../SKILL.md)(§5-9,12-13,15-19,22);react:[motion-react.md](motion-react.md);css_a:[css/animation-motion.md](css/animation-motion.md);css_c:[css/components-ui.md](css/components-ui.md)}
 
-Sections §5-§9, §12, §13, §15-§19, §22 of [`design`](../SKILL.md). Code patterns: [motion-react.md](motion-react.md). CSS animation: [css/animation-motion.md](css/animation-motion.md). CSS component patterns: [css/components-ui.md](css/components-ui.md).
-
-## 5. Animation Decisions
-
-**5.A Frequency:** 100+/day (shortcuts) = none; tens/day (hover) = subtle or none; occasional (modal, toast) = standard; rare (onboarding, success) = delight. Never animate keyboard actions.
-
-**5.B Purpose:** feedback, spatial consistency, state, bridging, explanation, delight. Can't name it -> don't build it. Data the user reads must not move for style.
-
-**5.C Easing:** enter/exit `ease-out`; on-screen move `ease-in-out`; hover `ease`; constant `linear`. Never `ease-in`.
-
+§R{5_DECIDE
+  freq:100+/d(kbd)=0;10s/d(hover)=subtle∨0;occasional(modal,toast)=std;rare(onboard,ok)=delight;¬anim(kbd);
+  why∈{feedback,spatial,state,bridge,explain,delight};¬name⇒¬build;¬move(read_data);
+  ease:in/out=ease-out;move=ease-in-out;hover=ease;const=linear;¬ease-in;
+  dur(<300ms):press=100-160ms;tip=125-200ms;drop=150-250ms;modal/drawer=200-400ms;
+  tool:CSS_trans>@starting-style>CSS_anim>scroll/ViewTrans>WAAPI>Motion(spring,layout,gesture)
+}
 ```css
---ease-out: cubic-bezier(0.23, 1, 0.32, 1);
---ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
---ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+--ease-out:cubic-bezier(0.23,1,0.32,1);--ease-in-out:cubic-bezier(0.77,0,0.175,1);--ease-drawer:cubic-bezier(0.32,0.72,0,1);
 ```
 
-**5.D Duration (UI < 300ms):** press 100-160ms, tooltip 125-200ms, dropdown 150-250ms, modal/drawer 200-400ms.
+§PAT{6_MECH
+  core:anim∈{transform,opacity,clip-path};¬scale(0)⇒scale(0.95)+opacity:0;spring(gesture/interrupt)@live;sym_in/out,orig=trig(¬modal),exit<enter;stag=30-80ms,¬block_in;hover@@media(hover:hover)and(pointer:fine);!:1-sent_why,≤1_marquee/pg;
+  spring:damp=1.0_def;~0.8_post-momentum(flick,drag);move=1.0/0.4,rot=0.8/0.4,drawer=0.8/0.3;`animate(el,{y:0},{type:'spring',bounce:0,duration:0.4})`;
+  gest:v_handoff→spring(v/(tgt-cur)_norm);proj:end=pos+(v/1000)*d/(1-d)(d=0.998)→snap_near;always_interrupt(¬lock,split_XY,blend_v_rev);rubber:(o*dim*0.55)/(dim+0.55*|o|),¬hard_stop;drag:ptr_cap,1_touch,dismiss_v>~0.11;
+  mat:backdrop-filter_over_scroll;¬light-glass/light-glass;boost_txt_ctr;anim(blur+scale)_sync;solid_if_prefers-reduced-transparency
+}
 
-**5.E Tool (cheapest first):** CSS transition > `@starting-style` > CSS animation > scroll-driven animation / View Transitions > WAAPI > Motion (springs, layout, gestures).
+§R{7_UI_!
+  press:scale(0.98)150ms--ease-out;trans>kf(retarget);blur(2px)_hides_crossfade;
+  in/out:@starting-style+transition-behavior:allow-discrete;
+  hdr(!):w-full,rounded-none(¬float/pill_def);app/dash/scroll⇒sticky top-0 z-50+(solid∨backdrop-blur)+1px_bot_hairline;edit/landing⇒static;nav_item⇒filled_pill/round_hover+active@page_r;
+  tabs(!):filled_round_seg_in_track(padding:4px,outer_r=inner_r+pad);active=solid_elev+hairline/shadow∨accent+hi-ctr_lbl;¬(underline,bot-border,bare-txt);
+  card/callout/alert(!):tonal_elev+1px_hairline(border-subtle);¬1-side_border(border-[lt]-[24])@(card,tile,callout,alert,li);¬nested_card⇒inset_muted∨div;pad≥p-4_uniform,concentric_r;
+  sel(!):{sidebar,dropdown,card,tr,opt}⇒tonal_bg∨filled_pill∨full_ring(1.5-2px+tint);¬1-side_border(border-[ltb]);
+  cb/radio/sw(!):checked=solid_accent(accent-color∨custom)+hi-ctr_mark;sw=pill_track+solid_accent+thumb(role="switch");
+  badge:color-mix(in oklch,var(--status) 12%,transparent)+hi-ctr_tint+opt_1px_hairline;¬loud_sat_routine;¬pulsing_dots;
+  overlay/tip:modal=<dialog>(showModal(),closedby="any");pop=[popover]+anchor+position-try-fallbacks;tip=popover="hint"+anchor(delay_1st,instant_next);hold=clip-path_2s_lin_in,200ms_out
+}
 
-## 6. Motion Mechanics
+§R{8_9_12
+  8:var_cascade⇒el.style.transform;Motion_x/y_main⇒full_transform_str;blur/grain⇒fixed_pointer-events-none;animation-timeline:scroll()/view()∨IntersectionObserver(¬scroll_listener);will-change_sparse;¬z-[9999]⇒top_layer(dialog,popover);lazy_WebGL/WASM,pause_offscreen;CWV:LCP<2.5s,INP<200ms,CLS<0.1;
+  9:WCAG2.2_AA;target≥24px(touch≥44px);focus¬obscured;drag⇒ptr_alt;rem_space;reduced:@media(prefers-reduced-motion:reduce){transition:opacity 200ms;transform:none}(crossfade,¬0);prefers-reduced-transparency⇒solid;prefers-contrast:more⇒solid+strong_border;forced-colors:active⇒keep_border/outline;¬fullscr_move_bg;soft_theme_sw;
+  12:glass=prem/media+inner_border+red-trans_fallback;mag/loops⇒MOTION>5,fits_brief,motion_vals_only;MOTION>4⇒vis_move;¬{scroll_listeners,scrollY_state,rAF→React_state,layout_on_static}
+}
 
-### 6.A Core
+§CFG{13_15
+  13:BaseUI_1.0/Radix,ArkUI,cmdk,sonner,input-otp,Leva,motion,NumberFlow,torph,Cobe,Satori,shiki,Liveline/recharts,dnd_kit,Virtuoso,zustand,clsx/cva;theme=color-scheme+light-dark()(next-themes_only_manual_persist);rm:{custom_toasts,div_dialogs,rerender_tickers,1k+_unvirt_rows,nested_cn_ternaries};
+  15:gate=@supports/feat(WebGPU→WebGL2);BL={ViewTrans(same/cross-doc;React19.3<ViewTransition>@Next16.4),@starting-style,scroll-anim,anchor,@property,WAAPI,Workers,OffscreenCanvas,WASM};prog(Chrome137+/139+,¬BL)={CSS_if(),@function,sibling-index(),corner-shape};polish_20%
+}
 
-* Animate only `transform`, `opacity` (+ `clip-path`). Never from `scale(0)` - start `0.95` + `opacity: 0`.
-* Springs for gestures/interruptible motion; interrupt from the live on-screen value.
-* Symmetric enter/exit; `transform-origin` at the trigger (modals exempt). Exit faster than enter.
-* Stagger 30-80ms; never block input. Hover behind `@media (hover: hover) and (pointer: fine)`.
-* **Mandatory:** every animation justified in one sentence; max one marquee per page.
+§CHK{16_17_18
+  16:{slowmo_2-5x,DevTools_Anim,Chrome_DevTools_MCP_INP,real_touch,next-day_eyes};
+  17:{0-cfg_DX(<Toaster/>+toast()),defs>opts,memorable_names,invisible_edge(pause_hidden),trans>kf,personality(slow_decide,fast_sys)};
+  18:{Purpose,Agency(undo>confirm),Responsibility,Familiarity,Flexibility,Simplicity(¬minimal),Craft,Delight;inline_val;screen∈{where,next,out};ctrl_mirrors_tgt;specific_lbl}
+}
 
-### 6.B Springs
-
-Damping 1.0 (no bounce) default; ~0.8 only after momentum gestures (flick, drag release). Move `1.0/0.4`, rotate `0.8/0.4`, drawer `0.8/0.3`.
-
-```js
-animate(el, { y: 0 }, { type: 'spring', bounce: 0, duration: 0.4 });
-```
-
-### 6.C-G Gestures
-
-* **Velocity handoff:** pass release velocity to the spring (`v / (target - current)` if normalized).
-* **Momentum projection:** `end = pos + (v / 1000) * d / (1 - d)`, `d = 0.998`, then snap nearest.
-* **Interruptible always:** never lock input; split X/Y springs; blend velocity on reversal.
-* **Rubber-band edges:** `(o * dim * 0.55) / (dim + 0.55 * |o|)`, never hard stops.
-* Pointer capture during drag; ignore extra touches; dismiss on velocity > ~0.11.
-
-### 6.H Materials
-
-Translucent chrome (`backdrop-filter`) with content scrolling under; never light-glass on light-glass; boost text contrast on blur; animate blur + scale together; provide a solid surface fallback for `prefers-reduced-transparency`.
-
-## 7. Modern Component Principles
-
-* **Press & interaction:** `scale(0.98)` 150ms `--ease-out`. Transitions over keyframes so rapid triggers retarget mid-flight. Small `blur(2px)` hides rough icon/content crossfades.
-* **Enter/exit states:** Use `@starting-style` + `transition-behavior: allow-discrete`.
-* **Header (mandatory):** Full-width, square outer edges (`rounded-none`), never a floating or rounded pill navbar by default. Pick by surface: `sticky top-0 z-50` with solid or `backdrop-blur` background + 1px bottom hairline for app/dashboard/long-scroll pages; normal static flow for editorial/minimal/landing pages. Nav items inside may use filled pill/rounded hover and active states on the page radius scale.
-* **Tabs filled + rounded (mandatory):** Use a segmented/filled tab bar inside a subtle muted container track (`padding: 4px`, outer radius = inner radius + padding). Active tab = solid elevated surface fill + crisp hairline/shadow (or solid accent fill with high-contrast label). **Never** use underline-only tabs, bottom-border tabs, or bare-text tabs.
-* **Cards, callouts & alerts (mandatory):** Use tonal surface elevation + full-perimeter 1px hairline border (`border-subtle`). **Never** use a one-sided accent border (`border-l-4`, `border-t-4`, `border-l-2`, etc.) on cards, stat tiles, callouts, alerts, or list items. **Never** nest cards inside cards; use an inset muted surface or divider instead. Keep uniform padding on all sides (`p-4` min) and concentric radius.
-* **Selection never one-sided border (mandatory):** Selected sidebar links, dropdown items, cards, table rows, and options get a distinct tonal background fill, a filled pill style, or a full-perimeter accent ring (`1.5-2px` + subtle tint). **Never** use a one-sided border (`border-l`, `border-t`, `border-b`) to mark selection.
-* **Checkbox, radio & switch filled (mandatory):** Checked checkbox/radio = solid accent fill (`accent-color` or custom) + high-contrast check/dot mark. Switch = pill track with solid accent fill when checked and crisp sliding thumb (`role="switch"`).
-* **Badges & status pills:** Soft tonal fill (`color-mix(in oklch, var(--status) 12%, transparent)`) + high-contrast tinted text + optional subtle 1px hairline. Avoid loud fully-saturated badges for routine status; never use decorative pulsing status dots.
-* **Overlays & tooltips:** Modals = native `<dialog>` (`showModal()`, `closedby="any"`). Menus/popovers = `[popover]` + CSS anchor positioning + `position-try-fallbacks`. Tooltips = `popover="hint"` + anchor positioning; delay first, instant on subsequent hovers. Hold-to-act = `clip-path` 2s linear in, 200ms out.
-
-## 8. Performance
-
-* CSS variables cascade - set `el.style.transform` for per-frame values. Motion `x`/`y` run on main thread; use a full `transform` string under load.
-* Blur/grain only on fixed `pointer-events-none` layers. `animation-timeline: scroll()/view()` or `IntersectionObserver`, never scroll listeners. `will-change` sparingly. No `z-[9999]`; use the top layer (`dialog`, `popover`).
-* Lazy-init WebGL/WASM; pause off-screen. **CWV:** LCP < 2.5s, INP < 200ms, CLS < 0.1.
-
-## 9. Accessibility
-
-* WCAG 2.2 AA contrast everywhere; targets 24px minimum, 44px on touch; focus not obscured by sticky chrome; drag actions have a pointer alternative; `rem` spacing.
-* **Reduced motion:** cross-fade, not zero: `@media (prefers-reduced-motion: reduce) { transition: opacity 200ms; transform: none }`.
-* Reduced transparency: solid surfaces. `prefers-contrast: more`: solid + stronger borders. `forced-colors: active`: keep borders and outlines. No full-screen moving backgrounds; soft theme switches.
-
-## 12. Context-Aware Tools
-
-* Glass: premium/media only, with inner border + reduced-transparency fallback. Magnetic physics / perpetual loops: `MOTION > 5` and fitting brief, motion values only.
-* `MOTION > 4` means the page visibly moves.
-* **Forbidden:** scroll listeners, `scrollY` in state, rAF loops on React state, `layout` props on static content.
-
-## 13. UI Libraries
-
-Base UI 1.0 / Radix (headless), Ark UI, cmdk, sonner (toasts), input-otp, Leva, motion, NumberFlow, torph, Cobe, Satori, shiki, Liveline/recharts, dnd kit, Virtuoso, zustand, clsx/cva. Theme: `color-scheme` + `light-dark()`; next-themes only to persist a manual override. Replace hand-rolled toasts, div dialogs, re-render number tickers, 1k+ unvirtualized rows, nested className ternaries.
-
-## 15. Progressive Enhancement
-
-Gate with `@supports` / feature checks (WebGPU -> WebGL2). Baseline toolkit: View Transitions (same-document and cross-document; React 19.3 `<ViewTransition>` in Next.js 16.4), `@starting-style`, scroll-driven animation, anchor positioning, `@property`, WAAPI, Workers, OffscreenCanvas, WASM. Progressive (Chrome 137+/139+, not Baseline): CSS `if()`, `@function`, `sibling-index()`, `corner-shape`. Polish the last 20%.
-
-## 16. Debugging Animations
-
-Slow-motion (2-5x), DevTools Animations panel frame-by-frame, Chrome DevTools MCP traces for INP, real devices for touch, fresh eyes next day.
-
-## 17. Loved Components
-
-Zero-setup DX (`<Toaster />` + `toast()`); great defaults over options; memorable names; edge cases handled invisibly (pause on hidden tab); transitions over keyframes. Motion matches personality; slow where the user decides, fast where the system responds.
-
-## 18. Apple Foundations
-
-Purpose, Agency (undo over confirms), Responsibility, Familiarity, Flexibility, Simplicity (not minimalism), Craft, Delight. Validate inline; every screen answers where am I / where next / how out; controls mirror what they change; specific labels.
-
-## 19. Reference Vocabulary
-
-* **Hero:** Asymmetric Split, Editorial Manifesto, Video Mask, Kinetic Type, Curtain Reveal, Scroll-Pinned.
-* **Nav:** Sticky Header, Static Header, Dock Magnification, Magnetic Button, Gooey Menu, Dynamic Island, Radial Menu, Mega Menu.
-* **Layout:** Bento, Masonry, Split-Screen Scroll, Sticky-Stack.
-* **Cards:** Tonal Surface, Parallax Tilt, Spotlight Border, Glass Panel, Swipe Stack, Morphing Modal.
-* **Scroll:** Horizontal Hijack, Zoom Parallax, Progress Path. **Media:** Coverflow, Drag-to-Pan, Hover Trail.
-* **Text:** Marquee, Mask Reveal, Scramble, Circular Path. **Micro:** Skeleton Shimmer, Ripple, SVG Line Draw, Mesh Gradient.
-* **Libraries:** Motion default; GSAP 3.13 (free, all plugins) + ScrollTrigger for scrolltelling, Lenis for smooth scroll; Three.js r186+ / R3F 9 for 3D - isolated leaves with cleanup; never mix GSAP/Three with Motion in one tree.
-
-## 22. Review Fixes
-
-| Issue | Fix |
-|---|---|
-| `transition: all` | Name specific properties |
-| `scale(0)` entry | `scale(0.95)` + `opacity: 0` |
-| `ease-in` | `--ease-out` |
-| Popover origin `center` | Trigger origin |
-| Keyboard-action animation | Remove |
-| UI > 300ms | 150-250ms |
-| Ungated hover | `(hover: hover) and (pointer: fine)` |
-| Keyframes on rapid triggers | Transitions |
-| Equal enter/exit speed | Faster exit |
-| Mass mount | 30-80ms stagger |
-| Layout-property animation | `transform` / `opacity` |
-| No reduced motion | Gentler cross-fade variant |
-| Underline-only tabs | Filled rounded segmented tabs in a muted track |
-| One-sided border on card/callout | Full-perimeter 1px hairline + tonal surface fill |
-| Nested cards | Inset muted surface or hairline divider |
+§MAP{19_22
+  hero:{AsymSplit,EditManifesto,VideoMask,KineticType,CurtainReveal,ScrollPinned};nav:{StickyHdr,StaticHdr,DockMag,MagneticBtn,GooeyMenu,DynamicIsland,RadialMenu,MegaMenu};layout:{Bento,Masonry,SplitScroll,StickyStack};cards:{TonalSurf,ParallaxTilt,SpotlightBorder,GlassPanel,SwipeStack,MorphModal};scroll:{HorizHijack,ZoomParallax,ProgressPath};media:{Coverflow,DragPan,HoverTrail};txt:{Marquee,MaskReveal,Scramble,CircularPath};micro:{SkeletonShimmer,Ripple,SVGLineDraw,MeshGrad};
+  libs:{Motion_def;GSAP_3.13(free,all_plugins)+ScrollTrigger+Lenis;Three_r186+/R3F_9(isolated+cleanup);¬mix(GSAP/Three,Motion)_1_tree};
+  22_fix:¬transition:all⇒prop_list;+§5-9{¬scale(0),¬ease-in,orig=trig,¬kbd_anim,UI≤250ms,hover_media,trans>kf,exit<enter,stag30-80ms,transform/opacity,red_mot_fade,filled_tab,full_hairline,¬nested_card}
+}

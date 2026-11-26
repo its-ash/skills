@@ -1,154 +1,34 @@
-# Scholar Evaluation
+@REF:scholar-evaluation
+§R{scope}
+eval(paper|proposal|thesis_ch|lit_rev|methods|ev_qual|cit_sup),compare,rev_feedback
+art∈{empirical,theoretical,tech_rep,sys/narr_lit_rev,proposal,thesis_ch,conf_abs/short}
+scope∈{comprehensive(all),targeted(1-2_dims:meth|cit),comparative(rank≥2_same_rubric)}
 
-Evaluate papers, proposals, literature reviews, methods sections, evidence quality, and citation support with a repeatable 1 to 5 rubric.
+§PAT{rubric_1_5}
+scale:{5:excel/rigor/pub_ready,4:good/min_impr,3:adeq/gaps/usable,2:weak/subst_rev,1:poor/maj_fail,N/A:inapp}
+1_Prob&Q:{clear/spec,contrib,scope/assump_expl,Q↔claim}
+2_Lit&Ctx:{prior_cov,synth>list,gaps_acc,rec+found_bal}
+3_Method:{ans_Q,justif,vars/data/partic/mat_clear,repro,eth/prac_lim}
+4_Data&Ev:{cred/fit,sample/cov_adeq,incl/excl/preproc_doc,miss+bias_disc}
+5_Analysis:{stat/qual/comp_fit,fair_base/ctrl,uncert/sens/robust,alt_exp}
+6_Res&Interp:{clear,claims⊆ev,fig/tbl/met_clear,neg/null_honest}
+7_Lim&Valid:{spec(¬gen),int/ext/constr/concl_risk,spec≠demo}
+8_Writ&Struct:{flow,org_by_Q,def/not_clear,scholar_tone}
+9_Citations:{sup_claims,primary_pref,rev_lbl_rev,prep_lbl_prep,meta/links_ok}
 
-## When to use
+§PAT{proc}
+1:read(abs,intro,fig,concl)→claims|2:read(meth,res)→ev|3:chk(claims↔cits)|4:score(dims)|5:sep(blockers,revs)|6:next_edits
 
-- Reviewing a research paper, proposal, thesis chapter, or literature review.
-- Checking whether claims are supported by cited evidence.
-- Evaluating methodology, study design, analysis, or limitations.
-- Comparing two or more papers for quality or relevance.
-- Producing structured feedback for revision.
-
-## Evaluation Scope
-
-Start by identifying the artifact:
-
-- empirical research paper
-- theoretical paper
-- technical report
-- systematic or narrative literature review
-- research proposal
-- thesis or dissertation chapter
-- conference abstract or short paper
-
-Then choose scope:
-
-- **comprehensive**: all rubric dimensions
-- **targeted**: one or two dimensions, such as method or citations
-- **comparative**: rank multiple works against the same rubric
-
-## Rubric
-
-Score each applicable dimension from 1 to 5:
-
-- 5: excellent; clear, rigorous, and publication-ready
-- 4: good; minor improvements needed
-- 3: adequate; meaningful gaps but usable
-- 2: weak; substantial revision needed
-- 1: poor; major validity or clarity problems
-
-Use `N/A` for dimensions that do not apply.
-
-### 1. Problem and Research Question
-
-- Is the problem clear and specific?
-- Is the contribution meaningful?
-- Are scope and assumptions explicit?
-- Does the question match the claimed contribution?
-
-### 2. Literature and Context
-
-- Is relevant prior work covered?
-- Does the work synthesize rather than merely list sources?
-- Are gaps accurately identified?
-- Are recent and foundational sources balanced?
-
-### 3. Methodology
-
-- Does the method answer the research question?
-- Are design choices justified?
-- Are variables, datasets, participants, or materials described clearly?
-- Could another researcher reproduce the work?
-- Are ethical and practical constraints acknowledged?
-
-### 4. Data and Evidence
-
-- Are data sources credible and appropriate?
-- Is sample size or corpus coverage adequate?
-- Are inclusion, exclusion, and preprocessing decisions documented?
-- Are missing data and bias risks discussed?
-
-### 5. Analysis
-
-- Are statistical, qualitative, or computational methods appropriate?
-- Are baselines and controls fair?
-- Are uncertainty, sensitivity, or robustness checks included when needed?
-- Are alternative explanations considered?
-
-### 6. Results and Interpretation
-
-- Are results clearly presented?
-- Do claims stay within the evidence?
-- Are figures, tables, and metrics understandable?
-- Are negative or null results handled honestly?
-
-### 7. Limitations and Threats to Validity
-
-- Are limitations specific rather than generic?
-- Are internal, external, construct, and conclusion-validity risks addressed?
-- Does the paper distinguish speculation from demonstrated results?
-
-### 8. Writing and Structure
-
-- Is the argument easy to follow?
-- Are sections organized around the research question?
-- Are definitions and notation clear?
-- Is the tone precise and scholarly?
-
-### 9. Citations
-
-- Do cited papers support the claims attached to them?
-- Are primary sources used where possible?
-- Are reviews labeled as reviews?
-- Are preprints labeled as preprints?
-- Are citation metadata and links correct?
-
-## Review Process
-
-1. Read the abstract, introduction, figures, and conclusion for claimed
-   contribution.
-2. Read methods and results for evidence quality.
-3. Check the strongest claims against cited sources.
-4. Score each applicable dimension.
-5. Separate critical blockers from revision suggestions.
-6. End with concrete next edits.
-
-## Output Template
-
+§FMT{tpl}
 ```markdown
 # Scholar Evaluation: <Artifact>
-
 ## Overall Assessment
-
-- Overall score: <1-5 or N/A>
-- Confidence: <high | medium | low>
-- Summary: <3-5 sentences>
-
-## Dimension Scores
-
-| Dimension | Score | Evidence | Revision priority |
-| --- | ---: | --- | --- |
-| Problem and question |  |  |  |
-| Literature and context |  |  |  |
-| Methodology |  |  |  |
-| Data and evidence |  |  |  |
-| Analysis |  |  |  |
-| Results and interpretation |  |  |  |
-| Limitations |  |  |  |
-| Writing and structure |  |  |  |
-| Citations |  |  |  |
-
+Overall:<1-5|N/A> | Confidence:<high|medium|low> | Summary:<3-5 sent>
+## Dimension Scores (<dim>: <score> | <evidence> | <revision priority>)
+- Problem&question | Literature&context | Methodology | Data&evidence | Analysis | Results&interpretation | Limitations | Writing&structure | Citations
 ## Critical Issues
-
 ## Recommended Revisions
-
 ## Evidence Checks Needed
 ```
 
-## Pitfalls
-
-- Do not use the score as a substitute for concrete feedback.
-- Do not penalize a paper for omitting a dimension outside its scope.
-- Do not treat citation count, venue, or author reputation as proof of quality.
-- Do not accept unsupported claims just because they appear in the abstract.
+§ANTI{score≠feedback;¬penalize(out_of_scope_dim);cit_cnt∨venue∨rep≠quality;abs_claim≠verif}

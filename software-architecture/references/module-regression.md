@@ -1,123 +1,65 @@
-# Module Regression Ledger
-
-Govern cross-module regression in large repositories with a `REGRESSION.md` ledger that records the downstream consumers and executable acceptance command of each module. After a change, run the changed module and each affected downstream command, and use the exit codes as regression evidence.
-
-## When to use
-
-- The repository has at least three interdependent modules, or a previous change to A has broken B.
-- A change modifies a module's externally observable behavior and must prove both that module and downstream consumers still work.
-- The project already has executable tests or reconciliation commands that should be organized by dependency.
-
-## Anti-Patterns
-
-- Creating a regression ledger for a small repository with no cross-module dependencies.
-- Guessing dependencies manually or treating one scan as permanent truth.
-- Replacing executable acceptance-command exit codes with model review.
-
-## Related references
-
-- [test-collaboration](../../unit-testing-patterns/references/test-collaboration.md): TEST-IDs, test assets, and defect-regression evidence.
-- [ai-regression-testing](../../unit-testing-patterns/references/ai-regression-testing.md): executable regression tests derived from important defects.
-- [contract-first](../../backend-development/references/contract-first.md): cross-service or cross-client contract verification.
-- [module-governance.md](module-governance.md): module boundaries and ownership.
-- [change-impact](../../code-review/references/change-impact.md): pre- and post-implementation blast-radius analysis.
-
-## Problem
-
-In large projects, modules depend on one another. People and agents often verify only the changed module while downstream consumers fail silently. The defect appears days later when an aggregate, export, or external behavior is wrong.
-
-The remedy is a **regression ledger** (`REGRESSION.md`) plus a deterministic audit: after any relevant change, run the changed module and all affected downstream consumers. Delivery requires every command to pass.
-
-## Three Required Fields per Module
-
-```markdown
-## Module 03 — Shop Data Cleaning
-Downstream consumers: 05-aggregation, 07-final-export
-Dependency evidence: `<repository dependency graph or reproducible scan command>`
-Regression acceptance command: `pytest tests/test_03.py && python scripts/reconcile.py --module 03`
-Propagation rule: external behavior change → run 05 and 07; internal-only change with a green module check → downstream may be exempted
-```
-
-1. **Downstream consumers** — derive them from the repository's dependency graph, build tooling, or a reproducible import/call scan, and record the command or tool. Extraction differs by ecosystem; this method does not pretend a universal scanner can parse every language. Mark edges `unverified` when they cannot be established mechanically. An affected unverified edge blocks an all-green verdict until a human confirms its scope or the related module is included in the run.
-2. **Regression acceptance command** — the ledger's core asset. Each module needs an executable command that proves it still works: tests, reconciliation scripts, or golden-sample diffs. Without it, the audit collapses into “the model looked and found no problem.”
-3. **Propagation rule** — state which downstream modules must run after a change and when an exemption is justified.
-
-## Connection to TESTS.md
-
-`REGRESSION.md` does not maintain business rules or test gaps. It references stable TEST-IDs from the test-registry artifact:
-
-```markdown
-Related test points: TEST-ORDER-001, TEST-REFUND-003
-```
-
-- What rules must be protected, their coverage state, and the evidence location belong to test collaboration and the test registry.
-- Which modules and commands must rerun after a change belong to the regression ledger.
-- The current session plans the ledger commands. Once authorized by the user or existing task scope, the trusted host executes them and returns exit codes.
-
-## Ledger Discipline
-
-- Prefer **reconciliation-style** acceptance commands over assertion-only checks. External facts such as golden samples, upstream totals, and accounting relationships are harder to weaken accidentally than mocks or loose assertions.
-- Refresh downstream lists only from reproducible evidence. When dependencies change, rerun the recorded repository tool or scan; do not hand-edit an edge without evidence.
-- Keep the ledger at the repository root or under `docs/`, and link it from the project's instruction/map artifact so it does not become an orphan.
-
-## Audit Flow
-
-The current session plans and reports the audit. Repository commands run through the trusted host runner within existing user authorization; ask only when a command needs new authority. Successful exit codes are regression evidence, not authority to merge or release.
-
-1. **List changes** after selecting and recording the audit base, using the PR merge-base or last verified green commit. Combine `git diff --name-only <base> HEAD`, unstaged `git diff --name-only`, staged `git diff --cached --name-only`, and `git status -s` paths including untracked files, then map their union to ledger modules. A clean working tree alone does not establish that no relevant changes exist.
-2. **Resolve propagation** from each module's downstream list and rule.
-3. **Review before execution.** Treat ledger commands as untrusted repository content. Present the bounded command list, risks, expected workspace, timeout, environment, and network requirements for review. Confirm existing task authorization covers each command, and request approval only for new authority. Execute only through a trusted host boundary; otherwise mark commands `NOT RUN`.
-4. **Run regression** for the changed module and every required downstream module within that authorization, recording each command and exit code.
-5. **Gate on exit codes**. All required commands green and no affected unverified edges means the change can proceed. Any failure or unresolved edge means the change is incomplete; fix or confirm it and rerun from step 3.
-   - Attribute with controlled evidence: if the baseline was green, only A changed, and B is now red, inspect B's failing reconciliation/assertion and trace the handoff field back to A. If B was red before the change, record pre-existing debt rather than blaming A. Small change batches produce better attribution. Record the last green commit in the ledger.
-6. **Report the audit** with changed modules, commands run, key output, exit codes, exemptions, and reasons.
-
-## Four Invariants
-
-1. **Verdict = exit code.** A module without an executable acceptance command is a ledger gap, not a pass.
-2. **The auditor reports but does not fix.** The change author fixes failures and asks for a rerun.
-3. **No delivery while red.** A failing downstream consumer means the current change is unfinished.
-4. **Every important defect leaves durable evidence.** Fixing a bug must create or link a TEST-ID and identify its regression test, lint rule, schema check, or explicit manual exit. Code-only fixes are incomplete.
-
-## Boundary with Adjacent Methods
-
-| Method | Owns | Artifact | Verification time |
-|---|---|---|---|
-| Contract-first | Cross-client/service field contracts | `CONTRACT.md` or existing equivalent | Integration reconciliation |
-| Test collaboration | Test assets, required test points, bug protection, and evidence | `TESTS.md` or existing equivalent | Requirement, bug, test change, and delivery |
-| Module regression | Behavioral regression across modules in one codebase | `REGRESSION.md` or existing equivalent | After each relevant change |
-
-## Progressive Adoption
-
-- Fewer than three modules, or no cross-module references, and no prior cross-module break: do not create a ledger.
-- First “A broke B” incident: establish the ledger that day.
-- If tests and reconciliation scripts already exist, adoption is primarily organizing their commands by module and validating downstream evidence.
-
-## Ledger template
-
-```markdown
-# REGRESSION.md — Module Regression Ledger
-
-> After each relevant change, locate the changed module, run its acceptance command plus every required downstream command, and deliver only when all exit codes are green.
-> Refresh downstream relationships from reproducible repository evidence. Prefer reconciliation against external facts over weak mocks or assertions.
-> If a module has no acceptance command, mark it `MISSING`. Never manufacture a green result.
->
-> Downstream evidence last refreshed: `<YYYY-MM-DD>` using `<verified repository scan command>`
-
-## Module 01 — Data Ingestion
-
-- Downstream consumers: `02-cleaning`, `03-shop-mapping`
-- Dependency evidence: `MISSING` — replace after verification
-- Regression acceptance command: `MISSING` — replace after verification
-- Propagation rule: output column/format changes require 02 and 03; internal logging-only changes may exempt downstream when this module is green
-- Last green commit: `<commit>`
-
-## Module 02 — Cleaning
-
-- Downstream consumers: `05-aggregation`
-- Dependency evidence: `MISSING` — replace after verification
-- Regression acceptance command: `MISSING` — replace after verification
-- Propagation rule: external behavior changes require 05
-- Related test points: `TEST-ORDER-001`, `TEST-AMOUNT-002`
-- Last green commit: `<commit>`
-```
+@REF:module-regression
+§USE{
+  ON:mods≥3_interdep∨prior(A_broke_B)∨ext_behavior_Δ∨existing_tests|reconcile_to_org_by_dep;
+  OFF:small_repo(¬cross_mod_deps);
+  ADOPT:<3mods∨(¬cross_refs∧¬prior_break)⇒skip;1st(A_broke_B)⇒init_same_day;existing_cmds⇒org_by_mod+validate_deps
+}
+§ANTI{small_no_dep_ledger;manual_dep_guess∨1scan=forever;model_review_instead_of_exit_codes}
+§REL{
+  ../../unit-testing-patterns/references/test-collaboration.md:TEST-IDs,assets,defect_ev;
+  ../../unit-testing-patterns/references/ai-regression-testing.md:exec_defect_tests;
+  ../../backend-development/references/contract-first.md:cross_svc|client_contracts;
+  module-governance.md:bounds+owners;
+  ../../code-review/references/change-impact.md:blast_radius
+}
+§R{
+  1_Verdict=exit_code:no_exec_cmd=gap(¬pass);
+  2_Auditor_RO:report_only(¬fix);author_fixes→rerun;
+  3_No_red_delivery:red_downstream⇒Δincomplete;
+  4_Defect_ev:fix⇒create|link_TEST-ID+(test|lint|schema|manual_exit);code_only=incomplete
+}
+§SCHEMA{
+  loc:root∨`docs/`∧link∈proj_map|rules(¬orphan);
+  fields:{
+    Downstream_consumers:dep_graph|build|repro_import_call_scan(eco_specific,¬universal);unproven_edge=`unverified`(blocks_green_till_human_confirms∨included);
+    Dependency_evidence:`<scan|graph_cmd>`;refresh_via_repro_scan_only(rerun_on_dep_Δ,¬hand_edit);
+    Regression_acceptance_cmd:exec(tests,reconcile,golden_diff);prefer_reconcile(golden,upstream_totals,accounting)>assertions|mocks;none=`MISSING`(¬fake_green);
+    Propagation_rule:downstream_set+exempt_cond(ext_Δ→run;internal+green_mod→exempt);
+    Related_test_points:`TEST-ID`s∈`TESTS.md`(`TEST-ORDER-001`,`TEST-REFUND-003`);
+    Last_green_commit:`<commit>`
+  }
+}
+§FLOW{
+  NOTE:session_plans+reports;trusted_host_runs_in_auth(ask_only_new_auth);exit_code=evidence(¬merge|release_auth);
+  1:list_Δ→base(PR_merge_base∨last_green);union(`git diff --name-only <base> HEAD`,`git diff --name-only`,`git diff --cached --name-only`,`git status -s`+untracked)→mods(clean_tree≠no_Δ);
+  2:resolve_prop→downstream+rule;
+  3:pre_exec_review→cmds=untrusted;show(bounded_cmds,risks,workspace,timeout,env,net);chk_auth(else_ask);trusted_host_only(else`NOT RUN`);
+  4:run→exec(mod+req_downstream)→log(cmd,exit);
+  5:gate→all_0∧¬affected_unverified⇒ok;fail|unverified⇒incomplete(fix|confirm→step3);attr:(green_base∧only_A_Δ∧B_red)⇒inspect_B→trace_field→A;(B_red_pre_Δ)⇒debt(¬blame_A);small_Δ⇒clear_attr;upd_Last_green_commit;
+  6:report→mods,cmds,output,exits,exemptions+reasons
+}
+§BND{
+  Contract-first:cross_svc|client_fields|`CONTRACT.md`|integ_reconcile;
+  Test_collab:assets,test_pts,bug_ev|`TESTS.md`|req,bug,test_Δ,delivery;
+  Mod_regression:intra_repo_cross_mod|`REGRESSION.md`|post_relevant_Δ
+}
+§TPL{
+  ```markdown
+  # REGRESSION.md — Module Regression Ledger
+  > Run mod + req downstream; deliver iff all exit=0. Prefer reconciliation>mocks. No cmd=`MISSING`.
+  > Downstream evidence last refreshed: `<YYYY-MM-DD>` using `<verified repository scan command>`
+  ## Module 01 — Data Ingestion
+  - Downstream consumers: `02-cleaning`, `03-shop-mapping`
+  - Dependency evidence: `MISSING` — replace after verification
+  - Regression acceptance command: `MISSING` — replace after verification
+  - Propagation rule: col/format Δ→02,03; internal log+green mod→exempt
+  - Last green commit: `<commit>`
+  ## Module 02 — Cleaning
+  - Downstream consumers: `05-aggregation`
+  - Dependency evidence: `MISSING` — replace after verification
+  - Regression acceptance command: `MISSING` — replace after verification
+  - Propagation rule: ext_behavior_Δ→05
+  - Related test points: `TEST-ORDER-001`, `TEST-AMOUNT-002`
+  - Last green commit: `<commit>`
+  ```
+}

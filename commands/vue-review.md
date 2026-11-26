@@ -1,173 +1,50 @@
 ---
-description: Comprehensive Vue.js code review for Composition API correctness, reactivity, composable patterns, template security, accessibility, and Vue-specific performance. Invokes the vue-reviewer agent (and typescript-reviewer alongside on .vue/.ts changes).
+description: "Vue.js review (Composition API, reactivity, composables, template sec, a11y, perf) via vue-reviewer (+typescript-reviewer on .vue/.ts)."
 ---
-
-# Vue Code Review
-
-This command invokes the **vue-reviewer** agent for Vue-specific code review. For pull requests touching `.vue` files or Vue-containing `.ts`/`.js` files, both `vue-reviewer` and `typescript-reviewer` should run — each owns a distinct lane.
-
-## What This Command Does
-
-1. **Identify Vue Changes**: Find modified `.vue` files and Vue-related `.ts`/`.js` files via `git diff`
-2. **Run Lint**: Execute `eslint` with `eslint-plugin-vue`
-3. **Typecheck**: Run `vue-tsc --noEmit` or the project's canonical typecheck command
-4. **Review Vue Lanes Only**: Reactivity, composables, template security, accessibility, Vue-specific performance
-5. **Generate Report**: Categorize issues by severity (CRITICAL / HIGH / MEDIUM)
-
-## When to Use
-
-Use `/vue-review` when:
-
-- A PR or commit touches `.vue` files
-- After writing or modifying Vue components, composables, or Pinia stores
-- Before merging Vue code
-- Auditing template security (`v-html`, URL bindings)
-- Reviewing a new composable for correctness
-- Auditing Vue Router guards and navigation
-- Reviewing Nuxt server routes or SSR-specific code
-
-For pure `.ts`/`.js` changes with no Vue imports, use `/code-review` (general).
-
-## Scope vs `/code-review` and TypeScript Review
-
-| Tool | Scope |
-|---|---|
-| `vue-reviewer` (this command) | Reactivity, composables, template security, a11y, Vue performance, Pinia/Router |
-| `typescript-reviewer` | Generic TS/JS — `any` abuse, async correctness, Node security |
-| `security-reviewer` | Project-wide security audit |
-| `/code-review` | Generic uncommitted-changes or PR review |
-
-On a `.vue` / Vue-related PR, invoke both `vue-reviewer` and `typescript-reviewer`. Findings from each are non-overlapping by design.
-
-## Review Categories
-
-### CRITICAL (Must Fix)
-
-- `v-html` with unsanitized input
-- `:href`/`:src` with unvalidated user URLs (`javascript:`, `data:`)
-- Secret in client bundle (`VITE_*`, Nuxt `public` runtimeConfig)
-- Server endpoint without input validation (Nuxt Nitro)
-- `localStorage`/`sessionStorage` for session tokens
-- Destructuring `reactive()` objects (breaks reactivity; props destructure is safe since Vue 3.5)
-- `reactive()` object replacement (breaks watchers)
-- Watcher source tracking a ref object instead of `.value`
-
-### HIGH (Should Fix)
-
-- Composable with module-scope side effects
-- Missing cleanup in composable (watcher, interval, listener)
-- `v-for` without `:key` or with `key={index}`
-- `v-if` + `v-for` on same element
-- Props mutation
-- Missing prop validation
-- Route guard returning false without redirect
-- `useRoute().params` destructured at top-level (snapshot)
-- `v-model` bound to computed without setter
-- Accessibility violations (missing labels, non-semantic interactive elements)
-- Direct store property mutation outside actions
-
-### MEDIUM (Consider)
-
-- Options API in new Vue 3 code
-- Component over 300 lines
-- `v-show` where `v-if` is more appropriate (or vice versa)
-- Missing `:max` on `<KeepAlive>`
-- Missing `shallowRef` for large replaced data
-- Custom validation instead of vetted form library
-- `defineExpose` exposing more than necessary
-- `inheritAttrs` not disabled when using `v-bind="$attrs"`
-
-## Automated Checks Run
-
-```bash
-# Lint (required)
-npx eslint .
-
-# Vue-specific typecheck
-vue-tsc --noEmit
-
-# Targeted security rules
-npx eslint . --rule 'vue/no-v-html: warn' \
-              --rule 'vue/no-template-target-blank: error'
-
-# Supply-chain
-npm audit
-```
-
-If `eslint-plugin-vue` or `vue-tsc` is not configured, the review will flag the gap as a HIGH config issue and continue.
-
-## Example Usage
-
-````text
-User: /vue-review
-
-Agent:
-# Vue Code Review Report
-
-## Files Reviewed
-- src/components/UserCard.vue (modified)
-- src/composables/useUser.ts (new)
-- src/stores/useUserStore.ts (modified)
-
-## Lint Results
-PASS: eslint clean
-PASS: vue-tsc clean
-
-## Issues Found
-
-[CRITICAL] Unsanitized v-html
-File: src/components/UserCard.vue:15
-Issue: User-controlled bio rendered as raw HTML via v-html.
-Why: XSS via stored script tags in user input.
-Fix: Sanitize with DOMPurify or render as text:
-```vue
-<script setup>
-import DOMPurify from "dompurify";
-const safeBio = computed(() => DOMPurify.sanitize(user.bio));
-</script>
-<template>
-  <div v-html="safeBio" />
-</template>
-```
-
-[HIGH] Watcher in composable missing cleanup
-File: src/composables/useUser.ts:22
-Issue: `watch` callback fires fetch without AbortController; stale responses can overwrite newer data.
-Fix: Use onCleanup to abort:
-```ts
-watch(userId, async (newId, _old, onCleanup) => {
-  const controller = new AbortController();
-  onCleanup(() => controller.abort());
-  const data = await fetch(`/api/users/${newId}`, { signal: controller.signal });
-  user.value = await data.json();
-});
-```
-
-## Summary
-- CRITICAL: 1
-- HIGH: 1
-- MEDIUM: 0
-
-Recommendation: FAIL: Block merge until CRITICAL issue is fixed
-````
-
-## Approval Criteria
-
-| Status | Condition |
-|---|---|
-| PASS: Approve | No CRITICAL or HIGH issues |
-| WARNING: Warning | Only MEDIUM issues (merge with caution) |
-| FAIL: Block | CRITICAL or HIGH issues found |
-
-## Integration with Other Commands
-
-- Run your project's build command first if the build is broken
-- Run tests to ensure component tests pass
-- Run `/vue-review` before merging Vue code
-- Use `/code-review` for non-Vue-specific concerns on the same PR
-
-## Related
-
-- Agent: `vue-reviewer`
-- Companion agent: `typescript-reviewer` (run alongside for Vue-related TS/JS)
-- Skill: `web-quality-audit/references/web-accessibility.md`
+@CMD:vue-review
+§SCOPE{
+when:{PR/commit∈`.vue`,post_edit(comp/composable/Pinia),pre_merge,audit(`v-html`/URL_bind),new_composable,Router_guards/nav,Nuxt_SSR/routes}
+`vue-reviewer`:reactivity,composables,template_sec,a11y,Vue_perf,Pinia/Router
+`typescript-reviewer`:generic_TS/JS,`any`_abuse,async,Node_sec
+`security-reviewer`:proj_wide_sec
+`/code-review`:generic_PR/diff(pure_TS/JS_sans_Vue_imports⇒use_this)
+`.vue`∨Vue_`.ts`/`.js`⇒invoke(`vue-reviewer`∧`typescript-reviewer`,non_overlapping)
+}
+§FLOW{
+1:precheck→fix_broken_build∧run_component_tests
+2:`git diff`→mod(`.vue`,Vue_`.ts`/`.js`)
+3:checks:`npx eslint .`; `vue-tsc --noEmit`(∨canonical_typecheck); `npx eslint . --rule 'vue/no-v-html: warn' --rule 'vue/no-template-target-blank: error'`; `npm audit`
+4:missing(`eslint-plugin-vue`∨`vue-tsc`)⇒flag(HIGH_config)∧continue
+5:review(Vue_lanes_only)→emit_report(CRITICAL|HIGH|MEDIUM)
+}
+§R{
+CRITICAL:`v-html`_unsanitized(fix:`DOMPurify.sanitize`∨text)
+CRITICAL:`:href`/`:src`_unvalidated_URL(`javascript:`,`data:`)
+CRITICAL:client_secret(`VITE_*`,Nuxt_`public`_runtimeConfig)
+CRITICAL:Nitro_endpoint_sans_input_val
+CRITICAL:`localStorage`/`sessionStorage`_session_tokens
+CRITICAL:destructure_`reactive()`(props_destructure_ok≥Vue3.5)
+CRITICAL:`reactive()`_reassign(breaks_watchers)
+CRITICAL:watch_ref_obj_sans_`.value`
+HIGH:composable_module_scope_side_fx
+HIGH:composable_no_cleanup(watch:`onCleanup`+`AbortController`,interval,listener)
+HIGH:`v-for`_sans_`:key`∨`key={index}`
+HIGH:`v-if`+`v-for`_same_el
+HIGH:props_mut;missing_prop_val
+HIGH:route_guard_`return false`_sans_redirect
+HIGH:`useRoute().params`_top_destructure(snapshot)
+HIGH:`v-model`_computed_sans_setter
+HIGH:a11y(missing_labels,non_semantic_interactive)
+HIGH:Pinia_direct_state_mut_outside_actions
+MEDIUM:Options_API_new_Vue3;comp_>300L;`v-show`vs`v-if`_misuse;`<KeepAlive>`_sans_`:max`
+MEDIUM:large_replaced_sans_`shallowRef`;custom_val_vs_vetted_lib;`defineExpose`_overexpose;`v-bind="$attrs"`_sans_`inheritAttrs:false`
+}
+§GATE{
+`PASS: Approve`⇔CRITICAL=0∧HIGH=0
+`WARNING: Warning`⇔MEDIUM>0∧CRITICAL=0∧HIGH=0
+`FAIL: Block`⇔CRITICAL>0∨HIGH>0
+}
+§OUT{
+fmt:`# Vue Code Review Report`→`## Files Reviewed`→`## Lint Results`(`PASS: eslint clean`,`PASS: vue-tsc clean`)→`## Issues Found`(`[<SEV>] <Title>\nFile: <path:line>\nIssue:\nWhy:\nFix:`)→`## Summary`(CRITICAL/HIGH/MEDIUM)→`Recommendation: <GATE>`
+rel:{`vue-reviewer`,`typescript-reviewer`,`/code-review`(non-Vue),`web-quality-audit/references/web-accessibility.md`}
+}

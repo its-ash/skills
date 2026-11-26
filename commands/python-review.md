@@ -1,292 +1,45 @@
 ---
-description: Comprehensive Python code review for PEP 8 compliance, type hints, security, and Pythonic idioms. Invokes the python-reviewer agent.
+description: "Python code review (PEP 8, type hints, security, idioms) via python-reviewer agent."
 ---
-
-# Python Code Review
-
-This command invokes the **python-reviewer** agent for comprehensive Python-specific code review.
-
-## What This Command Does
-
-1. **Identify Python Changes**: Find modified `.py` files via `git diff`
-2. **Run Static Analysis**: Execute `ruff check`, `ruff format --check`, `pyright` or `mypy --strict`
-3. **Security Scan**: Check for SQL injection, command injection, unsafe deserialization
-4. **Type Safety Review**: Analyze type hints and type checker errors
-5. **Pythonic Code Check**: Verify code follows PEP 8 and Python best practices
-6. **Generate Report**: Categorize issues by severity
-
-## When to Use
-
-Use `/python-review` when:
-- After writing or modifying Python code
-- Before committing Python changes
-- Reviewing pull requests with Python code
-- Onboarding to a new Python codebase
-- Learning Pythonic patterns and idioms
-
-## Review Categories
-
-### CRITICAL (Must Fix)
-- SQL/Command injection vulnerabilities
-- Unsafe eval/exec usage
-- Pickle unsafe deserialization
-- Hardcoded credentials
-- YAML unsafe load
-- Bare except clauses hiding errors
-
-### HIGH (Should Fix)
-- Missing type hints on public functions
-- Mutable default arguments
-- Swallowing exceptions silently
-- Not using context managers for resources
-- C-style looping instead of comprehensions
-- Using type() instead of isinstance()
-- Race conditions without locks
-
-### MEDIUM (Consider)
-- PEP 8 formatting violations
-- Missing docstrings on public functions
-- Print statements instead of logging
-- Inefficient string operations
-- Magic numbers without named constants
-- Not using f-strings for formatting
-- Unnecessary list creation
-
-## Automated Checks Run
-
-```bash
-# Type checking
-uv run pyright  # or: uv run mypy --strict .
-
-# Linting and formatting (ruff replaces flake8, isort, black)
-uv run ruff check .
-uv run ruff format --check .
-
-# Security scanning
-uv run ruff check --select S .  # bandit rules
-semgrep --config auto .
-
-# Dependency audit
-uv run pip-audit
-
-# Testing
-uv run pytest --cov=app --cov-report=term-missing
-```
-
-## Example Usage
-
-```text
-User: /python-review
-
-Agent:
-# Python Code Review Report
-
-## Files Reviewed
-- app/routes/user.py (modified)
-- app/services/auth.py (modified)
-
-## Static Analysis Results
-✓ ruff check: No issues
-✓ pyright: No errors
-WARNING: ruff format: 2 files need reformatting
-✓ ruff S rules: No security issues
-
-## Issues Found
-
-[CRITICAL] SQL Injection vulnerability
-File: app/routes/user.py:42
-Issue: User input directly interpolated into SQL query
-```python
-query = f"SELECT * FROM users WHERE id = {user_id}"  # Bad
-```
-Fix: Use parameterized query
-```python
-query = "SELECT * FROM users WHERE id = %s"  # Good
-cursor.execute(query, (user_id,))
-```
-
-[HIGH] Mutable default argument
-File: app/services/auth.py:18
-Issue: Mutable default argument causes shared state
-```python
-def process_items(items=[]):  # Bad
-    items.append("new")
-    return items
-```
-Fix: Use None as default
-```python
-def process_items(items=None):  # Good
-    if items is None:
-        items = []
-    items.append("new")
-    return items
-```
-
-[MEDIUM] Missing type hints
-File: app/services/auth.py:25
-Issue: Public function without type annotations
-```python
-def get_user(user_id):  # Bad
-    return db.find(user_id)
-```
-Fix: Add type hints
-```python
-def get_user(user_id: str) -> User | None:  # Good
-    return db.find(user_id)
-```
-
-[MEDIUM] Not using context manager
-File: app/routes/user.py:55
-Issue: File not closed on exception
-```python
-f = open("config.json")  # Bad
-data = f.read()
-f.close()
-```
-Fix: Use context manager
-```python
-with open("config.json") as f:  # Good
-    data = f.read()
-```
-
-## Summary
-- CRITICAL: 1
-- HIGH: 1
-- MEDIUM: 2
-
-Recommendation: FAIL: Block merge until CRITICAL issue is fixed
-
-## Formatting Required
-Run: `uv run ruff format app/routes/user.py app/services/auth.py`
-```
-
-## Approval Criteria
-
-| Status | Condition |
-|--------|-----------|
-| PASS: Approve | No CRITICAL or HIGH issues |
-| WARNING: Warning | Only MEDIUM issues (merge with caution) |
-| FAIL: Block | CRITICAL or HIGH issues found |
-
-## Integration with Other Commands
-
-- Use `unit-testing-patterns/references/test-driven-development.md` first to ensure tests pass
-- Use `/code-review` for non-Python specific concerns
-- Use `/python-review` before committing
-- Use `/build-fix` if static analysis tools fail
-
-## Framework-Specific Reviews
-
-### Django Projects
-The reviewer checks for:
-- N+1 query issues (use `select_related` and `prefetch_related`)
-- Missing migrations for model changes
-- Raw SQL usage when ORM could work
-- Missing `transaction.atomic()` for multi-step operations
-
-### FastAPI Projects
-The reviewer checks for:
-- CORS misconfiguration
-- Pydantic models for request validation
-- Response models correctness
-- Proper async/await usage
-- Dependency injection patterns
-
-### Flask Projects
-The reviewer checks for:
-- Context management (app context, request context)
-- Proper error handling
-- Blueprint organization
-- Configuration management
-
-## Related
-
-- Agent: `python-reviewer`
-- Skills: `python/references/python-patterns.md`, `python/references/python-testing.md`
-
-## Common Fixes
-
-### Add Type Hints
-```python
-# Before
-def calculate(x, y):
-    return x + y
-
-# After
-def calculate(x: int | float, y: int | float) -> int | float:
-    return x + y
-```
-
-### Use Context Managers
-```python
-# Before
-f = open("file.txt")
-data = f.read()
-f.close()
-
-# After
-with open("file.txt") as f:
-    data = f.read()
-```
-
-### Use List Comprehensions
-```python
-# Before
-result = []
-for item in items:
-    if item.active:
-        result.append(item.name)
-
-# After
-result = [item.name for item in items if item.active]
-```
-
-### Fix Mutable Defaults
-```python
-# Before
-def append(value, items=[]):
-    items.append(value)
-    return items
-
-# After
-def append(value, items=None):
-    if items is None:
-        items = []
-    items.append(value)
-    return items
-```
-
-### Use f-strings
-```python
-# Before
-name = "Alice"
-greeting = "Hello, " + name + "!"
-greeting2 = "Hello, {}".format(name)
-
-# After
-greeting = f"Hello, {name}!"
-```
-
-### Fix String Concatenation in Loops
-```python
-# Before
-result = ""
-for item in items:
-    result += str(item)
-
-# After
-result = "".join(str(item) for item in items)
-```
-
-## Python Version Compatibility
-
-Baseline is Python 3.13+ (3.15 current). The reviewer flags legacy idioms that newer syntax replaces:
-
-| Legacy | Use instead |
-|--------|-------------|
-| `Optional[X]`, `Union[X, Y]` | `X | None`, `X | Y` |
-| `List[X]`, `Dict[K, V]` | `list[X]`, `dict[K, V]` |
-| `TypeVar` boilerplate | PEP 695 `def fn[T](x: T) -> T` |
-| `if/elif` chains on structure | `match` statements |
-
-Ensure `requires-python` in `pyproject.toml` states the minimum version.
+@CMD:python-review
+agent:python-reviewer
+skills:[`python/references/python-patterns.md`,`python/references/python-testing.md`]
+§FLOW{
+  1:identify modified `.py` files via `git diff`
+  2:static_analysis:
+    `uv run pyright` ∨ `uv run mypy --strict .`
+    `uv run ruff check .`
+    `uv run ruff format --check .`
+  3:security_audit:
+    `uv run ruff check --select S .`
+    `semgrep --config auto .`
+    `uv run pip-audit`
+  4:tests:`uv run pytest --cov=app --cov-report=term-missing`
+  5:review severity(§SEV)+framework(§FW)+Python3.13+(§PY)→report(§OUT)
+}
+§SEV{
+  CRITICAL(Block):SQL/cmd_inj,unsafe `eval`/`exec`,unsafe `pickle`,hardcoded_creds,unsafe `yaml.load`,bare `except:`
+  HIGH(Block):missing public fn type hints,mutable defaults(`=[]`→`None`),silent exception swallow,missing context mgr(`with`),C-style loop vs comprehension,`type()` vs `isinstance()`,lockless race conditions
+  MEDIUM(Warn):PEP 8 format,missing public fn docstrings,`print()` vs `logging`,loop `str +=` vs `"".join()`,magic numbers,non-f-string formatting,unnecessary list creation
+}
+§FW{
+  Django:N+1(`select_related`/`prefetch_related`),missing migrations,raw SQL vs ORM,missing `transaction.atomic()`
+  FastAPI:CORS misconfig,Pydantic req validation,`response_model`,async/await usage,DI patterns
+  Flask:app/request context mgmt,error handling,blueprint org,config mgmt
+}
+§PY{
+  baseline:3.13+(3.15 current);verify `requires-python` in `pyproject.toml`
+  flag_legacy:{`Optional[X]`/`Union[X,Y]`⇒`X|None`/`X|Y`,`List[X]`/`Dict[K,V]`⇒`list[X]`/`dict[K,V]`,`TypeVar`⇒PEP695 `def fn[T](x:T)->T`,structural `if/elif`⇒`match`}
+}
+§GATE{
+  `PASS: Approve`⇔CRITICAL≡0∧HIGH≡0
+  `WARNING: Warning`⇔CRITICAL≡0∧HIGH≡0∧MEDIUM>0
+  `FAIL: Block`⇔CRITICAL>0∨HIGH>0
+}
+§OUT{
+  `# Python Code Review Report`:Files Reviewed,Static Analysis Results,Issues([CRITICAL|HIGH|MEDIUM],`file:line`,issue,fix),Summary counts,Recommendation(PASS/WARNING/FAIL),Formatting cmd(`uv run ruff format ...`)
+}
+§REL{
+  pre:`unit-testing-patterns/references/test-driven-development.md`
+  other:`/code-review`(non-Python),`/python-review`(pre-commit),`/build-fix`(tool fail)
+}

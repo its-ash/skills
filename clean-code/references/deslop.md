@@ -1,49 +1,15 @@
-# Deslop Workflow and Completion Check
-
-Detail for the mandatory pass in [`../SKILL.md`](../SKILL.md). Run it after every code change.
-
-## 1. Get the diff
-
-```bash
-git diff main...HEAD
-```
-
-## 2. Remove slop, keep functional changes
-
-| Slop | Signal | Fix |
-|---|---|---|
-| Excessive comments | A human would not write it, or it differs from the file's comment style (e.g. "This function returns the user" above `getUser()`) | Delete |
-| Defensive over-checking | Extra `try/catch`, null checks, or validation that is abnormal for that area, esp. on already-validated paths | Delete |
-| Type escape hatches | TS `as any`, Python `cast(Any, ...)` to silence errors | Fix the type |
-| Inline imports | Python imports inside functions | Move to top with other imports |
-| Style drift | Formatting, naming, or patterns unlike the surrounding file | Match the file |
-
-## 3. Report
-
-One to three sentences, e.g.:
-```
-Removed 3 inline comments, 1 unnecessary try/catch, and moved 2 inline imports to module top in user_service.py
-```
-
-## Self-check before "done"
-
-Fix any failure before you finish.
-
-| Check | Question |
-|---|---|
-| Goal | Did I do exactly what the user asked? |
-| Files | Did I edit every file that needs it (importers, importees, tests, shared users)? |
-| Works | Did I run or verify the change? |
-| Clean | Do lint and type checks pass? |
-| Edges | Did I miss an edge case? |
-| Deslop | Did I review the diff and remove slop? |
-
-## Verification commands
-
-Use the project's configured tooling. Do not invent scripts.
-
-| Stack | Command |
-|---|---|
-| TS/JS | `npm run lint && npm run typecheck && npm test` |
-| Python | `ruff check . && mypy . && pytest` |
-| Go | `go vet ./... && go test ./...` |
+@REF:deslop
+§REL{../SKILL.md:mandatory_post_Δ_pass}
+§CMD{
+  diff:`git diff main...HEAD`;
+  verify[proj_tooling,¬invent]:{TS/JS:`npm run lint && npm run typecheck && npm test`,Py:`ruff check . && mypy . && pytest`,Go:`go vet ./... && go test ./...`}
+}
+§PAT[slop_rm_keep_Δ]{
+  excess_cmt(¬human∨≠file_style,e.g.above_getUser())⇒del;
+  overcheck(abnormal_try/catch|null_chk|val,esp_validated_paths)⇒del;
+  type_escape(TS:`as any`,Py:`cast(Any, ...)`)⇒fix_type;
+  inline_import(Py_in_fn)⇒top;
+  style_drift(fmt|name|pat≠file)⇒match_file
+}
+§R{report:1-3_sent(e.g."Removed 3 inline comments, 1 unnecessary try/catch, moved 2 inline imports to top in user_service.py")}
+§CHK[fix_failures_pre_done]{Goal:exact_req?;Files:importers∧importees∧tests∧shared_users?;Works:verified?;Clean:lint∧types_pass?;Edges:¬missed?;Deslop:diff_cleaned?}

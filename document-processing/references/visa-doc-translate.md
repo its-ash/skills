@@ -1,121 +1,37 @@
-# Visa Document Translation
+@REF:visa-doc-translate
+§SCOPE{
+  in:image(HEIC|PNG|JPG);
+  out:`<original_filename>_Translated.pdf`@(same_dir,A4_bilingual);
+  docs:[bank_deposit(`存款证明`),income(`收入证明`),employment(`在职证明`),retirement(`退休证明`),property(`房产证明`),business_license(`营业执照`),ID_cards,passports,official_docs];
+  mode:autonomous_sequence(¬ask_confirmation_per_step)
+}
 
-Translate visa document images (HEIC, PNG, or JPG) into English with OCR, and produce a bilingual PDF that pairs the original image with a formatted translation.
+§PAT[pipeline]{
+  1_heic_conv:if(HEIC)→`sips -s format png <input> --out <output>`;
+  2_orient:`PIL.ImageOps.exif_transpose(img)`(EXIF_6→90°_CW)∧test(180°_if_upside_down)⇒auto_pick_upright;
+  3_ocr_fallback:[
+    1:macOS_Vision(`import Vision; from Foundation import NSURL`),
+    2:EasyOCR(`pip install easyocr`),
+    3:Tesseract(`brew install tesseract tesseract-lang && pip install pytesseract`)
+  ]→extract(all_text)∧classify_doc_type;
+  4_translate:{
+    style:professional_visa_EN∧preserve(structure,format,numbers,dates,amounts);
+    names:original+`(English)`(Chinese⇒pinyin,e.g.`WU Zhengye`)
+  };
+  5_pdf(PIL+reportlab,A4):{
+    page_1:rotated_original_img(centered,scaled_to_A4);
+    page_2:EN_translation(title:centered+bold;body:left_aligned+spaced)+footer(`"This is an English translation of the original document"`);
+    legal:¬call(`"certified"`)_unless_qualified_translator_certifies(statement+name+signature)
+  };
+  6_output:write(`<original_filename>_Translated.pdf`)∧report_path
+}
 
-## When to use
+§CFG[deps]{
+  core:`pip install pillow reportlab`,
+  macos_vision:`pip install pyobjc-framework-Vision pyobjc-framework-Quartz`
+}
 
-- A visa application needs a document translated to English.
-- An official certificate (bank deposit, employment, income, retirement) must be OCR'd and translated.
-- You need a bilingual translation PDF for immigration paperwork.
-
-## Instructions
-
-When the user gives an image file path, do these steps in sequence without a confirmation at each step:
-
-1. **Image Conversion**: If the file is HEIC, convert it to PNG using `sips -s format png <input> --out <output>`
-
-2. **Image Rotation**:
-   - Read the EXIF orientation and apply it with `PIL.ImageOps.exif_transpose(img)`
-     (orientation 6 means the image must turn 90 degrees clockwise to be upright)
-   - Apply additional rotation as needed (test 180 degrees if the document appears upside down)
-
-3. **OCR Text Extraction**:
-   - Try multiple OCR methods automatically:
-     - macOS Vision framework (preferred for macOS)
-     - EasyOCR (cross-platform, no tesseract required)
-     - Tesseract OCR (if available)
-   - Extract all text information from the document
-   - Identify document type (deposit certificate, employment certificate, retirement certificate, etc.)
-
-4. **Translation**:
-   - Translate all text content to English professionally
-   - Maintain the original document structure and format
-   - Use professional terminology appropriate for visa applications
-   - Keep proper names in original language with English in parentheses
-   - For Chinese names, use pinyin format (e.g., WU Zhengye)
-   - Preserve all numbers, dates, and amounts accurately
-
-5. **PDF Generation**:
-   - Create a Python script using PIL and reportlab libraries
-   - Page 1: Display the rotated original image, centered and scaled to fit A4 page
-   - Page 2: Display the English translation with proper formatting:
-     - Title centered and bold
-     - Content left-aligned with appropriate spacing
-     - Professional layout suitable for official documents
-   - Add a note at the bottom: "This is an English translation of the original document".
-     Do not call it "certified" unless a qualified translator certifies it; many
-     immigration authorities require a translator statement, name, and signature
-   - Execute the script to generate the PDF
-
-6. **Output**: Create a PDF file named `<original_filename>_Translated.pdf` in the same directory
-
-## Supported Documents
-
-- Bank deposit certificates (存款证明)
-- Income certificates (收入证明)
-- Employment certificates (在职证明)
-- Retirement certificates (退休证明)
-- Property certificates (房产证明)
-- Business licenses (营业执照)
-- ID cards and passports
-- Other official documents
-
-## Technical Implementation
-
-### OCR Methods (tried in order)
-
-1. **macOS Vision Framework** (macOS only):
-   ```python
-   import Vision
-   from Foundation import NSURL
-   ```
-
-2. **EasyOCR** (cross-platform):
-   ```bash
-   pip install easyocr
-   ```
-
-3. **Tesseract OCR** (if available):
-   ```bash
-   brew install tesseract tesseract-lang
-   pip install pytesseract
-   ```
-
-### Required Python Libraries
-
-```bash
-pip install pillow reportlab
-```
-
-For macOS Vision framework:
-```bash
-pip install pyobjc-framework-Vision pyobjc-framework-Quartz
-```
-
-## Important Guidelines
-
-- DO NOT ask for user confirmation at each step
-- Automatically determine the best rotation angle
-- Try multiple OCR methods if one fails
-- Ensure all numbers, dates, and amounts are accurately translated
-- Use clean, professional formatting
-- Complete the entire process and report the final PDF location
-
-## Example usage
-
-```text
-Translate RetirementCertificate.PNG for my visa application
-Translate BankStatement.HEIC to English
-Translate EmploymentLetter.jpg into a bilingual PDF
-```
-
-## Output example
-
-The workflow will:
-1. Extract text using available OCR method
-2. Translate to professional English
-3. Generate `<filename>_Translated.pdf` with:
-   - Page 1: Original document image
-   - Page 2: Professional English translation
-
-Use it for visa applications to Australia, the USA, Canada, the UK, and other countries that require translated documents. Check each authority's translation rules before submission. The file contains personal data: keep it local and delete temporary OCR files after use.
+§SEC[privacy_compliance]{
+  data:personal_PII⇒keep_local∧delete_temp_OCR_files_post_run;
+  jurisdiction:verify_target_authority_rules(AU|US|CA|UK|etc)_pre_submit
+}

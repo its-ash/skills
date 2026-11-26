@@ -1,135 +1,35 @@
-> **Parent skill:** [`design`](../SKILL.md). This is a sub-skill; follow `design` for the shared workflow and load this only when the task needs it.
-
-# Figma MCP Design‑to‑Code Workflow
-
-Translate a Figma frame, component, or variant into production code with pixel‑perfect visual fidelity. Use this workflow whenever a task includes a Figma URL, node ID, or a request to implement a design.
-
-## When to use
-- The user supplies a Figma link or node ID.
-- You need to generate React (or other framework) code that matches the design.
-- A Figma MCP server is reachable and configured.
-- The project has an existing design system or component library.
-
----
-
-## Prerequisites
-- Figma MCP server (Dev Mode) reachable: remote `https://mcp.figma.com/mcp` or the Figma Desktop local server.
-- Project design‑system tokens and components are defined. Figma variables map to DTCG tokens; Code Connect maps components when the file has it.
-
-## Setup (run once per environment)
+@REF:figma
+§REL{../SKILL.md:parent_workflow(load_first);../../frontend-development/SKILL.md:React/Next;../../typescript/SKILL.md:TS;../../screenshot/SKILL.md:capture;../../ux-research/SKILL.md:UX}
+§WHEN{figma_URL|node_id,gen_framework_code_from_design,figma_MCP_avail,existing_DS}
+§CFG:prereqs_setup{
+  MCP:Dev_Mode(`https://mcp.figma.com/mcp`|Figma_Desktop_local);
+  project:DTCG_tokens(←Figma_vars)+Code_Connect(when_present);
 ```bash
 claude mcp add --transport http figma https://mcp.figma.com/mcp   # Claude Code
 codex mcp add figma --url https://mcp.figma.com/mcp                 # Codex CLI
-# Complete the OAuth login in the client, then restart it
+# complete OAuth login then restart client
 ```
-If any MCP call fails, pause, run the steps above, then continue with the workflow.
-
----
-
-## Workflow
-### 1. Identify the node
-- **From a Figma URL**: extract `fileKey` (segment after `/design/`) and `node-id` query value.
-  - Example URL: `https://figma.com/design/kL9xQn2VwM8pYrTb4ZcHjF/DesignSystem?node-id=42-15`
-  - `fileKey = kL9xQn2VwM8pYrTb4ZcHjF`
-  - `nodeId = 42-15`
-- **From Figma Desktop (figma‑desktop MCP)**: the server uses the currently open file, so only `nodeId` is needed.
-
-### 2. Fetch design context
-```bash
-get_design_context(fileKey="<fileKey>", nodeId="<nodeId>")
-```
-The response includes layout, typography, colors, component hierarchy, and spacing. Call `get_variable_defs` for the variables used by the node and map them to project tokens. Use Code Connect mappings when the response lists them.
-
-**If the response is truncated**:
-```bash
-get_metadata(fileKey="<fileKey>", nodeId="<nodeId>")
-# Identify needed child nodes
-get_design_context(fileKey="<fileKey>", nodeId="<childNodeId>")
-```
-### 3. Capture a screenshot
-```bash
-get_screenshot(fileKey="<fileKey>", nodeId="<nodeId>")
-```
-Keep the image for visual validation.
-
-### 4. Download assets
-- Use the MCP assets endpoint to retrieve images, SVGs, or icons.
-- **Important rules**:
-  - If the asset URL is a `localhost` address, use it directly.
-  - Do **not** add external icon packages.
-  - Do **not** create placeholder assets when a real source exists.
-
-### 5. Translate to project conventions
-1. Treat the MCP output (usually React + Tailwind) as a design blueprint, not final code.
-2. Replace Tailwind utilities with the project’s design‑system tokens (color, spacing, typography).
-3. Reuse existing components (buttons, inputs, icons, layout primitives) instead of creating new ones.
-4. Follow the project’s routing, state‑management, and data‑fetch patterns.
-5. Keep component files in the designated design‑system directory and follow naming conventions.
-
-### 6. Achieve 1:1 visual parity
-- Use design tokens from the context data wherever possible.
-- Prefer project tokens for consistency; adjust spacing or size minimally to match the screenshot.
-- Meet WCAG 2.2 AA (contrast, visible focus, targets 24px minimum).
-- Avoid hard‑coded values; extract them to constants or token references.
-
-### 7. Validate against the screenshot
-| Check | What to verify |
-|-------|----------------|
-| Layout | Spacing, alignment, sizing matches |
-| Typography | Font family, size, weight, line‑height |
-| Colors | Exact color values |
-| States | Hover, active, disabled visuals |
-| Responsiveness | Breakpoints and constraints follow design |
-| Assets | Images and SVGs render correctly |
-| Accessibility | Contrast and ARIA attributes |
-
-If any discrepancy appears, iterate: adjust code, re‑run the relevant step, and compare again.
-
----
-
-## Implementation Rules
-- **Output handling**: Treat MCP output as a reference, not as final styling.
-- **Design‑system alignment**: Always map Figma tokens to project tokens before coding.
-- **Component reuse**: Extend existing components; create new ones only when no suitable component exists.
-- **Asset policy**: Use only assets delivered by the MCP server. Do not import external icon libraries.
-- **Code quality**: Add TypeScript types; avoid inline styles unless dynamic; use container queries, not viewport breakpoints, for component constraints.
-- **Documentation**: Record each new component or deviation from the Figma design in the handoff note.
-
----
-
-## Checklist
-- [ ] Figma MCP server configured and logged in.
-- [ ] Node ID and file key extracted correctly.
-- [ ] `get_design_context` executed and data reviewed.
-- [ ] Screenshot captured and saved.
-- [ ] All required assets downloaded and referenced.
-- [ ] Tailwind classes replaced with project tokens.
-- [ ] Existing design‑system components reused where possible.
-- [ ] Visual parity validated against screenshot.
-- [ ] WCAG 2.2 AA checks passed.
-- [ ] Code passes project linting and type‑checking.
-- [ ] New components documented; deviations noted.
-
----
-
-## Common Issues
-- **Truncated design data** – Run `get_metadata` first, then fetch needed child nodes individually.
-- **Asset URLs not loading** – Verify the MCP assets endpoint is reachable; use the `localhost` URL directly.
-- **Design token mismatch** – Prefer project tokens; adjust spacing minimally to keep visual fidelity.
-- **Visual differences after implementation** – Compare side‑by‑side with the screenshot, check token values, and re‑align layout constraints.
-
----
-
-## References
-- Figma MCP Server Documentation: https://developers.figma.com/docs/figma-mcp-server/
-- Design Tokens & Variables: https://help.figma.com/hc/en-us/articles/15339657135383-Guide-to-variables-in-Figma
-
-## Related skills
-
-Load these when the task spans more than this skill.
-
-- [`design`](../SKILL.md) — Unified parent design skill covering the full lifecycle from brief inference to production. Load first for the shared workflow, then return here for the design-to-code workflow.
-- [`frontend-development`](../../frontend-development/SKILL.md) — Frontend Development skill for building modern React/Next.js applications with TypeScript, MUI, TanStack Query…
-- [`typescript`](../../typescript/SKILL.md) — Provides expert guidance for TypeScript projects, covering setup analysis, migration, monorepo configuration,…
-- [`screenshot`](../../screenshot/SKILL.md) — Capture a desktop screenshot (full screen, window, region, or app) on macOS, Linux, or Windows. Use when the u…
-- [`ux-research`](../../ux-research/SKILL.md) — Provides a step‑by‑step workflow for senior UX researchers and designers to generate data‑driven personas, map…
+  MCP_fail⇒pause→run_setup→resume
+}
+§PAT:workflow{
+  1_id_node:{URL:`/design/<fileKey>/...?node-id=<nodeId>`(e.g.`https://figma.com/design/kL9xQn2VwM8pYrTb4ZcHjF/DesignSystem?node-id=42-15`⇒`fileKey=kL9xQn2VwM8pYrTb4ZcHjF`,`nodeId=42-15`);figma-desktop⇒open_file⇒`nodeId`_only};
+  2_fetch:`get_design_context(fileKey="<fileKey>",nodeId="<nodeId>")`+`get_variable_defs`→map_tokens+Code_Connect;truncated⇒`get_metadata(fileKey="<fileKey>",nodeId="<nodeId>")`→child_ids→`get_design_context(fileKey="<fileKey>",nodeId="<childNodeId>")`;
+  3_screenshot:`get_screenshot(fileKey="<fileKey>",nodeId="<nodeId>")`(keep_for_validation);
+  4_assets:MCP_assets_endpoint;rules:{`localhost`_URL⇒use_direct,¬external_icon_pkgs,¬placeholder_when_real_src_exists};
+  5_translate:MCP_output(React+TW)=blueprint¬final;TW_utils→project_DS_tokens;reuse_existing(btns,inputs,icons,layout);follow_project(routing,state,data-fetch,DS_dir,naming);
+  6_parity:use_context_tokens;prefer_project_tokens(minimal_space/size_tweak_for_match);WCAG_2.2_AA(contrast,visible_focus,targets≥24px);¬hard-coded_vals(constants/tokens);
+  7_validate_vs_screenshot:{layout(space/align/size),type(family/size/weight/lh),colors,states(hover/active/disabled),responsive(bp/constraints),assets(imgs/SVGs),a11y(contrast/ARIA)}⇒iterate_on_diff
+}
+§R{
+  MCP_out=ref¬final_style;map_tokens_pre_code;reuse/extend_components(new⇔0_match);
+  assets=MCP_only(¬ext_icon_libs);TS_types;¬inline_styles(unless_dynamic);
+  @container_queries>viewport_bp_for_components;record_new_components/deviations_in_handoff
+}
+§CHK{MCP_configured+authed,fileKey+nodeId_ok,get_design_context_reviewed,screenshot_saved,assets_downloaded,TW→tokens,DS_components_reused,parity_validated,WCAG_2.2_AA_pass,lint+typecheck_pass,new_components+deviations_noted}
+§ERR{
+  truncated⇒get_metadata→fetch_children_individually;
+  asset_load_fail⇒verify_MCP_endpoint+use_localhost_direct;
+  token_mismatch⇒prefer_project_tokens+minimal_space_tweak;
+  visual_diff⇒compare_side_by_side+check_tokens+realign_constraints
+}
+§URLS{https://developers.figma.com/docs/figma-mcp-server/,https://help.figma.com/hc/en-us/articles/15339657135383-Guide-to-variables-in-Figma}

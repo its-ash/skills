@@ -1,636 +1,83 @@
-# Autonomous Loops
-
-Patterns and architectures to run coding agents in continuous loops, from simple `claude -p` pipelines to RFC-driven multi-agent DAG systems, with quality gates, evals, and recovery controls.
-
-For goal definition and runaway checks, see [loop-design-check.md](loop-design-check.md). This file covers the loop mechanism.
-
-## Loop Selection Flow
-
-```text
-Start
-  |
-  +-- Need strict CI/PR control? -- yes --> Continuous PR loop (section 4)
-  |
-  +-- Need RFC decomposition? -- yes --> RFC-driven DAG (section 6)
-  |
-  +-- Need exploratory parallel generation? -- yes --> Infinite agentic loop (section 3)
-  |
-  +-- default --> Sequential pipeline (section 1)
-```
-
-Recommended production stack:
-1. RFC decomposition into a dependency DAG (section 6).
-2. Quality gates: build, lint, type check, tests, and a de-sloppify pass (section 5).
-3. Eval loop with pass/fail graders (see [eval-harness.md](eval-harness.md)).
-4. Session persistence through a shared notes file or session file (sections 2 and 4).
-
-## Loop Pattern Spectrum
-
-From simplest to most sophisticated:
-
-| Pattern | Complexity | Best For |
-|---------|-----------|----------|
-| [Sequential Pipeline](#1-sequential-pipeline-claude--p) | Low | Daily dev steps, scripted workflows |
-| [Session-Persistent REPL](#2-session-persistent-repl) | Low | Interactive persistent sessions |
-| [Infinite Agentic Loop](#3-infinite-agentic-loop) | Medium | Parallel content generation, spec-driven work |
-| [Continuous Claude PR Loop](#4-continuous-claude-pr-loop) | Medium | Multi-day iterative projects with CI gates |
-| [De-Sloppify Pattern](#5-the-de-sloppify-pattern) | Add-on | Quality cleanup after any Implementer step |
-| [Ralphinho / RFC-Driven DAG](#6-ralphinho--rfc-driven-dag-orchestration) | High | Large features, multi-unit parallel work with merge queue |
-
----
-
-## 1. Sequential Pipeline (`claude -p`)
-
-**The simplest loop.** Break daily development into a sequence of non-interactive `claude -p` calls. Each call is a focused step with a clear prompt.
-
-### Core Insight
-
-> If you can't figure out a loop like this, it means you can't even drive the LLM to fix your code in interactive mode.
-
-The `claude -p` flag runs Claude Code headless with a prompt and exits when done. Add `--output-format json` (or `stream-json`) when a script must parse the result. Chain calls to build a pipeline:
-
-```bash
-#!/bin/bash
-# daily-dev.sh — Sequential pipeline for a feature branch
-
-set -e
-
-# Step 1: Implement the feature
-claude -p "Read the spec in docs/auth-spec.md. Implement OAuth2 login in src/auth/. Write tests first (TDD). Do NOT create any new documentation files."
-
-# Step 2: De-sloppify (cleanup pass)
-claude -p "Review all files changed by the previous commit. Remove any unnecessary type tests, overly defensive checks, or testing of language features (e.g., testing that TypeScript generics work). Keep real business logic tests. Run the test suite after cleanup."
-
-# Step 3: Verify
-claude -p "Run the full build, lint, type check, and test suite. Fix any failures. Do not add new features."
-
-# Step 4: Commit
-claude -p "Create a conventional commit for all staged changes. Use 'feat: add OAuth2 login flow' as the message."
-```
-
-### Key Design Principles
-
-1. **Each step is isolated** — A fresh context window per `claude -p` call means no context bleed between steps.
-2. **Order matters** — Steps execute sequentially. Each builds on the filesystem state left by the previous.
-3. **Negative instructions are dangerous** — Don't say "don't test type systems." Instead, add a separate cleanup step (see [De-Sloppify Pattern](#5-the-de-sloppify-pattern)).
-4. **Exit codes propagate** — `set -e` stops the pipeline on failure.
-
-### Variations
-
-**With model routing:**
-```bash
-# Research with Opus 5.5 (deep reasoning)
-claude -p --model opus "Analyze the codebase architecture and write a plan for adding caching..."
-
-# Implement with Sonnet 5.5 (fast, capable)
-claude -p --model sonnet "Implement the caching layer according to the plan in docs/caching-plan.md..."
-
-# Review with Fable 5.1 (fresh context, no author bias)
-claude -p --model fable "Review all changes for security issues, race conditions, and edge cases..."
-```
-
-**With environment context:**
-```bash
-# Pass context via files, not prompt length
-echo "Focus areas: auth module, API rate limiting" > .claude-context.md
-claude -p "Read .claude-context.md for priorities. Work through them in order."
-rm .claude-context.md
-```
-
-**With `--allowedTools` restrictions:**
-```bash
-# Read-only analysis pass
-claude -p --allowedTools "Read,Grep,Glob" "Audit this codebase for security vulnerabilities..."
-
-# Write-only implementation pass
-claude -p --allowedTools "Read,Write,Edit,Bash" "Implement the fixes from security-audit.md..."
-```
-
----
-
-## 2. Session-Persistent REPL
-
-**A small persistent loop.** A REPL that sends each message to `claude -p` with the full session history, and keeps that history in a markdown file.
-
-```bash
-#!/bin/bash
-set -euo pipefail
-SESSION_FILE="${HOME}/.claude/sessions/${1:-default}.md"
-mkdir -p "$(dirname "$SESSION_FILE")"
-touch "$SESSION_FILE"
-
-while IFS= read -r -p "> " msg; do
-  [ -z "$msg" ] && continue
-  printf '\n## User\n%s\n' "$msg" >> "$SESSION_FILE"
-  reply="$(claude -p "Session history:
-$(cat "$SESSION_FILE")
-
-Answer the last user message.")"
-  printf '\n## Assistant\n%s\n' "$reply" >> "$SESSION_FILE"
-  printf '%s\n' "$reply"
-done
-```
-
-### How It Works
-
-1. Loads conversation history from the session file
-2. Each user message is sent to `claude -p` with full history as context
-3. Responses are appended to the session file (Markdown-as-database)
-4. Sessions persist across restarts
-
-Native alternative: `claude -p --continue` or `--resume <session-id>` reuses Claude Code's own session store. Use the file approach only when you need a readable, portable transcript.
-
-### When Persistent REPL vs Sequential Pipeline
-
-| Use Case | Persistent REPL | Sequential Pipeline |
-|----------|----------|-------------------|
-| Interactive exploration | Yes | No |
-| Scripted automation | No | Yes |
-| Session persistence | Built-in | Manual |
-| Context accumulation | Grows per turn | Fresh each step |
-| CI/CD integration | Poor | Excellent |
-
----
-
-## 3. Infinite Agentic Loop
-
-**A two-prompt system** that orchestrates parallel sub-agents for specification-driven generation. Developed by disler (credit: @disler).
-
-### Architecture: Two-Prompt System
-
-```
-PROMPT 1 (Orchestrator)              PROMPT 2 (Sub-Agents)
-┌─────────────────────┐             ┌──────────────────────┐
-│ Parse spec file      │             │ Receive full context  │
-│ Scan output dir      │  deploys   │ Read assigned number  │
-│ Plan iteration       │────────────│ Follow spec exactly   │
-│ Assign creative dirs │  N agents  │ Generate unique output │
-│ Manage waves         │             │ Save to output dir    │
-└─────────────────────┘             └──────────────────────┘
-```
-
-### The Pattern
-
-1. **Spec Analysis** — Orchestrator reads a specification file (Markdown) defining what to generate
-2. **Directory Recon** — Scans existing output to find the highest iteration number
-3. **Parallel Deployment** — Launches N sub-agents, each with:
-   - The full spec
-   - A unique creative direction
-   - A specific iteration number (no conflicts)
-   - A snapshot of existing iterations (for uniqueness)
-4. **Wave Management** — For infinite mode, deploys waves of 3-5 agents until context is exhausted
-
-### Implementation via Claude Code Commands
-
-Create `.claude/commands/infinite.md`:
-
-```markdown
-Parse the following arguments from $ARGUMENTS:
-1. spec_file — path to the specification markdown
-2. output_dir — where iterations are saved
-3. count — integer 1-N or "infinite"
-
-PHASE 1: Read and deeply understand the specification.
-PHASE 2: List output_dir, find highest iteration number. Start at N+1.
-PHASE 3: Plan creative directions — each agent gets a DIFFERENT theme/approach.
-PHASE 4: Deploy sub-agents in parallel (Agent tool). Each receives:
-  - Full spec text
-  - Current directory snapshot
-  - Their assigned iteration number
-  - Their unique creative direction
-PHASE 5 (infinite mode): Loop in waves of 3-5 until context is low.
-```
-
-**Invoke:**
-```bash
-/infinite specs/component-spec.md src/ 5
-/infinite specs/component-spec.md src/ infinite
-```
-
-### Batching Strategy
-
-| Count | Strategy |
-|-------|----------|
-| 1-5 | All agents simultaneously |
-| 6-20 | Batches of 5 |
-| infinite | Waves of 3-5, progressive sophistication |
-
-### Key Insight: Uniqueness via Assignment
-
-Don't rely on agents to self-differentiate. The orchestrator **assigns** each agent a specific creative direction and iteration number. This prevents duplicate concepts across parallel agents.
-
----
-
-## 4. Continuous Claude PR Loop
-
-**A production-grade shell script** that runs Claude Code in a continuous loop, creating PRs, waiting for CI, and merging automatically. Created by AnandChowdhary (credit: @AnandChowdhary).
-
-### Core Loop
-
-```
-┌─────────────────────────────────────────────────────┐
-│  CONTINUOUS CLAUDE ITERATION                        │
-│                                                     │
-│  1. Create branch (continuous-claude/iteration-N)   │
-│  2. Run claude -p with enhanced prompt              │
-│  3. (Optional) Reviewer pass — separate claude -p   │
-│  4. Commit changes (claude generates message)       │
-│  5. Push + create PR (gh pr create)                 │
-│  6. Wait for CI checks (poll gh pr checks)          │
-│  7. CI failure? → Auto-fix pass (claude -p)         │
-│  8. Merge PR (squash/merge/rebase)                  │
-│  9. Return to main → repeat                         │
-│                                                     │
-│  Limit by: --max-runs N | --max-cost $X             │
-│            --max-duration 2h | completion signal     │
-└─────────────────────────────────────────────────────┘
-```
-
-### Installation
-
-> **Warning:** Install continuous-claude from its repository after reviewing the code. Do not pipe external scripts directly to bash.
-
-### Usage
-
-```bash
-# Basic: 10 iterations
-continuous-claude --prompt "Add unit tests for all untested functions" --max-runs 10
-
-# Cost-limited
-continuous-claude --prompt "Fix all linter errors" --max-cost 5.00
-
-# Time-boxed
-continuous-claude --prompt "Improve test coverage" --max-duration 8h
-
-# With code review pass
-continuous-claude \
-  --prompt "Add authentication feature" \
-  --max-runs 10 \
-  --review-prompt "Run npm test && npm run lint, fix any failures"
-
-# Parallel via worktrees
-continuous-claude --prompt "Add tests" --max-runs 5 --worktree tests-worker &
-continuous-claude --prompt "Refactor code" --max-runs 5 --worktree refactor-worker &
-wait
-```
-
-### Cross-Iteration Context: SHARED_TASK_NOTES.md
-
-The critical innovation: a `SHARED_TASK_NOTES.md` file persists across iterations:
-
-```markdown
-## Progress
-- [x] Added tests for auth module (iteration 1)
-- [x] Fixed edge case in token refresh (iteration 2)
-- [ ] Still need: rate limiting tests, error boundary tests
-
-## Next Steps
-- Focus on rate limiting module next
-- The mock setup in tests/helpers.ts can be reused
-```
-
-Claude reads this file at iteration start and updates it at iteration end. This bridges the context gap between independent `claude -p` invocations.
-
-### CI Failure Recovery
-
-When PR checks fail, Continuous Claude automatically:
-1. Fetches the failed run ID via `gh run list`
-2. Spawns a new `claude -p` with CI fix context
-3. Claude inspects logs via `gh run view`, fixes code, commits, pushes
-4. Re-waits for checks (up to `--ci-retry-max` attempts)
-
-### Completion Signal
-
-Claude can signal "I'm done" by outputting a magic phrase:
-
-```bash
-continuous-claude \
-  --prompt "Fix all bugs in the issue tracker" \
-  --completion-signal "CONTINUOUS_CLAUDE_PROJECT_COMPLETE" \
-  --completion-threshold 3  # Stops after 3 consecutive signals
-```
-
-Three consecutive iterations signaling completion stops the loop, preventing wasted runs on finished work.
-
-### Key Configuration
-
-| Flag | Purpose |
-|------|---------|
-| `--max-runs N` | Stop after N successful iterations |
-| `--max-cost $X` | Stop after spending $X |
-| `--max-duration 2h` | Stop after time elapsed |
-| `--merge-strategy squash` | squash, merge, or rebase |
-| `--worktree <name>` | Parallel execution via git worktrees |
-| `--disable-commits` | Dry-run mode (no git operations) |
-| `--review-prompt "..."` | Add reviewer pass per iteration |
-| `--ci-retry-max N` | Auto-fix CI failures (default: 1) |
-
----
-
-## 5. The De-Sloppify Pattern
-
-**An add-on pattern for any loop.** Add a dedicated cleanup/refactor step after each Implementer step.
-
-### The Problem
-
-When you ask an LLM to implement with TDD, it takes "write tests" too literally:
-- Tests that verify TypeScript's type system works (testing `typeof x === 'string'`)
-- Overly defensive runtime checks for things the type system already guarantees
-- Tests for framework behavior rather than business logic
-- Excessive error handling that obscures the actual code
-
-### Why Not Negative Instructions?
-
-Adding "don't test type systems" or "don't add unnecessary checks" to the Implementer prompt has downstream effects:
-- The model becomes hesitant about ALL testing
-- It skips legitimate edge case tests
-- Quality degrades unpredictably
-
-### The Solution: Separate Pass
-
-Instead of constraining the Implementer, let it be thorough. Then add a focused cleanup agent:
-
-```bash
-# Step 1: Implement (let it be thorough)
-claude -p "Implement the feature with full TDD. Be thorough with tests."
-
-# Step 2: De-sloppify (separate context, focused cleanup)
-claude -p "Review all changes in the working tree. Remove:
-- Tests that verify language/framework behavior rather than business logic
-- Redundant type checks that the type system already enforces
-- Over-defensive error handling for impossible states
-- Console.log statements
-- Commented-out code
-
-Keep all business logic tests. Run the test suite after cleanup to ensure nothing breaks."
-```
-
-### In a Loop Context
-
-```bash
-for feature in "${features[@]}"; do
-  # Implement
-  claude -p "Implement $feature with TDD."
-
-  # De-sloppify
-  claude -p "Cleanup pass: review changes, remove test/code slop, run tests."
-
-  # Verify
-  claude -p "Run build + lint + tests. Fix any failures."
-
-  # Commit
-  claude -p "Commit with message: feat: add $feature"
-done
-```
-
-### Key Insight
-
-> Rather than adding negative instructions which have downstream quality effects, add a separate de-sloppify pass. Two focused agents outperform one constrained agent.
-
----
-
-## 6. Ralphinho / RFC-Driven DAG Orchestration
-
-**The most sophisticated pattern.** An RFC-driven, multi-agent pipeline that decomposes a spec into a dependency DAG, runs each unit through a tiered quality pipeline, and lands them via an agent-driven merge queue. Created by enitrat (credit: @enitrat).
-
-### Architecture Overview
-
-```
-RFC/PRD Document
-       │
-       ▼
-  DECOMPOSITION (AI)
-  Break RFC into work units with dependency DAG
-       │
-       ▼
-┌──────────────────────────────────────────────────────┐
-│  RALPH LOOP (up to 3 passes)                         │
-│                                                      │
-│  For each DAG layer (sequential, by dependency):     │
-│                                                      │
-│  ┌── Quality Pipelines (parallel per unit) ───────┐  │
-│  │  Each unit in its own worktree:                │  │
-│  │  Research → Plan → Implement → Test → Review   │  │
-│  │  (depth varies by complexity tier)             │  │
-│  └────────────────────────────────────────────────┘  │
-│                                                      │
-│  ┌── Merge Queue ─────────────────────────────────┐  │
-│  │  Rebase onto main → Run tests → Land or evict │  │
-│  │  Evicted units re-enter with conflict context  │  │
-│  └────────────────────────────────────────────────┘  │
-│                                                      │
-└──────────────────────────────────────────────────────┘
-```
-
-### RFC Decomposition
-
-AI reads the RFC and produces work units:
-
-```typescript
-interface WorkUnit {
-  id: string;              // kebab-case identifier
-  name: string;            // Human-readable name
-  rfcSections: string[];   // Which RFC sections this addresses
-  description: string;     // Detailed description
-  deps: string[];          // Dependencies (other unit IDs)
-  acceptance: string[];    // Concrete acceptance criteria
-  tier: "trivial" | "small" | "medium" | "large";
+@REF:autonomous-loops
+§CORE{
+  refs:{goal_runaway:[loop-design-check.md](loop-design-check.md),eval_graders:[eval-harness.md](eval-harness.md)};
+  select:{strict_CI_PR⇒§4;RFC_DAG⇒§6;exploratory_parallel⇒§3;default⇒§1};
+  prod_stack:[1:RFC→DAG(§6),2:gates(build+lint+typecheck+tests+de-sloppify(§5)),3:eval_pass_fail(eval-harness.md),4:persist(SHARED_TASK_NOTES|session_file(§2,§4))]
 }
-```
-
-**Decomposition Rules:**
-- Prefer fewer, cohesive units (minimize merge risk)
-- Minimize cross-unit file overlap (avoid conflicts)
-- Keep tests WITH implementation (never separate "implement X" + "test X")
-- Dependencies only where real code dependency exists
-
-The dependency DAG determines execution order:
-```
-Layer 0: [unit-a, unit-b]     ← no deps, run in parallel
-Layer 1: [unit-c]             ← depends on unit-a
-Layer 2: [unit-d, unit-e]     ← depend on unit-c
-```
-
-### Complexity Tiers
-
-Different tiers get different pipeline depths:
-
-| Tier | Pipeline Stages |
-|------|----------------|
-| **trivial** | implement → test |
-| **small** | implement → test → code-review |
-| **medium** | research → plan → implement → test → PRD-review + code-review → review-fix |
-| **large** | research → plan → implement → test → PRD-review + code-review → review-fix → final-review |
-
-This prevents expensive operations on simple changes while ensuring architectural changes get thorough scrutiny.
-
-### Separate Context Windows (Author-Bias Elimination)
-
-Each stage runs in its own agent process with its own context window:
-
-| Stage | Model | Purpose |
-|-------|-------|---------|
-| Research | Sonnet 5.5 | Read codebase + RFC, produce context doc |
-| Plan | Opus 5.5 | Design implementation steps |
-| Implement | Sonnet 5.5 | Write code following the plan |
-| Test | Haiku 5.5 | Run build + test suite, summarize failures |
-| PRD Review | Sonnet 5.5 | Spec compliance check |
-| Code Review | Opus 5.5 | Quality + security check |
-| Review Fix | Sonnet 5.5 | Address review issues |
-| Final Review | Fable 5.1 | Quality gate (large tier only) |
-
-**Critical design:** The reviewer never wrote the code it reviews. This eliminates author bias — the most common source of missed issues in self-review.
-
-### Merge Queue with Eviction
-
-After quality pipelines complete, units enter the merge queue:
-
-```
-Unit branch
-    │
-    ├─ Rebase onto main
-    │   └─ Conflict? → EVICT (capture conflict context)
-    │
-    ├─ Run build + tests
-    │   └─ Fail? → EVICT (capture test output)
-    │
-    └─ Pass → Fast-forward main, push, delete branch
-```
-
-**File Overlap Intelligence:**
-- Non-overlapping units land speculatively in parallel
-- Overlapping units land one-by-one, rebasing each time
-
-**Eviction Recovery:**
-When evicted, full context is captured (conflicting files, diffs, test output) and fed back to the implementer on the next Ralph pass:
-
-```markdown
-## MERGE CONFLICT — RESOLVE BEFORE NEXT LANDING
-
-Your previous implementation conflicted with another unit that landed first.
-Restructure your changes to avoid the conflicting files/lines below.
-
-{full eviction context with diffs}
-```
-
-### Data Flow Between Stages
-
-```
-research.contextFilePath ──────────────────→ plan
-plan.implementationSteps ──────────────────→ implement
-implement.{filesCreated, whatWasDone} ─────→ test, reviews
-test.failingSummary ───────────────────────→ reviews, implement (next pass)
-reviews.{feedback, issues} ────────────────→ review-fix → implement (next pass)
-final-review.reasoning ────────────────────→ implement (next pass)
-evictionContext ───────────────────────────→ implement (after merge conflict)
-```
-
-### Worktree Isolation
-
-Every unit runs in an isolated worktree (uses jj/Jujutsu, not git):
-```
-/tmp/workflow-wt-{unit-id}/
-```
-
-Pipeline stages for the same unit **share** a worktree, preserving state (context files, plan files, code changes) across research → plan → implement → test → review.
-
-### Key Design Principles
-
-1. **Deterministic execution** — Upfront decomposition locks in parallelism and ordering
-2. **Human review at leverage points** — The work plan is the single highest-leverage intervention point
-3. **Separate concerns** — Each stage in a separate context window with a separate agent
-4. **Conflict recovery with context** — Full eviction context enables intelligent re-runs, not blind retries
-5. **Tier-driven depth** — Trivial changes skip research/review; large changes get maximum scrutiny
-6. **Resumable workflows** — Full state persisted to SQLite; resume from any point
-7. **Native option**: the Claude Code Workflow tool scripts the same stage graph with subagents in worktrees; use it before you write a custom orchestrator
-
-### When to Use Ralphinho vs Simpler Patterns
-
-| Signal | Use Ralphinho | Use Simpler Pattern |
-|--------|--------------|-------------------|
-| Multiple interdependent work units | Yes | No |
-| Need parallel implementation | Yes | No |
-| Merge conflicts likely | Yes | No (sequential is fine) |
-| Single-file change | No | Yes (sequential pipeline) |
-| Multi-day project | Yes | Maybe (continuous-claude) |
-| Spec/RFC already written | Yes | Maybe |
-| Quick iteration on one thing | No | Yes (REPL or pipeline) |
-
----
-
-## Choosing the Right Pattern
-
-### Decision Matrix
-
-```
-Is the task a single focused change?
-├─ Yes → Sequential Pipeline or Persistent REPL
-└─ No → Is there a written spec/RFC?
-         ├─ Yes → Do you need parallel implementation?
-         │        ├─ Yes → Ralphinho (DAG orchestration)
-         │        └─ No → Continuous Claude (iterative PR loop)
-         └─ No → Do you need many variations of the same thing?
-                  ├─ Yes → Infinite Agentic Loop (spec-driven generation)
-                  └─ No → Sequential Pipeline with de-sloppify
-```
-
-### Combining Patterns
-
-These patterns compose well:
-
-1. **Sequential Pipeline + De-Sloppify** — The most common combination. Every implement step gets a cleanup pass.
-
-2. **Continuous Claude + De-Sloppify** — Add `--review-prompt` with a de-sloppify directive to each iteration.
-
-3. **Any loop + Verification** — Run build, lint, type check, and tests as a gate before each commit. Stop the loop when the gate fails twice with the same root cause.
-
-4. **Ralphinho's tiered approach in simpler loops** — Even in a sequential pipeline, you can route simple tasks to Haiku 5.5 and complex tasks to Opus 5.5 or Fable 5.1:
-   ```bash
-   # Simple formatting fix
-   claude -p --model haiku "Fix the import ordering in src/utils.ts"
-
-   # Complex architectural change
-   claude -p --model opus "Refactor the auth module to use the strategy pattern"
-   ```
-
----
-
-## Anti-Patterns
-
-### Common Mistakes
-
-1. **Infinite loops without exit conditions** — Always have a max-runs, max-cost, max-duration, or completion signal.
-
-2. **No context bridge between iterations** — Each `claude -p` call starts fresh. Use `SHARED_TASK_NOTES.md` or filesystem state to bridge context.
-
-3. **Retrying the same failure** — If an iteration fails, don't just retry. Capture the error context and feed it to the next attempt.
-
-4. **Negative instructions instead of cleanup passes** — Don't say "don't do X." Add a separate pass that removes X.
-
-5. **All agents in one context window** — For complex workflows, separate concerns into different agent processes. The reviewer should never be the author.
-
-6. **Ignoring file overlap in parallel work** — If two parallel agents might edit the same file, you need a merge strategy (sequential landing, rebase, or conflict resolution).
-
-### Failure Modes
-
-- Loop churn without measurable progress
-- Repeated retries with the same root cause
-- Merge queue stalls
-- Cost drift from unbounded escalation
-
-### Recovery
-
-1. Freeze the loop.
-2. Audit the harness: exit conditions, gates, context bridge, and cost limits.
-3. Reduce the scope to the failing unit.
-4. Replay with explicit acceptance criteria.
-
----
-
-## References
-
-| Project | Author | Link |
-|---------|--------|------|
-| Ralphinho | enitrat | credit: @enitrat |
-| Infinite Agentic Loop | disler | credit: @disler |
-| Continuous Claude | AnandChowdhary | credit: @AnandChowdhary |
+§SPECTRUM{
+  1_SeqPipeline:Low|daily_dev,scripted;
+  2_PersistentREPL:Low|interactive_persist;
+  3_InfiniteLoop:Med|parallel_gen,spec_driven;
+  4_ContinuousClaudePR:Med|multi_day+CI_gates;
+  5_DeSloppify:AddOn|post_impl_cleanup;
+  6_RalphinhoDAG:High|large_feat,parallel_units+merge_queue
+}
+§PAT{
+  1_SeqPipeline:{
+    cmd:`claude -p`(headless+exit;`--output-format json`|`stream-json`for_parse);
+    flow:`set -e`→impl(TDD,¬new_docs)→de-sloppify(cleanup_prev_commit,keep_biz_tests,run_suite)→verify(build+lint+type+test,fix,¬new_feat)→commit(conventional);
+    rules:{fresh_ctx/call(¬bleed);seq_FS_handoff;¬neg_instr⇒sep_cleanup_pass(§5);`set -e`propagates_exit};
+    route:`--model opus`(Opus 5.5 arch/plan)|`--model sonnet`(Sonnet 5.5 impl)|`--model fable`(Fable 5.1 review,¬author_bias)|`--model haiku`(Haiku 5.5 fmt/test);
+    ctx_file:write`.claude-context.md`→`claude -p`read→`rm .claude-context.md`;
+    tools:`--allowedTools "Read,Grep,Glob"`(ro_audit)|`"Read,Write,Edit,Bash"`(impl)
+  };
+  2_PersistentREPL:{
+    impl:`set -euo pipefail`;`SESSION_FILE="${HOME}/.claude/sessions/${1:-default}.md"`;loop:`read -r -p "> " msg`→append`## User`→`claude -p`w/_full_file→append`## Assistant`;
+    native_alt:`claude -p --continue`|`--resume <session-id>`(use_file_only_for_portable_readable_transcript);
+    vs_seq:REPL={interactive:1,persist:builtin,ctx:grows/turn,CI:poor};Seq={interactive:0,persist:manual,ctx:fresh/step,CI:excellent}
+  };
+  3_InfiniteLoop:{
+    credit:@disler;arch:2prompt(Orchestrator→N_SubAgents);
+    cmd_file:`.claude/commands/infinite.md`args=`$ARGUMENTS`({1:spec_file,2:output_dir,3:count(`1-N`|"infinite")});
+    phases:1_read_spec→2_scan_output_dir(max_iter=N,start=N+1)→3_assign_unique_creative_dir/agent→4_deploy_parallel_Agent_tool(spec+dir_snap+iter#+theme)→5_infinite_mode(waves:3-5_until_low_ctx);
+    invoke:`/infinite specs/component-spec.md src/ 5`⊕`/infinite specs/component-spec.md src/ infinite`;
+    batch:{1-5:all_simul,6-20:batches_of_5,infinite:waves_3-5(progressive)};
+    rule:orchestrator_assigns_dir+iter#(¬self_diff⇒prevents_dupes)
+  };
+  4_ContinuousClaudePR:{
+    credit:@AnandChowdhary;sec:review_repo_before_install(¬`curl|bash`);
+    loop:1_branch(`continuous-claude/iteration-N`)→2_`claude -p`→3_opt_review(`claude -p`)→4_commit→5_push+`gh pr create`→6_poll(`gh pr checks`)→7_CI_fail⇒auto_fix(`claude -p`)→8_merge(squash|merge|rebase)→9_main→repeat;
+    ctx_bridge:`SHARED_TASK_NOTES.md`(`## Progress` `- [x]`/`- [ ]`, `## Next Steps`;read_start,upd_end);
+    ci_fix:`gh run list`→spawn`claude -p`→`gh run view`→fix,commit,push→re-poll(≤`--ci-retry-max`,def=1);
+    stop:`--completion-signal "CONTINUOUS_CLAUDE_PROJECT_COMPLETE" --completion-threshold 3`(3_consec_signals);
+    flags:{`--prompt "..."`,`--max-runs N`,`--max-cost $X`,`--max-duration 2h`(e.g.`8h`),`--merge-strategy squash|merge|rebase`,`--worktree <name>`(parallel+&+`wait`),`--disable-commits`(dry_run),`--review-prompt "..."`,`--ci-retry-max N`(def:1)}
+  };
+  5_DeSloppify:{
+    add_on:post_Implementer_cleanup_pass;
+    problem:LLM_TDD_overwrites{typeof/type_system_tests,redundant_type_checks,framework_tests,obscuring_err_handle};
+    anti:¬neg_instr_in_Implementer(causes_hesitation,skips_edge_cases,degrades_quality);
+    sol:2_focused_agents>1_constrained;sep`claude -p`removes{lang/fw_tests,redundant_type_checks,impossible_state_guards,`console.log`,commented_code},keeps_biz_tests+runs_suite;
+    loop:impl→de-sloppify→verify(build+lint+tests)→commit
+  };
+  6_RalphinhoDAG:{
+    credit:@enitrat;
+    flow:RFC/PRD→AI_decomp(WorkUnit_DAG)→RalphLoop(≤3_passes;seq_per_DAG_layer)→[parallel_unit_pipelines(worktree)→MergeQueue(rebase_main→build+test→ff_main+push+del_branch⊕EVICT+ctx→next_pass)];
+    unit_ts:`WorkUnit{id:string;name:string;rfcSections:string[];description:string;deps:string[];acceptance:string[];tier:"trivial"|"small"|"medium"|"large"}`;
+    decomp_rules:{fewer_cohesive_units(min_merge_risk);min_file_overlap;tests_WITH_impl(¬split);deps_only_if_real_code_dep};
+    tiers:{
+      trivial:impl→test;
+      small:impl→test→code-review;
+      medium:research→plan→impl→test→(PRD-review+code-review)→review-fix;
+      large:research→plan→impl→test→(PRD-review+code-review)→review-fix→final-review
+    };
+    stages_models:{Research:Sonnet5.5(ctx_doc);Plan:Opus5.5(steps);Implement:Sonnet5.5;Test:Haiku5.5(build+test_fail_sum);PRD_Review:Sonnet5.5(spec);Code_Review:Opus5.5(qual+sec);Review_Fix:Sonnet5.5;Final_Review:Fable5.1(large_only)};
+    bias_rule:sep_process+ctx_window/stage;reviewer≠author;
+    merge_queue:{
+      overlap:non_overlapping⇒speculative_parallel_land;overlapping⇒1-by-1_rebase;
+      evict:conflict|build_test_fail⇒EVICT+capture(`## MERGE CONFLICT — RESOLVE BEFORE NEXT LANDING`,files,diffs,test_out)→next_Ralph_pass_impl
+    };
+    data_flow:{`research.contextFilePath`→plan;`plan.implementationSteps`→impl;`implement.{filesCreated,whatWasDone}`→test,reviews;`test.failingSummary`→reviews,impl(next);`reviews.{feedback,issues}`→review-fix→impl(next);`final-review.reasoning`→impl(next);`evictionContext`→impl(after_conflict)};
+    worktree:`/tmp/workflow-wt-{unit-id}/`(uses`jj`/Jujutsu,¬git;unit_stages_share_wt);
+    principles:{deterministic_DAG;human_review@work_plan=max_leverage;sep_ctx/stage;ctx_eviction_recovery;tier_depth;SQLite_resumable;native_opt:ClaudeCode_Workflow_tool_before_custom};
+    use_when:interdep_units|parallel_impl|likely_conflicts|multi_day+RFC;else(single_file|quick_iter⇒REPL/seq;non_parallel_RFC⇒ContinuousClaude)
+  }
+}
+§COMB{
+  tree:single_focused?⇒Seq|REPL : spec/RFC?⇒(parallel?⇒Ralphinho : ContinuousClaude) : many_vars?⇒InfiniteLoop : Seq+DeSloppify;
+  recipes:{Seq+DeSloppify;ContinuousClaude+`--review-prompt`deslop;any+gate(build+lint+type+test;stop_after_2x_same_root_fail);simple_loop+tier_routing(`--model haiku`fix|`--model opus`arch)}
+}
+§ANTI{
+  mistakes:{no_exit_cond(`max-runs`/`max-cost`/`max-duration`/signal);no_ctx_bridge(`SHARED_TASK_NOTES.md`|FS);blind_retry_w/o_err_ctx;neg_instr_vs_cleanup_pass;all_agents_1_ctx(reviewer=author);ignore_parallel_file_overlap};
+  fail_modes:{churn_no_progress;repeat_same_root_cause;merge_queue_stall;unbounded_escalation_cost};
+  recovery:1_freeze_loop→2_audit(exits,gates,ctx_bridge,cost_limits)→3_reduce_scope_to_failing_unit→4_replay_w/_explicit_acceptance
+}

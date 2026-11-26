@@ -1,242 +1,30 @@
-# Agent Architecture Audit
-
-A diagnostic workflow for agent systems that hide failures behind wrapper layers, stale memory, retry loops, or transport/rendering mutations.
-
-## When to use
-
-**MANDATORY for:**
-- Releasing any agent or LLM-powered application to production
-- Shipping features with tool calling, memory, or multi-step workflows
-- Agent behavior degrades after adding wrapper layers
-- User reports "the agent is getting worse" or "tools are flaky"
-- Same model works in playground but breaks inside your wrapper
-- Debugging agent behavior for more than 15 minutes without finding root cause
-
-**Do not use for:**
-- Debugging one failing agent run — use `references/agent-introspection-debugging.md`
-- Code review — use `code-review/SKILL.md`
-- Security scanning — use `references/agent-security-hardening.md` or `secure-coding/SKILL.md`
-- Agent performance benchmarking — use `references/eval-harness.md`
-- Writing new features
-
-## The 12-Layer Stack
-
-Every agent system has these layers. Any of them can corrupt the answer:
-
-| # | Layer | What Goes Wrong |
-|---|-------|----------------|
-| 1 | System prompt | Conflicting instructions, instruction bloat |
-| 2 | Session history | Stale context injection from previous turns |
-| 3 | Long-term memory | Pollution across sessions, old topics in new conversations |
-| 4 | Distillation | Compressed artifacts re-entering as pseudo-facts |
-| 5 | Active recall | Redundant re-summary layers wasting context |
-| 6 | Tool selection | Wrong tool routing, model skips required tools |
-| 7 | Tool execution | Hallucinated execution — claims to call but doesn't |
-| 8 | Tool interpretation | Misread or ignored tool output |
-| 9 | Answer shaping | Format corruption in final response |
-| 10 | Platform rendering | Transport-layer mutation (UI, API, CLI mutates valid answers) |
-| 11 | Hidden repair loops | Silent fallback/retry agents running second LLM pass |
-| 12 | Persistence | Expired state or cached artifacts reused as live evidence |
-
-## Common Failure Patterns
-
-### 1. Wrapper Regression
-
-The base model produces correct answers, but the wrapper layers make it worse.
-
-**Symptoms:**
-- Model works fine in playground or direct API call, breaks in your agent
-- Added a new prompt layer, existing behavior degraded
-- Agent sounds confident but is confidently wrong
-- "It was working before the last update"
-
-### 2. Memory Contamination
-
-Old topics leak into new conversations through history, memory retrieval, or distillation.
-
-**Symptoms:**
-- Agent brings up unrelated past topics
-- User corrections don't stick (old memory overwrites new)
-- Same-session artifacts re-enter as pseudo-facts
-- Memory grows without bound, degrading response quality over time
-
-### 3. Tool Discipline Failure
-
-Tools are declared in the prompt but not enforced in code. The model skips them or hallucinates execution.
-
-**Symptoms:**
-- "Must use tool X" in prompt, but model answers without calling it
-- Tool results look correct but were never actually executed
-- Different tools fight over the same responsibility
-- Model uses tool when it shouldn't, or skips it when it must
-
-### 4. Rendering/Transport Corruption
-
-The agent's internal answer is correct, but the platform layer mutates it during delivery.
-
-**Symptoms:**
-- Logs show correct answer, user sees broken output
-- Markdown rendering, JSON parsing, or streaming fragments corrupt valid responses
-- Hidden fallback agent quietly replaces the answer before delivery
-- Output differs between terminal and UI
-
-### 5. Hidden Agent Layers
-
-Silent repair, retry, summarization, or recall agents run without explicit contracts.
-
-**Symptoms:**
-- Output changes between internal generation and user delivery
-- "Auto-fix" loops run a second LLM pass the user doesn't know about
-- Multiple agents modify the same output without coordination
-- Answers get "smoothed" or "corrected" by invisible layers
-
-## Audit Workflow
-
-### Phase 1: Scope
-
-Define what you're auditing:
-
-- **Target system** — what agent application?
-- **Entrypoints** — how do users interact with it?
-- **Model stack** — which LLM(s) and providers?
-- **Symptoms** — what does the user report?
-- **Time window** — when did it start?
-- **Layers to audit** — which of the 12 layers apply?
-
-### Phase 2: Evidence Collection
-
-Gather evidence from the codebase:
-
-- **Source code** — agent loop, tool router, memory admission, prompt assembly
-- **Logs**: session traces (OpenTelemetry GenAI spans in Langfuse or LangSmith), tool call records
-- **Config** — prompt templates, tool schemas, provider settings
-- **Memory files** — SOPs, knowledge bases, session archives
-
-Use `rg` to search for anti-patterns:
-
+@REF:agent-architecture-audit
+§USE{req∈{prod_release,ship(tool_call|memory|multi_step),wrapper_degrade,rpt("getting worse"|"tools flaky"),playground_ok∧wrapper_fail,debug>15m};¬use∈{single_run→references/agent-introspection-debugging.md,code_review→code-review/SKILL.md,sec→references/agent-security-hardening.md∨secure-coding/SKILL.md,bench→references/eval-harness.md,new_feat}}
+§STK[1..12]{1:sys_prompt(conflict,bloat);2:session_hist(stale_ctx_inj);3:long_term_mem(cross_session_pollute,old_topic_leak);4:distill(artifact→pseudo_fact);5:active_recall(redundant_resummary_waste);6:tool_select(wrong_route,skip_req);7:tool_exec(hallucinated_exec);8:tool_interp(misread|ignore_out);9:ans_shape(fmt_corrupt);10:platform_render(UI|API|CLI_mutate);11:hidden_repair(silent_fallback|retry_2nd_LLM);12:persist(expired_state|cache→live_evid)}
+§PAT{1_wrapper_regress:playground|api_ok∧wrapper_fail|post_prompt_degrade|confidently_wrong|"worked_before_update";2_mem_contam:old_topic_leak|user_corr_overwritten|same_session_pseudo_fact|unbounded_growth;3_tool_disc_fail:"must use tool X"∈prompt_only∧skip|hallucinated_res|tool_overlap|wrong_call∨skip_must;4_render_corrupt:logs_ok≠user_out|md|json|stream_corrupt|silent_fallback_replace|term≠UI;5_hidden_layers:uncontracted(repair|retry|sum|recall)|invisible_2nd_LLM|uncoord_multi_agent|silent_smooth}
+§WF{
+P1_scope:{target,entrypoints,model_stack,symptoms,time_window,layers⊆1..12};
+P2_evid:{src(loop,tool_router,mem_admit,prompt_asm),logs(OTel_GenAI∈{Langfuse,LangSmith},tool_records),cfg(prompt_tpl,tool_schema,provider),mem_files(SOP,KB,session_arch)};
+P3_map:∀finding⇒{symptom,mechanism,source_layer∈1..12,root_cause,evidence(file:line|log:row),confidence∈[0.0,1.0]};
+P4_fix(code_first,¬prompt_first):1.code_gate_tools→2.rm|narrow_hidden_repair(contracts)→3.dedup_ctx(prompt∧hist∧mem∧distill)→4.mem_admit(user_corr>agent_assert)→5.tighten_distill_trig→6.render_passthrough(¬mutate)→7.typed_json_envelopes(¬prose)
+}
+§CMD{
 ```bash
-# Tool requirements expressed only in prompt text (not code)
 rg "must.*tool|必须.*工具|required.*call" --type md
-
-# Tool execution without validation
 rg "tool_call|toolCall|tool_use" --type py --type ts
-
-# Hidden LLM calls outside main agent loop
 rg "completion|chat\.create|messages\.create|llm\.invoke"
-
-# Memory admission without user-correction priority
 rg "memory.*admit|long.*term.*update|persist.*memory" --type py --type ts
-
-# Fallback loops that run additional LLM calls
 rg "fallback|retry.*llm|repair.*prompt|re-?prompt" --type py --type ts
-
-# Silent output mutation
 rg "mutate|rewrite.*response|transform.*output|shap" --type py --type ts
 ```
-
-### Phase 3: Failure Mapping
-
-For each finding, document:
-
-- **Symptom** — what the user sees
-- **Mechanism** — how the wrapper causes it
-- **Source layer** — which of the 12 layers
-- **Root cause** — the deepest cause
-- **Evidence** — file:line or log:row reference
-- **Confidence** — 0.0 to 1.0
-
-### Phase 4: Fix Strategy
-
-Default fix order (code-first, not prompt-first):
-
-1. **Code-gate tool requirements** — enforce in code, not just prompt text
-2. **Remove or narrow hidden repair agents** — make fallback explicit with contracts
-3. **Reduce context duplication** — same info through prompt + history + memory + distillation
-4. **Tighten memory admission** — user corrections > agent assertions
-5. **Tighten distillation triggers** — don't compress what shouldn't be compressed
-6. **Reduce rendering mutation** — pass-through, don't transform
-7. **Convert to typed JSON envelopes** — structured internal flow, not freeform prose
-
-## Severity Model
-
-| Level | Meaning | Action |
-|-------|---------|--------|
-| `critical` | Agent can confidently produce wrong operational behavior | Fix before next release |
-| `high` | Agent frequently degrades correctness or stability | Fix this sprint |
-| `medium` | Correctness usually survives but output is fragile or wasteful | Plan for next cycle |
-| `low` | Mostly cosmetic or maintainability issues | Backlog |
-
-## Output Format
-
-Present findings to the user in this order:
-
-1. **Severity-ranked findings** (most critical first)
-2. **Architecture diagnosis** (which layer corrupted what, and why)
-3. **Ordered fix plan** (code-first, not prompt-first)
-
-Do not lead with compliments or summaries. If the system is broken, say so directly.
-
-## Quick Diagnostic Questions
-
-When auditing an agent system, answer these:
-
-| # | Question | If Yes → |
-|---|----------|----------|
-| 1 | Can the model skip a required tool and still answer? | Tool not code-gated |
-| 2 | Does old conversation content appear in new turns? | Memory contamination |
-| 3 | Is the same info in system prompt AND memory AND history? | Context duplication |
-| 4 | Does the platform run a second LLM pass before delivery? | Hidden repair loop |
-| 5 | Does the output differ between internal generation and user delivery? | Rendering corruption |
-| 6 | Are "must use tool X" rules only in prompt text? | Tool discipline failure |
-| 7 | Can the agent's own monologue become persistent memory? | Memory poisoning |
-
-## Anti-Patterns to Avoid
-
-- Avoid blaming the model before falsifying wrapper-layer regressions.
-- Avoid blaming memory without showing the contamination path.
-- Do not let a clean current state erase a dirty historical incident.
-- Do not treat markdown prose as a trustworthy internal protocol.
-- Do not accept "must use tool" in prompt text when code never enforces it.
-- Keep findings direct, evidence-backed, and severity-ranked.
-
-## Report Schema
-
-Audits should produce structured reports following this shape:
-
-```json
-{
-  "schema_version": "agent-architecture-audit.report.v1",
-  "executive_verdict": {
-    "overall_health": "high_risk",
-    "primary_failure_mode": "string",
-    "most_urgent_fix": "string"
-  },
-  "scope": {
-    "target_name": "string",
-    "model_stack": ["string"],
-    "layers_to_audit": ["string"]
-  },
-  "findings": [
-    {
-      "severity": "critical|high|medium|low",
-      "title": "string",
-      "mechanism": "string",
-      "source_layer": "string",
-      "root_cause": "string",
-      "evidence_refs": ["file:line"],
-      "confidence": 0.0,
-      "recommended_fix": "string"
-    }
-  ],
-  "ordered_fix_plan": [
-    { "order": 1, "goal": "string", "why_now": "string", "expected_effect": "string" }
-  ]
 }
+§SEV{critical:confidently_wrong_ops⇒pre_release;high:freq_degrade(correctness|stability)⇒this_sprint;medium:fragile|wasteful⇒next_cycle;low:cosmetic|maint⇒backlog}
+§OUT{order:[severity_ranked(critical→low),arch_diag(layer,what,why),ordered_fix_plan(code_first)];¬compliments∧¬lead_sum;broken⇒state_directly}
+§DIAG{1:skip_req_tool∧ans⇒¬code_gated;2:old_conv∈new_turn⇒mem_contam;3:same_info∈(prompt∧mem∧hist)⇒ctx_dup;4:2nd_LLM_pre_deliv⇒hidden_repair_loop;5:internal_out≠user_out⇒render_corrupt;6:"must use tool X"∈prompt_only⇒tool_disc_fail;7:agent_monologue→persist_mem⇒mem_poison}
+§ANTI{¬blame_model≺falsify_wrapper;¬blame_mem¬contam_path;¬clean_now_erase_past;¬md_prose_protocol;¬accept_prompt_only_tool_req;direct∧evid_backed∧sev_ranked}
+§SCHEMA{
+```json
+{"schema_version":"agent-architecture-audit.report.v1","executive_verdict":{"overall_health":"high_risk","primary_failure_mode":"string","most_urgent_fix":"string"},"scope":{"target_name":"string","model_stack":["string"],"layers_to_audit":["string"]},"findings":[{"severity":"critical|high|medium|low","title":"string","mechanism":"string","source_layer":"string","root_cause":"string","evidence_refs":["file:line"],"confidence":0.0,"recommended_fix":"string"}],"ordered_fix_plan":[{"order":1,"goal":"string","why_now":"string","expected_effect":"string"}]}
 ```
-
-## Related
-
-- `references/agent-introspection-debugging.md` — debug agent runtime failures (loops, timeouts, state errors)
-- `references/eval-harness.md` — benchmark agent performance head-to-head
-- `references/agent-security-hardening.md` — security audit for agent runtimes
-- `references/agent-harness-construction.md` — build agent harnesses from scratch
+}
+§REL{references/agent-introspection-debugging.md:runtime_fail(loops,timeouts,state);references/eval-harness.md:bench;references/agent-security-hardening.md:sec_audit;references/agent-harness-construction.md:build_harness}

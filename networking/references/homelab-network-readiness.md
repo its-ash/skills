@@ -1,163 +1,22 @@
-# Homelab Network Readiness
-
-Use this skill before changing a home or small-lab network that mixes VLANs,
-Pi-hole or another local DNS resolver, firewall rules, and remote VPN access.
-
-This is a planning and review skill. Do not turn it into copy-paste router,
-firewall, or VPN configuration unless the target platform, current topology,
-rollback path, console access, and maintenance window are all known.
-
-## When to use
-
-- Preparing to split a flat network into trusted, IoT, guest, server, or
-  management VLANs.
-- Moving DHCP clients to Pi-hole, AdGuard Home, Unbound, or another local DNS
-  resolver.
-- Adding WireGuard, Tailscale, ZeroTier, OpenVPN, or router-native VPN access.
-- Reviewing whether a homelab change can lock the operator out of the gateway,
-  switch, access point, DNS server, or VPN server.
-- Turning an informal home-network idea into a staged migration plan with
-  validation evidence.
-
-## Safety Rules
-
-- Keep the first answer read-only: inventory, risks, staged plan, validation,
-  and rollback.
-- Do not expose gateway admin panels, DNS resolvers, SSH, NAS consoles, or VPN
-  management UIs directly to the public internet.
-- Do not provide firewall, NAT, VLAN, DHCP, or VPN commands without a confirmed
-  platform and a rollback procedure.
-- Require out-of-band or same-room console access before changing management
-  VLANs, trunk ports, firewall default policies, or DHCP/DNS settings.
-- Keep a working path back to the internet before pointing the whole network at
-  a new DNS resolver or VPN route.
-- Treat IoT, guest, camera, and lab-server networks as different trust zones
-  until the operator explicitly chooses otherwise.
-
-## Required Inventory
-
-Collect this before giving implementation steps:
-
-| Area | Questions |
-| --- | --- |
-| Internet edge | What is the modem or ONT? Is the ISP router bridged or still routing? |
-| Gateway | What routes, firewalls, handles DHCP, and terminates VPNs? |
-| Switching | Which switch ports are uplinks, access ports, trunks, or unmanaged? |
-| Wi-Fi | Which SSIDs map to which networks, and are APs wired or mesh? |
-| Addressing | What subnets exist today, and which ranges conflict with VPN sites? |
-| DNS/DHCP | Which service currently hands out leases and resolver addresses? |
-| Management | How will the operator reach the gateway, switch, and AP after changes? |
-| Recovery | What can be reverted locally if DNS, DHCP, VLANs, or VPN routes break? |
-
-## VLAN And Trust-Zone Plan
-
-Start with intent rather than vendor syntax.
-
-| Zone | Typical contents | Default policy |
-| --- | --- | --- |
-| Trusted | Laptops, phones, admin workstations | Can reach shared services and management only when needed |
-| Servers | NAS, Home Assistant, lab hosts, DNS resolver | Accepts narrow inbound flows from trusted clients |
-| IoT | TVs, smart plugs, cameras, speakers | Internet access plus explicit exceptions only |
-| Guest | Visitor devices | Internet-only, no LAN reachability |
-| Management | Gateway, switches, APs, controllers | Reachable only from trusted admin devices |
-| VPN | Remote clients | Same or narrower access than trusted clients |
-
-Before recommending VLAN IDs or subnets, confirm:
-
-1. The gateway supports inter-VLAN routing and firewall rules.
-2. The switch supports the required tagged and untagged port behavior.
-3. The APs can map SSIDs to VLANs.
-4. The operator knows which port they are connected through during the change.
-5. The management network remains reachable after trunk and SSID changes.
-
-## DNS Filtering Readiness
-
-Pi-hole or another local resolver should be introduced as a dependency, not as a
-single point of failure.
-
-1. Give the resolver a reserved address before using it in DHCP options.
-2. Confirm it can resolve public DNS and local `home.arpa` names.
-3. Keep the gateway or a second resolver available as a temporary fallback.
-4. Test one client or one VLAN before changing every DHCP scope.
-5. Document which networks may bypass filtering and why.
-6. Check that blocking rules do not break captive portals, work VPNs, firmware
-   updates, or medical/security devices.
-
-Useful validation evidence:
-
-```text
-Client gets expected DHCP lease
-Client receives expected DNS resolver
-Public DNS lookup succeeds
-Local home.arpa lookup succeeds
-Blocked test domain is blocked only where intended
-Gateway and DNS admin interfaces are not reachable from guest or IoT networks
-```
-
-## Remote Access Readiness
-
-For WireGuard-style access, decide what the VPN is allowed to reach before
-generating keys or opening ports.
-
-| Mode | Use when | Risk notes |
-| --- | --- | --- |
-| Split tunnel to one subnet | Remote admin for NAS or lab hosts | Keep route list narrow |
-| Split tunnel to trusted services | Access selected apps by IP or DNS | Requires precise firewall rules |
-| Full tunnel | Untrusted networks or travel | More bandwidth and DNS responsibility |
-| Overlay VPN | Simpler remote access with identity controls | Still needs ACL review |
-
-Do not recommend port forwarding until the operator confirms:
-
-- The VPN endpoint is patched and actively maintained.
-- The forwarded port goes only to the VPN service, not an admin UI.
-- Dynamic DNS, public IP behavior, and ISP CGNAT status are understood.
-- Peer keys can be revoked without rebuilding the whole network.
-- Logs or connection status can verify who connected and when.
-
-## Change Sequence
-
-Prefer small, reversible changes:
-
-1. Snapshot the current topology, IP plan, DHCP settings, DNS settings, and
-   firewall rules.
-2. Reserve infrastructure addresses for gateway, DNS, controller, APs, NAS, and
-   VPN endpoint.
-3. Create the new zone or VLAN without moving critical devices.
-4. Move one test client and validate DHCP, DNS, routing, internet, and block
-   behavior.
-5. Add narrow firewall exceptions for required flows.
-6. Move one low-risk device group.
-7. Add VPN access with the narrowest route and firewall policy that satisfies
-   the use case.
-8. Document final state, known exceptions, and rollback commands or UI steps.
-
-## Review Checklist
-
-- Each network has a reason to exist and a clear trust boundary.
-- No management interface is reachable from guest, IoT, or the public internet.
-- DNS failure does not take down the operator's ability to recover locally.
-- DHCP scope changes were tested on one client before broad rollout.
-- VPN clients receive only the routes and DNS settings they need.
-- Firewall rules are default-deny between zones, with named exceptions.
-- The operator can still reach gateway, switch, AP, DNS, and VPN admin surfaces.
-- Rollback is documented in the same vocabulary as the chosen platform UI or
-  CLI.
-
-## Anti-Patterns
-
-- Segmenting networks before knowing which switch ports and SSIDs carry which
-  VLANs.
-- Moving the admin workstation off the only reachable management network.
-- Pointing all DHCP scopes at a Pi-hole before testing fallback DNS.
-- Publishing NAS, DNS, router, or hypervisor management directly to the
-  internet.
-- Treating VPN access as equivalent to full trusted-LAN access.
-- Adding allow-all firewall rules temporarily and forgetting to remove them.
-- Copying commands from another vendor or firmware version without checking the
-  exact platform syntax.
-
-## See also
-
-- [../SKILL.md](../SKILL.md) for the base network plan.
-- [homelab-vlan-segmentation.md](homelab-vlan-segmentation.md), [homelab-pihole-dns.md](homelab-pihole-dns.md), [homelab-wireguard-vpn.md](homelab-wireguard-vpn.md) for implementation.
-- [network-config-validation.md](network-config-validation.md), [network-interface-health.md](network-interface-health.md)
+@REF:homelab-network-readiness
+# Plan/review gate for homelab Δ(VLANs,Pi-hole/DNS,FW,VPN). ¬emit copy-paste cfg unless {platform,topology,rollback,console_access,maint_window} known.
+§D{use}
+split_flat→{trusted,iot,guest,server,mgmt}_VLANs | DHCP→{Pi-hole,AdGuard_Home,Unbound,local_DNS} | add_VPN∈{WireGuard,Tailscale,ZeroTier,OpenVPN,router_native} | lockout_audit∈{gw,switch,AP,DNS,VPN} | staged_migration+evidence
+§R{safety}
+1st_reply≡READ_ONLY(inventory,risks,plan,validation,rollback); ¬expose(public,{gw_admin,DNS,SSH,NAS_UI,VPN_UI}); ¬emit({FW,NAT,VLAN,DHCP,VPN}_cmds) unless platform∧rollback_known; require(OOB⊕local_console) pre_Δ({mgmt_VLAN,trunks,FW_default,DHCP,DNS}); keep(internet_path) pre_cutover(DNS∨VPN); zones:{IoT,guest,camera,lab_server}≠Trusted unless explicit
+§CHK{inventory}
+edge:modem/ONT,ISP_rtr(bridged/routing)?; gw:routes,FW,DHCP,VPN?; switch:uplink/access/trunk/unmanaged?; wifi:SSID→VLAN,AP(wired/mesh)?; addr:subnets,VPN_conflicts?; dns_dhcp:lease+resolver?; mgmt:post_Δ_reach(gw,switch,AP)?; recovery:local_revert(DNS,DHCP,VLAN,VPN)?
+§CFG{zones}
+Trusted:{laptops,phones,admin}⇒svcs+mgmt(needed); Servers:{NAS,Home_Assistant,lab,DNS}⇒narrow_in(Trusted); IoT:{TV,plugs,cams,speakers}⇒net+exceptions_only; Guest:{visitors}⇒net_only∧¬LAN; Management:{gw,switch,AP,ctrl}⇒in(Trusted_admin); VPN:{remote}⇒access≤Trusted; pre_VLAN:{gw_route+FW,switch_tag/untag,AP_SSID→VLAN,operator_port_known,mgmt_ok_post(trunk_Δ,SSID_Δ)}
+§R{dns_readiness}
+1:reserve_IP(resolver) pre_DHCP; 2:verify(public_DNS∧home.arpa); 3:fallback(gw∨2nd_resolver); 4:canary(1_client∨1_VLAN) pre_all_scopes; 5:doc(bypass_nets+why); 6:verify_¬break({captive_portals,work_VPNs,fw_updates,medical_security_devs}); evidence:{DHCP_lease,DNS_IP,public_ok,home.arpa_ok,block_scoped,admin_blocked(guest,IoT)}
+§CFG{vpn_readiness}
+split_1_subnet(NAS/lab)⇒narrow_routes; split_trusted(IP/DNS)⇒precise_FW; full_tunnel(untrusted/travel)⇒↑BW+DNS; overlay(identity)⇒ACL_review; pre_port_fwd:{patched,fwd→VPN_svc_only(¬admin_UI),DDNS+public_IP+CGNAT_known,per_peer_revoke,logs_who_when}
+§PAT{change_seq}
+1:snapshot({topology,IP_plan,DHCP,DNS,FW})→2:reserve_IPs({gw,DNS,ctrl,AP,NAS,VPN})→3:create_VLAN(¬move_crit)→4:canary_1_client({DHCP,DNS,route,net,block})→5:narrow_FW_exceptions→6:move_1_low_risk_grp→7:add_VPN(min_routes+FW)→8:doc({state,exceptions,rollback})
+§CHK{review}
+∀net:purpose+trust_boundary; ¬mgmt_from({guest,IoT,public}); DNS_fail¬block_recovery; DHCP_Δ_canary_1st; VPN⇒min(routes,DNS); FW≡default_deny+named_exceptions; admin_ok({gw,switch,AP,DNS,VPN}); rollback∈platform(UI∨CLI)
+§ANTI
+segment_pre_known(port/SSID→VLAN) | move_admin_off_mgmt | all_DHCP→Pi-hole_pre_fallback | expose_mgmt({NAS,DNS,rtr,hypervisor}) | VPN≡full_LAN | stale_allow_all_FW | cross_vendor_copy_paste_no_syntax_check
+§REL
+[../SKILL.md](../SKILL.md) | [homelab-vlan-segmentation.md](homelab-vlan-segmentation.md) | [homelab-pihole-dns.md](homelab-pihole-dns.md) | [homelab-wireguard-vpn.md](homelab-wireguard-vpn.md) | [network-config-validation.md](network-config-validation.md) | [network-interface-health.md](network-interface-health.md)

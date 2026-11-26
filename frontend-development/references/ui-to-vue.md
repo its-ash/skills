@@ -1,108 +1,38 @@
-# UI To Vue
-
-Batch-convert UI design screenshots into Vue 3 Composition API components with the `ui-to-vue-converter` npm CLI.
-
-## When to use
-
-- The user supplies a directory of design screenshots or design-export images.
-- The target application is Vue 3.
-- The user wants a first pass of page components, shared components, and router wiring.
-- The user names Vant, Element Plus, or Ant Design Vue as the component library.
-
-## When not to use
-
-- The user has only one screenshot and wants a custom component. Write it by hand with [vue.md](vue.md).
-- The target project is not Vue.
-- The design needs detailed interaction logic, data flow, or an accessibility review.
-- The screenshots contain private customer data that you must not send to an external model API.
-
-## Inputs
-
-Group screenshots by module and page state:
-
-```text
-screenshots/
-|-- HomePage/
-|   |-- List/
-|   |   |-- HomePage-List-Default@3x.png
-|   |   `-- cut-images/
-|   |-- cut-images/
-|   `-- HomePage-Default@3x.png
-`-- cut-images/
-```
-
-Supported cut-image directory names: `assets`, `icons`, `sprites`, `cut`, `images`, `cut-images`.
-
-## Conversion model
-
-- Page grouping: related screenshots (list, detail, form, loading, empty states) become one page component.
-- UI library mapping: native visual elements map to Vant, Element Plus, or Ant Design Vue components where practical.
-- Cut-image priority: page-level assets first, then module-level assets, then global shared assets.
-- Component extraction: repeated UI regions become shared components when they occur more than once.
-
-## CLI usage
-
-Use `npx` with a pinned version:
-
-```bash
-export DASHSCOPE_API_KEY=your_key
-npx ui-to-vue-converter@1.0.2 --input ./screenshots --ui vant --output ./src
-npx ui-to-vue-converter@1.0.2 --input ./designs --ui element-plus --output ./src
-npx ui-to-vue-converter@1.0.2 --input ./designs --ui antd-vue --output ./src
-```
-
-| Option | Description | Default |
-| --- | --- | --- |
-| `--input` | Design image directory | `./screenshots` |
-| `--ui` | UI library: `vant`, `element-plus`, or `antd-vue` | `vant` |
-| `--output` | Output directory | `./src` |
-| `--config` | Config file path | `./.ui-to-vue.config.json` |
-
-## API key handling
-
-The CLI reads DashScope credentials from the environment or from a config file. Use the environment variable in repositories. If you must use a config file, keep it out of version control:
-
-```json
-{
-  "apiKey": "your_dashscope_key",
-  "input": "./designs",
-  "ui": "vant",
-  "output": "./src"
+@REF:ui-to-vue
+§GOAL{batch_UI_screenshots→Vue3_CompositionAPI_comps+router_via_ui-to-vue-converter_CLI}
+§USE{
+  do⇔dir(screenshots)∧Vue3∧first_pass(pages,shared,router)∧ui∈{vant,element-plus,antd-vue};
+  ¬do⇔{1_screenshot_custom⇒[vue.md](vue.md);¬Vue;needs_complex_logic/data/a11y;private_data_blocked_from_ext_API}
 }
-```
-
-```gitignore
-.ui-to-vue.config.json
-```
-
-## Security and privacy
-
-- The CLI can send screenshots to an external model API. Get permission before you use private customer designs.
-- Pin the converter version in repeatable workflows. Do not use `@latest`.
-- Do not commit `.ui-to-vue.config.json`, API keys, generated secrets, or customer screenshots.
-- Review the generated Vue code before you commit it.
-
-## Output review checklist
-
-- [ ] Page components are under `views/` or the selected output directory.
-- [ ] Repeated UI regions are in `components/` only when reuse is clear.
-- [ ] Router output agrees with the router style of the target project.
-- [ ] Generated components use the requested UI library consistently.
-- [ ] Generated CSS units agree with the design baseline.
-- [ ] The code passes the project formatter, linter, type checker, and build.
-- [ ] Placeholder copy, mock data, and generated assets are reviewed before commit.
-
-## Troubleshooting
-
-| Issue | Check |
-| --- | --- |
-| `401` or authentication error | Make sure `DASHSCOPE_API_KEY` is set in the shell that runs the command. |
-| `command not found: ui-to-vue` | Use the `npx ui-to-vue-converter@1.0.2` form. |
-| Cut images are ignored | Make sure the asset directory name is supported and is under the matching page or module. |
-| Components ignore the requested UI library | Run again with an explicit `--ui` value and examine the generated imports. |
-| Layout dimensions are incorrect | Make sure the screenshot export width agrees with the target library baseline. |
-
-## Related skills
-
-- [`vue`](vue.md) — Vue 3 patterns to refine the generated code.
-- [`figma`](../../design/references/figma.md) — design handoff from Figma.
+§IN{
+  tree:`screenshots/HomePage/{HomePage-Default@3x.png,cut-images/,List/{HomePage-List-Default@3x.png,cut-images/}}+root_cut-images/`;
+  cut_dirs∈{assets,icons,sprites,cut,images,cut-images}
+}
+§MDL{
+  page_group:states(list,detail,form,loading,empty)→1_page;
+  ui_map:native→vant|element-plus|antd-vue;
+  cut_prio:page>module>global;
+  extract:repeated_UI(>1)→shared_comps
+}
+§CMD{
+  `export DASHSCOPE_API_KEY=<key>`
+  `npx ui-to-vue-converter@1.0.2 --input ./screenshots --ui vant --output ./src`
+  opts:{--input(./screenshots),--ui(vant|element-plus|antd-vue,def=vant),--output(./src),--config(./.ui-to-vue.config.json)}
+}
+§CFG{
+  env(`DASHSCOPE_API_KEY`)>cfg_file;
+  `.ui-to-vue.config.json`:`{"apiKey":"...","input":"./designs","ui":"vant","output":"./src"}`∧add_`.gitignore`
+}
+§SEC{
+  ext_API⇒permission_for_private_designs;pin=`@1.0.2`(¬`@latest`);
+  ¬commit:{.ui-to-vue.config.json,API_keys,secrets,customer_screenshots};review_output_pre_commit
+}
+§CHK{pages∈views/|output;shared∈components/_iff_clear_reuse;router_matches_project;consistent_--ui;CSS_units_match_baseline;fmt+lint+tsc+build_pass;copy/mocks/assets_reviewed}
+§DBG{
+  401/auth⇒check_DASHSCOPE_API_KEY_in_shell;
+  cmd_not_found:ui-to-vue⇒`npx ui-to-vue-converter@1.0.2`;
+  cut_ignored⇒dir∈cut_dirs_under_page/module;
+  wrong_UI_lib⇒explicit_`--ui`+check_imports;
+  wrong_dims⇒match_export_width_to_lib_baseline
+}
+§REL{[vue.md](vue.md);[figma.md](../../design/references/figma.md)}

@@ -1,75 +1,8 @@
-# Latency Critical Systems
-
-Optimize and verify latency-sensitive systems (realtime dashboards, market data feeds, streaming agents, execution gateways, queues, and caches) with measured hot paths.
-
-## When to use
-- p50/p95/p99 latency, throughput, or data freshness is important.
-- You optimize a hot path, a stream, a queue, or a cache.
-- You verify a realtime surface after deploy.
-
-This guide is about engineering only. It does not authorize live trading or give financial advice.
-
-## Split The Metrics
-
-Do not collapse everything into "fast." Track:
-
-- p50, p95, and p99 latency;
-- throughput;
-- freshness age;
-- queue depth;
-- cache hit rate;
-- provider/API response time;
-- browser render time;
-- correctness under load;
-- failure and retry behavior.
-
-## Map The Hot Path
-
-Write the path from user/event to final visible state:
-
-```text
-source event -> provider API -> ingest worker -> queue -> cache -> edge route
--> client stream -> browser render -> user-visible state
-```
-
-Then measure each segment separately.
-
-## Optimization Order
-
-1. Remove unnecessary round trips.
-2. Cache stable reads with freshness metadata.
-3. Batch small calls and writes.
-4. Move compute closer to the data or the user.
-5. Split hot and cold paths.
-6. Apply backpressure before queues grow unbounded.
-7. Use streaming only when it improves freshness or user experience.
-8. Add canaries for stale data, degraded providers, and bad cache state.
-
-## Verification
-
-Use live readbacks when a deployed surface exists:
-
-- HTTP timing and response headers;
-- provider freshness timestamp;
-- queue or job state;
-- edge/cache state;
-- browser verification for actual UI freshness;
-- logs around retries and degraded mode.
-
-For market-data or execution-adjacent paths, also verify orderbook age, VWAP
-assumptions, provider status, and kill-switch behavior before calling the path
-ready.
-
-## Guardrails
-
-- Do not optimize latency by dropping required validation.
-- Do not hide stale data behind fast cache hits.
-- Do not claim millisecond behavior from client labels without measurement.
-- Do not run live orders, destructive migrations, or customer-impacting deploys
-  without an explicit approval gate.
-- Keep secrets and private payloads out of logs and benchmark artifacts.
-
-## Related
-- [benchmark.md](benchmark.md) for baselines and the optimization loop.
-- [canary-watch.md](canary-watch.md) for stale-data and degraded-provider canaries.
-- [observability](../../devops-iac/references/observability.md) for latency dashboards and alerts.
+@REF:latency-critical-systems
+§SCOPE{target:realtime_dashboards∨market_data_feeds∨streaming_agents∨exec_gateways∨queues∨caches;use⇔(p50|p95|p99_latency∨throughput∨freshness_age)∈critical∨opt(hot_path|stream|queue|cache)∨post_deploy_verify(realtime);boundary:eng_only∧¬authorize(live_trading)∧¬financial_advice}
+§MTR{¬collapse:"fast";track:{p50,p95,p99_latency,throughput,freshness_age,queue_depth,cache_hit_rate,provider_api_rt,browser_render_time,load_correctness,failure_retry}}
+§PATH{hot:src_event→provider_API→ingest_worker→queue→cache→edge_route→client_stream→browser_render→visible_state;rule:measure(∀segment)∈separate}
+§OPT{1:rm(unneeded_round_trips);2:cache(stable_reads)+freshness_meta;3:batch(small_calls∧writes);4:compute_closer(data∨user);5:split(hot,cold);6:backpressure(pre_unbounded_queue);7:stream⇔improves(freshness∨UX);8:canary({stale_data,degraded_provider,bad_cache})}
+§CHK{deployed⇒live_readback:{http_timing∧resp_hdrs,provider_freshness_ts,queue|job_state,edge|cache_state,browser_UI_freshness,logs(retries∧degraded_mode)};mkt_data∨exec_adj⇒verify:{orderbook_age,VWAP_assumptions,provider_status,kill_switch}}
+§ANTI{¬drop(req_val)→opt_latency;¬hide(stale_data)∈fast_cache_hits;¬claim(ms)←client_labels∧¬measured;¬run({live_orders,destructive_migrations,cust_impacting_deploys})∧¬approval_gate;{secrets,private_payloads}∉{logs,bench_artifacts}}
+§REL{[benchmark.md](benchmark.md):baselines∧opt_loop;[canary-watch.md](canary-watch.md):stale_data∧degraded_provider_canaries;[observability](../../devops-iac/references/observability.md):latency_dashboards∧alerts}

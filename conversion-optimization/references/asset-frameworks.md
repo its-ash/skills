@@ -1,86 +1,73 @@
-# CRO Asset Frameworks
+@REF:asset-frameworks
+§R{parent:[`../SKILL.md`](../SKILL.md);read_only_audited_section}
 
-Per-asset checks for [`../SKILL.md`](../SKILL.md). Read only the section for the asset under audit.
+§PAT:Page(home|LP|pricing|feat|blog){
+  val≤5s:outcome_head∧¬jargon;
+  head:specific+val+ad_match;win:nums∨proof("Join 12 000+ teams");
+  CTA:1_prim_ATF+val("Submit"→"Start Free Trial");repeat_sec_post_sections;
+  hier:H1→H2→body+space+prod_shots>stock+big_benefit;
+  trust:logos+testim+reviews("Trusted by"_above_prim_CTA);
+  obj:FAQ_accordion(BTF)+guarantees+pricing_clarity;
+  fric:cut_weight+hide_nav(1_purpose_LP)+fewer_links;
+  AB:{head,CTA_color,hero_img_vs_vid,"Most Popular"_badge}
+}
 
-## 1. Page (homepage, landing, pricing, feature, blog)
+§PAT:Form(lead|contact|demo|quote|survey|checkout){
+  cost:3=base|4-6→-10-25%|7+→-25-50%;
+  req:email(∨phone)+pw(signup)+opt_name;
+  email:1_fld+inline_val+typo+mob_email_kbd;
+  name:1_"Full name"(split_only_pers);
+  phone:opt+auto_fmt+cc_pick;
+  co:auto_suggest+post_enrich;
+  opts:>5⇒searchable+vis_labels;
+  layout:1_col(2_col_paired_short:first/last);
+  multi:>5_flds∨sections⇒prog_bar+easy_1st+back+save;
+  err:inline+spec+focus_1st+keep_data;
+  sub:act+benefit("Get My Free Quote")+hi_contrast+≥44px;
+  trust:privacy+sec_badge+resp_time;
+  mob:big_targets+right_kbds+sticky_sub;
+  kpi:{start,comp,fld_drop,err,ttc}
+}
 
-| Dimension | Check | Quick win |
-|---|---|---|
-| Value proposition | Visitor gets the core benefit in ≤5 s | Outcome-focused headline; remove jargon |
-| Headline | Specific, states core value, matches ad copy | Test numbers or social proof ("Join 12 000+ teams") |
-| CTA | One primary CTA above the fold, value copy | "Submit" → "Start Free Trial"; repeat a secondary CTA after key sections |
-| Visual hierarchy | Clear H1 → H2 → body, white space, images support message | More spacing, larger benefit text, product screenshots over stock photos |
-| Trust signals | Logos, testimonials, review scores near CTA | "Trusted by" strip directly above primary CTA |
-| Objections | FAQ, guarantees, pricing clarity | Short FAQ accordion below the fold |
-| Friction | Slow load, hidden nav, too many links | Cut page weight; hide nav on single-purpose landing pages |
+§PAT:Popup_Modal{
+  trig:{scroll:25-50%(blog),exit:desk(→close)|mob(back_scroll∨delay),delay:30-60s(¬<10s),click:user_init,behav:cart_aband|pricing|repeat};
+  ord:head>val>form/CTA>close;w:400-600px(desk)|full_btm∨ctr(mob);
+  close:vis_X+"No thanks";
+  copy:benefit_head+subhead+spec_CTA+privacy;
+  freq:1/sess;dismiss:7-30d;
+  comp:GDPR(PII)+kbd/SR_a11y;
+  kpi:{impr,conv,close_rate,ttc}
+}
 
-Test ideas: headline A/B, CTA color, hero image vs. video, "Most Popular" badge on pricing.
+§PAT:Signup{
+  req:email/phone+pw;opt_name;defer(co,role,phone)→onboard;
+  social:first(>email);
+  steps:≤3→1_step;>3→multi+prog;
+  trust:"No credit card required"+privacy+sec_badge+testim;
+  err:inline+clear+keep_data;
+  mob:big_targets+autofill+social+sticky_CTA;
+  post:inst_conf+next_prev+defer_email_ver
+}
 
-## 2. Form (lead, contact, demo, quote, survey, checkout)
+§PAT:Onboarding{
+  aha:1st_act_pred_ret;1_goal/sess+defer_sec;interactive>static;
+  chk:3-7_hi_val(by_impact)+prog_bar+celebrate;
+  empty:purpose+prev+prim_CTA(create_1st);
+  tour:≤5_steps+dismiss+hide_ret;
+  chan:welcome_email+in_app+timed_push(¬immed);
+  kpi:{act_rate,tta,comp,D1/D7/D30_ret}
+}
 
-- Field cost: 3 fields = baseline; 4–6 → 10–25 % drop; 7+ → 25–50 % drop.
-- Essential: email (or phone) + password (signup) + one optional name field.
-- Email: one field, inline validation, typo detection, email keyboard on mobile.
-- Name: one "Full name" field; split only for personalization.
-- Phone: optional, auto-format, country code picker.
-- Company: auto-suggest; enrich after submit.
-- Choices: searchable dropdown for >5 options; keep labels visible.
-- Layout: single column; two columns only for short related fields (first/last name).
-- Multi-step: use for >5 fields or logical sections. Progress bar, easy questions first, back navigation, save progress.
-- Errors: inline, specific, focus first error, never clear entered data.
-- Submit: action + benefit ("Get My Free Quote"), high contrast, ≥44 px.
-- Trust: privacy note, security badge, expected response time.
-- Mobile: large tap targets, correct keyboards, sticky submit.
-- Metrics: start rate, completion rate, field-level drop-off, error rate, time to complete.
-
-## 3. Popup / modal
-
-| Trigger | Setting |
-|---|---|
-| Scroll | 25–50 % depth (blogs) |
-| Exit intent | Desktop: cursor toward close. Mobile: back-scroll or time delay |
-| Time delay | 30–60 s after load; never <10 s |
-| Click | User-initiated; zero annoyance |
-| Behavior | Cart abandonment, pricing-page visit, repeat visit |
-
-- Order: headline > value > form/CTA > close. Width 400–600 px desktop; full-width bottom or centered on mobile.
-- Close button always visible plus a "No thanks" link.
-- Copy: benefit headline, short subhead, specific CTA, privacy reassurance.
-- Frequency: once per session; respect dismiss for 7–30 days.
-- Compliance: GDPR consent for personal data; keyboard and screen-reader accessible.
-- Metrics: impressions, conversion, close rate, time to close.
-
-## 4. Signup flow
-
-- Essential: email/phone + password. Name optional. Defer company, role, phone to onboarding.
-- Put social auth first; it often converts better than email.
-- ≤3 fields → single step; >3 → multi-step with progress indicator.
-- Trust: "No credit card required", privacy note, security badge, testimonial.
-- Errors: inline, clear, keep entered data.
-- Mobile: large tap targets, autofill, social auth, sticky CTA.
-- After submit: instant confirmation, next-step preview; delay email verification if possible.
-
-## 5. Onboarding
-
-- Define the aha moment: the first action that predicts long-term retention.
-- One goal per session; defer secondary features.
-- Prefer interactive tasks to static tutorials.
-- Checklist: 3–7 high-value items, ordered by impact, progress bar, celebration on completion.
-- Empty states: explain purpose, show preview, primary CTA to create the first item.
-- Tooltips/tours: ≤5 steps, dismissible, hidden for returning users.
-- Multi-channel: welcome email, in-app reminders, timed push (not immediate).
-- Metrics: activation rate, time to activation, onboarding completion, Day 1/7/30 retention.
-
-## 6. Paywall / upgrade screen
-
-- Show only after real value (post-aha or at a usage limit).
-- Headline: benefit first ("Unlock unlimited projects"), not price first.
-- Show value: paid-feature preview, before/after, or ROI example.
-- Comparison: key differences only; mark the recommended plan.
-- Pricing: simple, annual/monthly toggle, clear per-seat cost.
-- CTA: action + benefit ("Upgrade to Pro – Get Unlimited").
-- Escape: clear "Maybe later" / "Continue with Free"; no guilt-trip copy.
-- Path: in-context upgrade, pre-filled info, few steps, security badges.
-- Mobile: full screen is acceptable, swipe to dismiss, large tap targets.
-- Frequency: 1–2 prompts per session; cool-down of days after dismiss.
-- Metrics: impressions, click-through, upgrade completion, revenue per user, churn after upgrade.
+§PAT:Paywall{
+  trig:post_aha∨usage_lim(post_val_only);
+  head:benefit_1st("Unlock unlimited projects")¬price_1st;
+  proof:paid_prev∨before/after∨ROI;
+  cmp:key_diffs+mark_rec;
+  price:simple+yr/mo_toggle+per_seat;
+  CTA:act+benefit("Upgrade to Pro – Get Unlimited");
+  esc:"Maybe later"|"Continue with Free"+¬guilt;
+  path:in_ctx+prefill+few_steps+sec_badges;
+  mob:full_ok+swipe_dismiss+big_targets;
+  freq:1-2/sess+cooldown_days;
+  kpi:{impr,CTR,upg_comp,ARPU,post_upg_churn}
+}

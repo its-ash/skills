@@ -1,84 +1,30 @@
 ---
-description: Safely identify and remove dead code with verification after each change.
+description: "Detect and remove dead code safely with per-step test verification."
 ---
-
-# Refactor Clean
-
-Safely identify and remove dead code with test verification at every step.
-
-## Step 1: Detect Dead Code
-
-Run analysis tools based on project type:
-
-| Tool | What It Finds | Command |
-|------|--------------|---------|
-| knip | Unused exports, files, dependencies | `npx knip` |
-| depcheck | Unused npm dependencies | `npx depcheck` |
-| ruff | Unused Python imports | `ruff check --select F401 .` |
-| vulture | Unused Python code | `vulture src/` |
-| deadcode | Unused Go code | `deadcode ./...` |
-| cargo-machete | Unused Rust dependencies | `cargo machete` |
-
-If no tool is available, use Grep to find exports with zero imports:
-```
-# Find exports, then check if they're imported anywhere
-```
-
-## Step 2: Categorize Findings
-
-Sort findings into safety tiers:
-
-| Tier | Examples | Action |
-|------|----------|--------|
-| **SAFE** | Unused utilities, test helpers, internal functions | Delete with confidence |
-| **CAUTION** | Components, API routes, middleware | Verify no dynamic imports or external consumers |
-| **DANGER** | Config files, entry points, type definitions | Investigate before touching |
-
-## Step 3: Safe Deletion Loop
-
-For each SAFE item:
-
-1. **Run full test suite** — Establish baseline (all green)
-2. **Delete the dead code** — Use Edit tool for surgical removal
-3. **Re-run test suite** — Verify nothing broke
-4. **If tests fail** — Immediately revert with `git restore <file>` and skip this item
-5. **If tests pass** — Move to next item
-
-## Step 4: Handle CAUTION Items
-
-Before deleting CAUTION items:
-- Search for dynamic imports: `import()`, `require()`, `__import__`
-- Search for string references: route names, component names in configs
-- Check if exported from a public package API
-- Verify no external consumers (check dependents if published)
-
-## Step 5: Consolidate Duplicates
-
-After removing dead code, look for:
-- Near-duplicate functions (>80% similar) — merge into one
-- Redundant type definitions — consolidate
-- Wrapper functions that add no value — inline them
-- Re-exports that serve no purpose — remove indirection
-
-## Step 6: Summary
-
-Report results:
-
-```
+@CMD:refactor-clean
+§FLOW{
+1:detect:JS/TS=`npx knip`|npm=`npx depcheck`|Py_imp=`ruff check --select F401 .`|Py=`vulture src/`|Go=`deadcode ./...`|Rust=`cargo machete`|¬tool⇒grep_exports→0_imports;
+2:tiers:{
+SAFE:unused_utils,test_helpers,internal_fns⇒delete;
+CAUTION:components,API_routes,middleware⇒§CAUTION_checks;
+DANGER:configs,entry_pts,type_defs⇒investigate
+};
+3:delete_loop(∀SAFE,1/step):full_tests(green)→Edit(del)→re-test→(FAIL⇒`git restore <file>`∧skip|PASS⇒next);
+4:CAUTION_checks:grep(`import()`,`require()`,`__import__`)∧grep_str(routes,cfg_components)∧pub_API_exports∧ext_consumers;
+5:consolidate:dup_fns(>80%)→merge|redundant_types→merge|no-op_wrappers→inline|dead_re-exports→drop;
+6:emit_§OUT
+}
+§R{¬del_without_tests;1_del/step(atomic);uncertain⇒skip;¬refactor_while_cleaning}
+§OUT{
+```text
 Dead Code Cleanup
 ──────────────────────────────
-Deleted:   12 unused functions
-           3 unused files
-           5 unused dependencies
-Skipped:   2 items (tests failed)
-Saved:     ~450 lines removed
+Deleted:   <n> unused functions
+           <n> unused files
+           <n> unused dependencies
+Skipped:   <n> items (tests failed)
+Saved:     ~<n> lines removed
 ──────────────────────────────
 All tests passing PASS:
 ```
-
-## Rules
-
-- **Never delete without running tests first**
-- **One deletion at a time** — Atomic changes make rollback easy
-- **Skip if uncertain** — Better to keep dead code than break production
-- **Don't refactor while cleaning** — Separate concerns (clean first, refactor later)
+}

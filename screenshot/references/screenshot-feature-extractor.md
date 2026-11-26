@@ -1,75 +1,35 @@
-# Screenshot Feature Extractor
+@REF:screenshot-feature-extractor
 
-Extract product features from UI screenshots and produce a development‑task checklist. The skill coordinates five specialized agents to analyze UI components, user interactions, and business logic, then synthesises and reviews the results.
+§WHEN{competitor_screenshots|mockup→PRD|batch_screens→feature_list|visual_gap_analysis}
 
-## When to use
-- Analyzing competitor product screenshots to identify features.
-- Turning UI mock‑ups or design screenshots into a product requirements document.
-- Batch processing many app screens to build a comprehensive feature list.
-- Conducting visual competitive analysis for gaps and opportunities.
+§FLOW{
+  1:collect→read_files∧record(path,notes)∧verify_same_product(⊕label_per_product);
+  2:parallel_Task_tool(3){
+    UI_Analyzer:UI_components+layout+design_patterns→JSON;
+    Interaction_Analyzer:user_interactions+nav_flows+state_transitions→JSON;
+    Business_Analyzer:business_functions+data_entities+domain_logic→JSON
+  };
+  3:Synthesizer(seq)→merge_3_JSONs→docs/plans/<YYYY-MM-DD>-<product>-features.md;
+  4:Reviewer(seq)→verify(completeness,quality)⇒emit_corrections_if_issues;
+  5:output→write(- [ ] list)∧concise_user_summary
+}
 
-## Workflow
-1. **Collect screenshots**
-   - Read each screenshot file supplied by the user.
-   - Record the file path and any contextual notes.
-   - Determine whether the screenshots belong to the same product.
-2. **Parallel analysis** (run three agents simultaneously using the Task tool)
-   ```
-   // UI Analyzer
-   Analyze the screenshot for UI components, layout, and design patterns.
-   Return JSON.
+§R{
+  fmt:- [ ] markdown_checkbox;
+  scope:small_executable_tasks∧what_to_build¬how(user_visible_only);
+  ¬{tech_stack,libs,frameworks,code_decisions,unverified_assumptions(ask_if_lacks_desc),generic_tasks("Improve UI"→"Add filter dropdown to product list view")};
+  multi_screen⇒deduplicate; competitive⇒flag(unique_target_features,competitor_gaps);
+  reviewer⇒∀extracted_feature∈final_checklist
+}
 
-   // Interaction Analyzer
-   Analyze the screenshot for user interactions, navigation flows, and state transitions.
-   Return JSON.
+§CHK{
+  [ ] gather_files+notes; [ ] verify|label_products;
+  [ ] run_3_analyzers_parallel(Task)→3_JSONs;
+  [ ] run_synthesizer→run_reviewer;
+  [ ] write docs/plans/<date>-<product>-features.md; [ ] summarize
+}
 
-   // Business Analyzer
-   Analyze the screenshot for business functions, data entities, and domain logic.
-   Return JSON.
-   ```
-3. **Synthesis** (single sequential agent)
-   ```
-   // Synthesizer
-   Combine the three JSON results into a unified development‑task list.
-   Output file: docs/plans/<YYYY-MM-DD>-<product>-features.md
-   ```
-4. **Review** (single sequential agent)
-   ```
-   // Reviewer
-   Check the task list for completeness and quality.
-   If issues exist, provide corrected items.
-   ```
-5. **Output**
-   - Write the final checklist to the markdown file shown above.
-   - Use a markdown task‑list format (`- [ ]`).
-   - Present a short summary to the user.
-
-## Guidelines
-- List each task as a markdown checkbox (`- [ ]`).
-- Keep tasks small and executable; describe **what** to build, not **how**.
-- Focus on user‑visible features and interactions; omit implementation details such as libraries or frameworks.
-- When multiple screenshots are processed, deduplicate overlapping features.
-- For competitive analysis, flag features that are unique to the target product and note any gaps compared to competitors.
-
-## Pitfalls to avoid
-- Do not include technology stack or code‑level decisions in the task list.
-- Do not assume missing context; request clarification if a screenshot lacks description.
-- Avoid overly generic tasks (e.g., "Improve UI")—make them specific (e.g., "Add filter dropdown to product list view").
-- Ensure the reviewer validates that every extracted feature appears in the final checklist.
-
-## Checklist
-- [ ] Gather all screenshot files and note their context.
-- [ ] Verify that screenshots belong to the same product (or label each product separately).
-- [ ] Invoke UI, Interaction, and Business analyzers in parallel via the Task tool.
-- [ ] Receive three JSON analysis results.
-- [ ] Run the synthesizer to create a unified task list.
-- [ ] Run the reviewer to validate completeness and quality.
-- [ ] Write the final checklist to `docs/plans/<date>-<product>-features.md`.
-- [ ] Provide the user with a concise summary of extracted features.
-
-## Related skills
-
-Load these when the task spans more than this skill.
-
-- [`ux-research`](../../ux-research/SKILL.md) — Provides a step‑by‑step workflow for senior UX researchers and designers to generate data‑driven personas, map…
-- [`frontend-development`](../../frontend-development/SKILL.md) — Frontend Development skill for building modern React/Next.js applications with TypeScript, MUI, TanStack Query…
+§REL{
+  ../../ux-research/SKILL.md:personas,journey_maps;
+  ../../frontend-development/SKILL.md:React,Next.js,TS,MUI,TanStack_Query
+}

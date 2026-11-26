@@ -1,130 +1,41 @@
-# Cloudflare Deploy
-Deploy code and infrastructure to Cloudflare. Choose the appropriate Cloudflare product, authenticate, and run the deployment command.
-
-## When to use
-Use this skill when the user asks to **deploy**, **host**, **publish**, or **set up** a project on Cloudflare. It covers serverless functions, static sites, storage, AI, networking, security, media, and infrastructure‑as‑code.
-
-## Prerequisites
-- Ensure the deployment environment can make outbound network calls. If a sandbox blocks them, rerun with `sandbox_permissions=require_escalated`.
-- Expect the deployment to take a few minutes. Set a timeout longer than the default (e.g., 300 s).
-
-## Authentication (required before any `wrangler` command)
-1. Verify you are logged in:
-   ```bash
-   npx wrangler whoami   # Shows the Cloudflare account if authenticated
-   ```
-2. If not logged in, choose the appropriate method:
-   - **Interactive / local development**: run `wrangler login` and complete the OAuth flow.
-   - **CI/CD pipelines**: set the environment variable `CLOUDFLARE_API_TOKEN` with a token that has `Account Settings → API Tokens → Edit` permissions for the target account.
-
-## Decision Guide
-Select the Cloudflare product that matches your requirement.
-
-### Compute & Runtime
-| Need | Product | Typical command |
-|------|---------|-----------------|
-| Run serverless code at the edge | **Workers** | `npx wrangler deploy` |
-| Full‑stack web app with Git‑based deploys | **Pages** | `npx wrangler pages deploy ./public` |
-| Stateful coordination or real‑time data | **Durable Objects** | Define DO class, deploy with Workers |
-| Multi‑step background jobs | **Workflows** | `npx wrangler workflows deploy` |
-| Container workloads | **Containers** | `npx wrangler containers deploy` |
-| Multi‑tenant platform (customers upload code) | **Workers for Platforms** | Use platform SDK and deploy per tenant |
-| Scheduled tasks (cron) | **Cron Triggers** | Add `triggers.cron` in `wrangler.toml` |
-| Simple edge request modification | **Snippets** | Add snippet script and publish |
-| Observe Worker execution logs | **Tail Workers** | `npx wrangler tail` |
-| Optimize latency to backend services | **Smart Placement** | Enable `smart_placement` in `wrangler.toml` |
-
-### Storage & Data
-| Need | Product |
-|------|---------|
-| Key‑value store for config, sessions, cache | **KV** |
-| Relational SQL (SQLite) | **D1** |
-| PostgreSQL / MySQL compatible | **Hyperdrive** |
-| Object / file storage (S3‑compatible) | **R2** |
-| Message queue for async processing | **Queues** |
-| Vector embeddings for AI search | **Vectorize** |
-| Strongly‑consistent per‑entity state | **Durable Objects (storage)** |
-| Secrets management | **Secrets Store** |
-| Streaming ETL pipelines to R2 | **Pipelines** |
-| Long‑term persistent cache | **Cache Reserve** |
-
-### AI / Machine Learning
-| Need | Product |
-|------|---------|
-| Run inference (LLMs, embeddings, images) | **Workers AI** |
-| Vector database for retrieval‑augmented generation | **Vectorize** |
-| Build stateful AI agents | **Agents SDK** |
-| Cache / route requests to any AI provider | **AI Gateway** |
-| AI‑powered search widget | **AI Search** |
-
-### Networking & Connectivity
-| Need | Product |
-|------|---------|
-| Expose a local service to the internet | **Tunnel** |
-| TCP/UDP proxy for non‑HTTP traffic | **Spectrum** |
-| WebRTC TURN server | **TURN** |
-| Private network interconnect between Cloudflare and other clouds | **Network Interconnect** |
-| Global traffic acceleration | **Argo Smart Routing** |
-| Optimize backend latency (not user‑facing) | **Smart Placement** |
-| Real‑time video/audio | **RealtimeKit** or **Realtime SFU** |
-
-### Security
-| Need | Product |
-|------|---------|
-| Web Application Firewall | **WAF** |
-| DDoS protection | **DDoS** |
-| Bot detection and management | **Bot Management** |
-| API protection and schema validation | **API Shield** |
-| CAPTCHA‑free human verification | **Turnstile** |
-| Credential leak detection | **WAF (managed ruleset)** |
-
-### Media & Content
-| Need | Product |
-|------|---------|
-| Image optimization and transformation | **Images** |
-| Video streaming and on‑the‑fly encoding | **Stream** |
-| Browser automation / screenshots | **Browser Rendering** |
-| Third‑party script management | **Zaraz** |
-
-## Infrastructure as Code (IaC)
-- **Pulumi**: Write TypeScript, Python, Go, or .NET code and run `pulumi up`.
-- **Terraform**: Use the `cloudflare` provider. Example:
-  ```hcl
-  provider "cloudflare" {
-    api_token = var.cloudflare_api_token
-  }
-  ```
-- **Direct REST API**: Call `https://api.cloudflare.com/client/v4/…` with the API token.
-
-## Troubleshooting
-### Deploy fails due to network restrictions
-If you see timeouts, DNS errors, or connection resets, the sandbox may be blocking outbound traffic. Rerun the deployment with escalated network permissions:
-```bash
-# Example for a CI step
-npx wrangler deploy --sandbox-permissions=require_escalated
-```
-Prompt the user before doing this, e.g., "The deployment needs escalated network access. Shall I retry with the required permissions?"
-
-### Common errors
-- **Authentication error**: `wrangler login` again or verify `CLOUDFLARE_API_TOKEN`.
-- **Missing KV namespace**: Create it with `npx wrangler kv:namespace create "MY_KV"` and add the binding to `wrangler.toml`.
-- **Pages build failure**: Ensure the build command produces a `dist/` folder and that `wrangler.toml` points to it.
-- **Rate‑limit**: Back off and retry after the `Retry-After` header value.
-
-## Checklist
-- [ ] Verify `npx wrangler whoami` shows the correct account.
-- [ ] Set `CLOUDFLARE_API_TOKEN` in CI environments.
-- [ ] Choose the correct Cloudflare product (Workers, Pages, R2, etc.).
-- [ ] Add required bindings (KV, D1, R2, etc.) to `wrangler.toml`.
-- [ ] Configure any `triggers` (cron, routes, custom domains).
-- [ ] Run `npx wrangler deploy` (or `pages deploy`) with appropriate timeout.
-- [ ] If deployment fails, check network permissions and retry with `sandbox_permissions=require_escalated`.
-- [ ] Verify the deployed service works by sending a test request.
-
-## Related skills
-
-Load these when the task spans more than this skill.
-
-- [`devops-iac`](../SKILL.md) — DevOps IaC skill provides a step-by-step workflow for designing, implementing, and operating cloud infrastruct…
-- [`cloud-architecture`](cloud-architecture.md) — Provides step‑by‑step guidance, best‑practice rules, and checklists for designing, building, and optimizing se…
-- [`observability`](observability.md) — Observability skill provides practical guidance for building, querying, and visualizing production‑grade monit…
+@REF:cloudflare-deploy
+§SCOPE{deploy|host|publish|setup@CF:serverless,static,storage,AI,net,sec,media,IaC}
+§PRE{net:outbound(sandbox_block⇒prompt_user→`sandbox_permissions=require_escalated`);timeout:>def(≥300s)}
+§AUTH{
+  pre:`npx wrangler whoami`;
+  local:`wrangler login`(OAuth);
+  CI:`CLOUDFLARE_API_TOKEN`(perm:`Account Settings → API Tokens → Edit`)
+}
+§SEL{
+  compute:{
+    serverless_edge⇒Workers(`npx wrangler deploy`);
+    fullstack_git⇒Pages(`npx wrangler pages deploy ./public`);
+    stateful_rt⇒Durable_Objects(DO_class→deploy_w_Workers);
+    multistep_jobs⇒Workflows(`npx wrangler workflows deploy`);
+    containers⇒Containers(`npx wrangler containers deploy`);
+    multitenant_code⇒Workers_for_Platforms(SDK,per_tenant);
+    cron⇒Cron_Triggers(`wrangler.toml:triggers.cron`);
+    edge_req_mod⇒Snippets(script→publish);
+    logs⇒Tail_Workers(`npx wrangler tail`);
+    backend_lat⇒Smart_Placement(`wrangler.toml:smart_placement`)
+  };
+  data:{KV(cfg/sess/cache),D1(SQLite),Hyperdrive(PG/MySQL),R2(S3_obj),Queues(async_msg),Vectorize(vectors),Durable_Objects(strong_entity_state),Secrets_Store,Pipelines(ETL→R2),Cache_Reserve(long_cache)};
+  ai:{Workers_AI(LLM/embed/img),Vectorize(RAG),Agents_SDK(stateful_agents),AI_Gateway(route/cache),AI_Search(widget)};
+  net:{Tunnel(local_expose),Spectrum(TCP/UDP),TURN(WebRTC),Network_Interconnect(private_cloud),Argo_Smart_Routing(global_accel),Smart_Placement(backend_lat_not_user),RealtimeKit|Realtime_SFU(rt_AV)};
+  sec:{WAF,DDoS,Bot_Management,API_Shield(schema_val),Turnstile(no_CAPTCHA),WAF(managed_ruleset,cred_leak)};
+  media:{Images(opt/xform),Stream(video/encode),Browser_Rendering(auto/shot),Zaraz(3p_scripts)}
+}
+§IAC{
+  pulumi:TS|Py|Go|.NET→`pulumi up`;
+  tf:`provider "cloudflare"{api_token=var.cloudflare_api_token}`;
+  rest:`https://api.cloudflare.com/client/v4/…`(Bearer)
+}
+§ERR{
+  timeout|dns|reset⇒prompt_user→`npx wrangler deploy --sandbox-permissions=require_escalated`;
+  auth⇒`wrangler login`∨check(`CLOUDFLARE_API_TOKEN`);
+  no_kv⇒`npx wrangler kv:namespace create "MY_KV"`→bind(`wrangler.toml`);
+  pages_fail⇒build→`dist/`∧`wrangler.toml`→`dist/`;
+  429⇒backoff(`Retry-After`)
+}
+§CHK{`wrangler whoami`==acct;CI⇒`CLOUDFLARE_API_TOKEN`;prod∈§SEL;`wrangler.toml`{bindings(KV/D1/R2),triggers(cron/routes/custom_domains)};`wrangler deploy`|`pages deploy`(timeout≥300s);net_fail⇒escalate;smoke_test}
+§REL{[devops-iac](../SKILL.md);[cloud-architecture](cloud-architecture.md);[observability](observability.md)}

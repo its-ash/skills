@@ -1,57 +1,9 @@
-# Review Output Formats
-
-## Finding fields
-`File:Line` · Severity · Problem · Evidence · Fix · References.
-
-## Comment shapes
-````markdown
-**Issue:** [problem]
-**Current code:**
-```js
-// problematic code
-```
-**Suggested fix:**
-```js
-// improved code
-```
-**Why:** [reason]
-````
-
-```markdown
-**Question:** [question]
-**Context:** [why you ask]
-**Suggestion:** [optional]
-```
-
-```markdown
-**Nice!** [what you liked] — this is good because [reason]
-```
-
-## Audit report
-```markdown
-# Code Review Report
-**Scope:** [PR, branch, or codebase]
-**Date:** [date]
-
-## Summary
-[overall status and recommendation]
-
-## Findings
-### Critical
-### High
-### Medium
-### Low
-
-## Verified clean
-- [areas checked with no issues]
-
-## Unverified areas
-- [areas not fully checked and why]
-```
-
-## Final checklist
-- [ ] Full diff and all changed files reviewed.
-- [ ] Context and requirements understood.
-- [ ] Functionality, security, performance, quality, tests, docs, Git, design checked.
-- [ ] Findings prioritized, each with evidence.
-- [ ] Unverified areas disclosed.
+@REF:review-output
+§OUT{
+  fields:File:Line·Severity·Problem·Evidence·Fix·References;
+  issue:"Issue:[p]|Current code:[code]|Suggested fix:[code]|Why:[r]";
+  question:"Question:[q]|Context:[why]|Suggestion:[opt]";
+  praise:"Nice![what]—good because[why]";
+  audit:"#Code Review Report|Scope:[PR|branch|codebase]|Date|Summary:[rec]|Findings(Critical,High,Medium,Low)|Verified clean|Unverified areas(+why)"
+}
+§CHK{full_diff+files_rev;ctx+req_ok;chk(func,sec,perf,qual,tests,docs,git,design);prioritized+evidence;unverified_disclosed}

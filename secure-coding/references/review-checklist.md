@@ -1,49 +1,5 @@
-# Security review checklist
-
-## Full review report
-
-Write `security_best_practices_report.md` (or user path). Include:
-- Executive summary.
-- Findings by severity, each with numeric ID, file path, and line numbers.
-- One-sentence impact for each critical finding.
-- Closing summary with report location.
-
-Fix one finding at a time. Add a short comment that cites the practice and why. Run tests. Keep one finding per commit.
-
-## Pre-deployment
-
-- [ ] No hardcoded secrets; all in env or secret manager.
-- [ ] All input validated; all queries parameterized.
-- [ ] User content sanitized; CSP set.
-- [ ] CSRF protection on state-changing requests.
-- [ ] Tokens in httpOnly cookies; authorization checks on every object/function.
-- [ ] Rate limits on all endpoints.
-- [ ] HTTPS in production; security headers set.
-- [ ] Generic error messages; no sensitive data in logs.
-- [ ] Dependencies audited, no known vulnerabilities.
-- [ ] Row-level security where multi-tenant.
-- [ ] CORS limited to trusted origins.
-- [ ] File uploads validated.
-- [ ] Wallet signatures verified (blockchain only).
-
-## OWASP API Security Top 10
-
-1. Broken object-level authorization.
-2. Broken authentication.
-3. Broken object property-level authorization.
-4. Unrestricted resource consumption.
-5. Broken function-level authorization.
-6. Unrestricted access to sensitive business flows.
-7. Server-side request forgery.
-8. Security misconfiguration.
-9. Improper inventory management.
-10. Unsafe consumption of APIs.
-
-## Sources
-
-- OWASP API Top 10: https://owasp.org/www-project-api-security/
-- OWASP Top 10: https://owasp.org/www-project-top-ten/
-- JWT BCP (RFC 8725): https://tools.ietf.org/html/rfc8725
-- Next.js security: https://nextjs.org/docs/security
-- Supabase auth: https://supabase.com/docs/guides/auth
-- PortSwigger Academy: https://portswigger.net/web-security
+@REF:review-checklist
+§RPT{path:`security_best_practices_report.md`∨user;has:{exec_sum,sev_findings(id,file,lines),1sent_impact/crit,closing(path)};fix:1→cmt(practice+why)→test→1/commit}
+§CHK{¬hardcoded_secrets(env|mgr);val_in∧param_SQL;sanitized_HTML∧CSP;CSRF(state_Δ);httpOnly_cookies∧authz(∀obj,fn);rate_limit(∀ep);HTTPS_prod∧hdrs;gen_err∧¬sens_logs;deps_audit(¬vulns);RLS(multi_tenant);CORS(trusted);val_uploads;wallet_sig(chain)}
+§API10{1:BOLA;2:Auth;3:BOPLA;4:ResConsume;5:BFLA;6:BizFlow;7:SSRF;8:Misconfig;9:Inventory;10:UnsafeAPI}
+§SRC{API10:https://owasp.org/www-project-api-security/;OWASP10:https://owasp.org/www-project-top-ten/;RFC8725:https://tools.ietf.org/html/rfc8725;Next:https://nextjs.org/docs/security;Supa:https://supabase.com/docs/guides/auth;PortSwigger:https://portswigger.net/web-security}
