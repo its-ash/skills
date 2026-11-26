@@ -1,5 +1,5 @@
 LLM_URL ?= http://127.0.0.1:9694/v1/chat/completions
-LLM_MODEL ?= local
+LLM_MODEL ?= router/text
 
 .PHONY: run start deploy
 

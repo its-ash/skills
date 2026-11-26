@@ -5,7 +5,7 @@
 §CFG[Makefile]{
 ```makefile
 LLM_URL ?= http://127.0.0.1:9694/v1/chat/completions
-LLM_MODEL ?= local
+LLM_MODEL ?= router/text
 .PHONY: run start deploy
 run:
 	npm run dev
@@ -21,4 +21,4 @@ deploy:
 	git push origin main
 ```}
 §CFG[nuxt]{GHPages_docs/(manual_set;¬deploy_wf_unless_asked):start:npx nuxt generate;cp -r .output/public/* docs/ 2>/dev/null||cp -r dist/* docs/ 2>/dev/null;touch docs/.nojekyll}
-§CFG[.gitignore]{node_modules/,dist/,.env,.DS_Store}
+§CFG[.gitignore]{node_modules/,dist/,.DS_Store;¬".env"}

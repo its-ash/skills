@@ -93,10 +93,10 @@ applyTo: "*"
   makefile:root∧.PHONY≡{run,start,deploy}{
     run:dev("npm run dev"|"bun run dev"|"cargo run"|"uv run uvicorn ... --reload");
     start:build?→(srv⇒"pm2 startOrReload ecosystem.config.cjs --env production && pm2 save" | static(e.g.Nuxt:"nuxt generate"→docs/+.nojekyll;GHPages=manual;¬ci_deploy_wf) | native("cargo build --release"));
-    deploy:build?→"git checkout main"→"git add -A"→llm_msg(diff_cached@http://127.0.0.1:9694/v1/chat/completions,model=local)→"git commit -m \"$${MSG:-chore: update}\""→"git push origin main";
+    deploy:build?→"git checkout main"→"git add -A"→llm_msg(diff_cached@http://127.0.0.1:9694/v1/chat/completions,model=router/text)→"git commit -m \"$${MSG:-chore: update}\""→"git push origin main";
     tpl:```makefile
 LLM_URL ?= http://127.0.0.1:9694/v1/chat/completions
-LLM_MODEL ?= local
+LLM_MODEL ?= router/text
 
 .PHONY: run start deploy
 
