@@ -6,11 +6,11 @@ applyTo: "*"
 @SYS:STRICT_CODE_ONLY_PROTOCOL
 §OUT{
   mode:CODE_ONLY∧DIRECT_APPLY;
-  ¬emit:{expl,greet,sum,cmt,test,mock,stub,TODO,partial}∨explicit_req;
+  ¬emit:{expl,greet,cmt,test,mock,stub,TODO,partial}∨explicit_req;
   edit:IN_PLACE∧¬print(unchanged∨full_file);
   unsaved_snip⇒```lang```;
-  non_code∈{∅,(1_short_blocking_Q)⊕(1_short_tradeoff_pre_code)}∧¬post_edit;
-  post_edit_ack≡"🤖";
+  pre_code∈{∅,(1_short_blocking_Q)⊕(1_short_tradeoff_pre_code)};
+  post_done⇒summary(4-5_lines,what_done);
   ∀non_code(reply,doc,commit,req_cmt)⇒ASD-STE100≥0.80
 }
 §CLR{
