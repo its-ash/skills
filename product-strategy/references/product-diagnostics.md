@@ -1,8 +1,75 @@
 @REF:product-diagnostics
-§R{∀mode→actionable_doc;∀rec→1_next_step}
+§D{
+  goal:pressure_test_direction→actionable_doc(¬essays);
+  use⇔vague_idea(M1)∨existing_proj_drift(M2)∨pre_launch_onboard_audit(M3)∨backlog_overload(M4)∨strategy_audit;
+}
+§R{
+  ∀mode→actionable_doc;∀rec→1_next_step;
+  strategy_kernel(Rumelt):require({1:Diagnosis(core_friction/shift),2:Guiding_Policy(chosen_approach+tradeoff),3:Coherent_Actions(resourced,mutually_reinforcing)});reject(fluff∨goal_lists∨feature_factory);
+  discovery(Torres_OST):Outcome→Opportunities(user_pains)→Solutions(≥3_cands)→Assumption_Tests;¬jump(Outcome→1_feature);
+  assumption_risks(5):{desirability(want?),viability(unit_econ/COGS?),feasibility(latency/reliability?),usability(discover/trust?),ethics_safety(hallucination/PII/bias?)};test_cheapest_first(Wizard_of_Oz|clickable_proto|fake_door_pre_code);
+  metrics:1_North_Star(core_value_delivered)+2-3_input_levers+1_counter_metric/guardrail(prevent_gaming);
+  ask_hard_Qs:1@a_time(M1);
+}
 §PAT{
-  M1_YC(1_Q/turn):[1:who(person,¬"developers"),2:pain(freq,sev,workaround),3:why_now,4:10star(∞_$/t),5:MVP(min_proof),6:anti_goal(¬build),7:metric(¬vibes)]→`PRODUCT-BRIEF.md`({ans,risks,go/no-go});ask_pre_write;"go"→[product-capability.md](product-capability.md);
-  M2_founder:[1:read(README,CLAUDE.md,package.json,commits),2:intent,3:PMF(0-10):{growth,retention(contribs,ret),rev(pricing,billing,Stripe),moat},4:1_10x_lever,5:flag_waste];
-  M3_journey:[1:install_new,2:friction(confuse,err,docs),3:time_steps,4:cmp_comp,5:TTV(1st_win),6:top3_fixes];qa→[browser-qa.md](../../unit-testing-patterns/references/browser-qa.md);
-  M4_ICE:[1:feats,2:ICE=impact(1-5)×confidence(1-5)÷effort(1-5),3:rank,4:constraints(runway,team,deps),5:roadmap+rationale];
+  M1_YC_pre_build(1_Q/turn):[
+    1:who(named_ICP/HXC_persona,¬"developers"|"SMBs"),
+    2:pain(freq,severity,curr_workaround,budget_owner),
+    3:why_now(tech/reg/market_inflection),
+    4:10star(∞_$/time_ideal_exp),
+    5:MVP(min_proof+fixed_appetite_cap),
+    6:anti_goal(explicitly_¬build),
+    7:metric(NSM+guardrail,¬vibes),
+    8:monetization_sanity(value_metric∈{hybrid_base+credits,usage,outcome,seat};if_AI⇒chk_inference_COGS_vs_price),
+    9:riskiest_assumption(1_cheap_behavioral_test_pre_build)
+  ]→`PRODUCT-BRIEF.md`({kernel,OST_root,ans,risks,assumption_test,go/no-go});ask_pre_write;"go"→[product-capability.md](product-capability.md);
+  M2_founder_PMF_review:[
+    1:read(README,AGENTS/CLAUDE.md,package.json/pyproject,recent_commits,pricing/billing_code),
+    2:reconstruct(intended_strategy_kernel+curr_ICP),
+    3:PMF_eval:{
+      Sean_Ellis:"How disappointed if gone?"(≥40%_very_disappointed=PMF_gate);
+      Superhuman_engine:segment_very_disappointed→extract_HXC+superpower;fix_somewhat_disappointed_friction;ignore_not_disappointed;re_run_quarterly;
+      First_Round_4levels:{L1_Nascent(3-5_design_partners,satisfaction),L2_Developing(repeatable_demand,promise/channel),L3_Strong(flattening_cohorts+efficiency),L4_Extreme(overwhelming_pull)}×4Ps(Persona,Problem,Promise,Product);
+      retention_unit_econ:{cohort_curve_flatten?,NRR/GRR,AI_GM(45-60%_vs_SaaS_80-90%),seat_vs_hybrid_exposure,moat(data_flywheel|workflow_embed|switching_cost)}
+    },
+    4:1_10x_lever(highest_leverage_4P_or_bottleneck_move),
+    5:flag_waste(low_leverage_feats,feature_factory_drift,unprofitable_usage_tiers)
+  ];
+  M3_journey_audit:[
+    1:fresh_install_or_signup(clean_browser/env,¬dev_cache),
+    2:log_friction(confuse,err,dead_ends,docs_gaps,auth/billing_walls),
+    3:time_steps→measure_TTV(signup→1st_Aha_win),
+    4:AI_UX_check(if_AI:{latency_perceived,streaming,citation/trust_cues,error_recovery/undo/HITL}),
+    5:attribution_check(self_reported_"how_found/AI_assisted?"_for_dark_funnel),
+    6:cmp_top_comp_onboarding,
+    7:top3_fixes(ranked_by_TTV_drop×effort)
+  ];qa→[browser-qa.md](../../unit-testing-patterns/references/browser-qa.md);
+  M4_prioritization(select_by_stage):{
+    ICE(early_growth/fast_exps):`Impact(1-5)×Confidence(1-5)÷Effort(1-5)`;
+    RICE(data_backed_backlog):`(Reach×Impact×Confidence)÷Effort`;
+    WSJF(enterprise/platform_deps):`Cost_of_Delay(UserBizVal+TimeCrit+RiskRed)÷Job_Size`;
+    Shape_Up(anti_backlog_bloat):set_Appetite(fixed_time:2w|6w)→shape_variable_scope(descope_to_fit,¬extend_deadline);
+    steps:[1:map_cands→OST_opportunities,2:score_w_chosen_model,3:link_∀item→NSM_input_lever,4:apply_constraints(runway,team,deps,COGS),5:output_sequenced_roadmap+cut_list+rationale]
+  };
+}
+§CHK{
+  kernel_complete(Diagnosis+Guiding_Policy+Coherent_Actions);
+  PMF_anchored_in_data(Sean_Ellis|cohorts|4levels,¬gut);
+  top_risk_has_pre_code_assumption_test;
+  ∀rec_has_1_concrete_next_step+owner/metric;
+}
+§ANTI{
+  skip_diagnosis→feature_list;
+  generic_ICP("developers"|"businesses");
+  gut_PMF_score_wo_retention_or_Sean_Ellis;
+  build_full_AI_feat_wo_Wizard_of_Oz_or_eval_test;
+  flat_seat_pricing_for_high_token_workflows;
+  backlogs_unlinked_to_North_Star_Metric;
+}
+§REL{
+  next:[product-capability.md](product-capability.md);
+  market_diligence:[market-research.md](market-research.md);
+  positioning:[brand-discovery.md](brand-discovery.md);
+  qa:[browser-qa.md](../../unit-testing-patterns/references/browser-qa.md);
+  cro:[conversion-optimization](../../conversion-optimization/SKILL.md);
 }

@@ -1,49 +1,61 @@
 ---
 name: seo
-description: "AUTO_INVOKE(silent)⇔prompt∈{SEO,technical_SEO,on_page,E-E-A-T,keyword,schema,JSON-LD,rich_snippets,CWV,LCP,INP,CLS,mobile_SEO,local_SEO,ranking,crawlability,indexation,robots.txt,sitemap,canonical,hreflang,title_tag,meta_desc,h1,GEO,AI_search_citation,GSC,Lighthouse,Screaming_Frog,Ahrefs,Semrush}|SUB:{generative-engine-optimization,schema-markup,programmatic-seo}"
+description: "AUTO_INVOKE(silent)⇔prompt∈{SEO,technical_SEO,on_page,E-E-A-T,keyword,schema,JSON-LD,rich_snippets,ProductGroup,ProfilePage,CWV,LCP,INP,CLS,mobile_SEO,local_SEO,ranking,crawlability,indexation,robots.txt,sitemap,canonical,hreflang,title_tag,meta_desc,h1,GEO,AEO,AI_Overviews,AI_Mode,AI_search_citation,llms.txt,OAI-SearchBot,GPTBot,ClaudeBot,IndexNow,data-nosnippet,max-image-preview,scaled_content_abuse,GSC,Bing_Webmaster,Lighthouse,Screaming_Frog,Sitebulb,Ahrefs,Semrush}|SUB:{generative-engine-optimization,schema-markup,programmatic-seo}"
 ---
 @SKL:seo
 §R{
-  audit_order:crawl_index→tech(speed,sec,mobile)→on_page→content(E-E-A-T)→authority_links;
+  audit_order:crawl_index→tech(CWV,HTML≤2MB,SSR,sec,mobile)→on_page→content(E-E-A-T,info_gain)→GEO_citations→authority_links;
   fix(tech_blockers)≺opt(content);
   advice(content)⇒read(real_page)_first;
   ∀finding⇒tie_to(page∨file∨asset)∧fmt@references/audit-checklist.md;
-  ∀page⇒1_primary_intent∧1_primary_kw∧¬cannibalization;
-  mobile_first_index⇒content(mobile)≡content(desktop);
+  ∀page⇒1_primary_intent∧1_primary_topic∧¬cannibalization;
+  mobile_first_index⇒content_DOM_links_schema(mobile)≡content_DOM_links_schema(desktop);
   ∀page⇒{unique_title∈[50,60]c,unique_meta_desc∈[150,160]c,1×<h1>,self_canonical};
-  sitemap⊆(canonical∧indexable_URLs);redirect_chain≤2_hops;
-  schema⇔visible_page_content;val⇒Rich_Results_Test;
-  CWV_target:{LCP<2.5s,INP<200ms,CLS<0.1};
-  long_term_quality_signals∧¬manipulative_patterns;
+  googlebot_html_limit≤2MB_uncompressed(truncated_silently_past_2MB;PDF≤64MB);
+  sitemap⊆(canonical∧indexable_URLs)∧accurate_<lastmod>∧¬(<priority>∨<changefreq>);redirect_chain≤2_hops;
+  schema⇔visible_page_content;escape(`<`→`\u003c`)_in_SSR_JSON-LD;val⇒Rich_Results_Test∧Schema_Validator;
+  CWV_p75:{LCP≤2.5s,INP≤200ms,CLS≤0.1};
+  AI_crawlers⇒separate(training_bots,AI_search_bots)∧audit(CDN_WAF_blocks);
+  spam_compliance:¬{scaled_content_abuse,site_reputation_abuse,expired_domain_abuse};
+  multi_engine⇒GSC(Query_Groups,GenAI_reports)∧Bing_Webmaster∧IndexNow;
+  disavow_links⇒ONLY(manual_action∨severe_link_scheme)∧¬routine_maintenance;
 }
 §D{
-  kw_stuffing⇒user_first+density∈[1%,2%]+semantic_variants¬repeat_exact_phrase;
+  kw_stuffing∨density_targets⇒user_first+info_gain+entities+semantic_variants¬fixed_kw_pct;
   thin_near_dup_pages⇒consolidate∨differentiate¬compete_without_canonicals;
+  pagination⇒self_ref_canonical(page_N→page_N)¬(noindex∨canonical_to_page_1);
+  (internal_search∨thin_facets∨low_val_tags)⇒noindex,follow¬robots_txt_disallow_noindex_URL;
+  large_site∧crawl_waste⇒ctrl_params+clean_paginated_links+strip_session_IDs¬block_needed_CSS_JS;
+  multilingual⇒bidirectional_hreflang+self_ref+x-default¬auto_redirect_by_IP_only;
+  new_page_published⇒backfill_internal_links(strong_related_pages)¬orphan_pages;
+  AI_training_opt_out∧keep_AI_citations⇒Disallow(GPTBot,ClaudeBot,Google-Extended,Meta-ExternalAgent)∧Allow(OAI-SearchBot,Claude-SearchBot,PerplexityBot,Googlebot,Bingbot);
+  control_AI_Overviews_excerpts⇒data-nosnippet∨max-snippet∨nosnippet¬rely_on_Google-Extended;
+  Google_Discover⇒meta_robots(max-image-preview:large)∧hero_img≥1200px;
+  LCP_hero_img⇒fetchpriority="high"+¬loading="lazy"+AVIF/WebP¬lazy_above_fold;
+  pSEO_scale⇒proprietary_data+human_review+staged_pilot¬mass_thin_AI_swap(scaled_content_abuse);
   schema∉page_content⇒match_schema_to_visible¬markup_for_rich_results_only;
   req≡generic_improve_SEO⇒page_specific_implementable_fixes¬boilerplate_advice;
-  (pagination∨tag∨internal_search)⇒noindex,follow¬index;
-  large_site∧crawl_waste⇒control_params+paginate_inf_scroll+drop_session_IDs¬block_needed_in_robots.txt;
-  multilingual⇒hreflang/locale+x-default¬auto_redirect_by_IP_only;
-  new_page_published⇒backfill_internal_links(strong_related_pages)¬orphan_pages;
-  page_type≡Homepage⇒schema:Organization∨biz_type;
-  page_type≡Editorial⇒schema:Article∨BlogPosting;
-  page_type≡Product⇒schema:Product+Offer;
-  page_type≡StepGuide⇒schema:HowTo;
+  page_type≡Homepage⇒schema:Organization(sameAs,policies)+WebSite(Site_Name_only,¬SearchAction);
+  page_type≡Editorial|StepGuide⇒schema:Article|BlogPosting|NewsArticle(author_url,dateModified)¬deprecated_HowTo;
+  page_type≡Product⇒schema:Product+Offer(shippingDetails,hasMerchantReturnPolicy)⊕ProductGroup(variants);
+  page_type≡Creator|Forum⇒schema:ProfilePage⊕DiscussionForumPosting;
   page_type≡Interior⇒schema:BreadcrumbList;
-  page_type≡LocalBiz⇒schema:LocalBusiness(NAP,hours);
-  page_type≡Q&A⇒schema:FAQPage⇔visible_content≡Q&A;
+  page_type≡LocalBiz⇒schema:LocalBusiness(NAP,hours,geo);
+  page_type≡Q&A⇒visible_Q&A+optional_FAQPage(SERP_rich_results=gov_health_only;useful_for_GEO);
 }
 §REF{
-  robots.txt,sitemap_limits,indexation,CWV_fixes,mobile,HTTPS,URLs,hreflang,tools→references/technical-seo.md;
-  title,meta,heading,img,OG,Twitter,content_len,E-E-A-T,internal_links,kw_map,local_SEO→references/on-page-content.md;
-  prio_checklist,audit_proc,finding_fmt→references/audit-checklist.md;
-  JSON-LD_wf,schema_examples,fw_patterns→references/schema-markup.md;
-  GEO_citations(ChatGPT,Claude,Perplexity,Gemini)→references/generative-engine-optimization.md;
-  programmatic_pages_scale(location,comparison,alternative)→references/programmatic-seo.md;
+  robots.txt,2MB_HTML,sitemap_lastmod,IndexNow,pagination,CWV_fixes,Speculation_Rules,mobile,HTTPS,hreflang,tools→references/technical-seo.md;
+  title,meta,heading,img_fetchpriority,Discover,OG,E-E-A-T,info_gain,spam_policies,internal_links,kw_map,local_SEO→references/on-page-content.md;
+  prio_checklist,audit_proc,finding_fmt,disavow_rule,AI_audit→references/audit-checklist.md;
+  JSON-LD_wf,active_vs_deprecated_types,ProductGroup,ProfilePage,@graph,Nextjs_XSS_escape→references/schema-markup.md;
+  GEO_AEO,AI_Overviews,AI_Mode,crawlers(OAI-SearchBot,ClaudeBot,Google-Extended),llms.txt,aipref,utm_source=chatgpt.com→references/generative-engine-optimization.md;
+  programmatic_pages_scale,scaled_content_abuse,playbooks,pilot_launch→references/programmatic-seo.md;
+  competitor_alt_vs_pages,comparison_tables,central_YAML_arch→references/programmatic-seo/competitor-pages.md;
 }
 §REL{
   ../web-quality-audit/SKILL.md:full_audit(perf,a11y,SEO,sec);
   ../web-quality-audit/references/performance.md:CWV_Chrome_DevTools_MCP;
   ../content-writing/SKILL.md:SEO_blog_drafts,brand_voice;
   ../frontend-development/references/nextjs.md:Nextjs_metadata,rendering;
+  ../i18n-localization/SKILL.md:hreflang,i18n_URLs;
 }

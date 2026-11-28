@@ -4,7 +4,7 @@
 §FILES{index.html:manifest+SW_reg;manifest.json:meta+icons;sw.js:install/activate/fetch;app.js:reg+A2HS_prompt;offline.html:offline_nav_fallback}
 §CFG{
   `manifest.json`{name,short_name,description,start_url:"/",scope:"/",display:"standalone"(hide_UI),orientation:"portrait-primary",background_color:"#ffffff",theme_color:"#0055ff",icons:[192x192,512x512 PNG purpose:"any maskable"(Android_adaptive)]};
-  `index.html`:`<link rel="manifest" href="/manifest.json">`, `<meta name="theme-color" content="#0055ff">`, iOS(`<meta name="apple-mobile-web-app-capable" content="yes">`, `apple-mobile-web-app-status-bar-style`="default", `apple-mobile-web-app-title`, `<link rel="apple-touch-icon" href="/assets/icons/icon-192x192.png">`), `<button id="install-btn" hidden>`, `<script src="/app.js"></script>`
+  `index.html`:`<link rel="manifest" href="/manifest.json">`, `<meta name="theme-color" content="#0055ff">`, `<meta name="mobile-web-app-capable" content="yes">`(std,replaces_Chromium_warning_on_apple_tag), iOS(`<meta name="apple-mobile-web-app-capable" content="yes">`, `apple-mobile-web-app-status-bar-style`="default", `apple-mobile-web-app-title`, `<link rel="apple-touch-icon" href="/assets/icons/icon-192x192.png">`), `<button id="install-btn" hidden>`, `<script src="/app.js"></script>`
 }
 §PAT{
   `app.js`:
@@ -37,13 +37,14 @@ const staleWhileRevalidate=async q=>{const c=await caches.open(DYNAMIC_CACHE),m=
   HTTPS:required(local_domain⇒`mkcert`∨tunnel);
   iOS_Safari:¬`beforeinstallprompt`(Apple_meta_tags+Share→"Add to Home Screen");SW_caches_evict~7d_inactivity;
   cross_origin:opaque_responses(200-opaque_risk⇒`staleWhileRevalidate`);
-  cache_bust:automate `CACHE_VERSION`(Vite|Webpack)
+  cache_bust:automate `CACHE_VERSION`(Vite|`vite-plugin-pwa`|Workbox)
 }
 §WORKBOX{
-  CDN `https://storage.googleapis.com/workbox-cdn/releases/7.0.0/workbox-sw.js` ∨ npm(`self.__WB_MANIFEST`);
+  bundled(preferred):`vite-plugin-pwa`(Vite)|`@vite-pwa/nuxt`(Nuxt4)+`workbox-build@7.4+`(`registerType:'autoUpdate'`,precaches_`self.__WB_MANIFEST`);
+  CDN_fallback:`https://storage.googleapis.com/workbox-cdn/releases/7.4.0/workbox-sw.js`;
   `precacheAndRoute(self.__WB_MANIFEST||[])`;`registerRoute`:`destination==='image'`→`CacheFirst`,`mode==='navigate'`→`NetworkFirst`,`destination==='script'`→`StaleWhileRevalidate`
 }
-§CHK{HTTPS;manifest(name,short_name,start_url,display,192+512_maskable);SW_reg_clean(DevTools→Application→ServiceWorkers);offline_shell+`offline.html`;Lighthouse_PWA_pass;tested_Android_Chrome+iOS_Safari_A2HS}
+§CHK{HTTPS;manifest(name,short_name,start_url,display,192+512_maskable);`mobile-web-app-capable`+iOS_meta;SW_reg_clean(DevTools→Application→ServiceWorkers);offline_shell+`offline.html`;Lighthouse_PWA_pass;tested_Android_Chrome+iOS_Safari_A2HS}
 §REL{
   ../../web-quality-audit/references/web-performance.md:CWV_perf;
   ../../web-quality-audit/references/web-accessibility.md:WCAG_a11y;

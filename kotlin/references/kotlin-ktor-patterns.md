@@ -1,21 +1,22 @@
 @REF:kotlin-ktor-patterns
-§CTX{Ktor HTTP server+coroutines+DSLs:REST,Auth,CORS,ContentNegotiation,StatusPages,Koin DI,WebSockets,testApplication}
+§CTX{Ktor_3.6.2 HTTP server+coroutines+DSLs:REST,Auth,CORS,ContentNegotiation,RequestValidation,StatusPages,ktor-server-di/Koin,WebSockets,testApplication}
 
 §R{
-  routes≡thin∧logic→services∧DI→Koin∧integration_test→testApplication;
-  validate_input→require(...)⇒IllegalArgumentException→StatusPages:400;
-  ws_broadcast⇒snapshot(synchronized(conns){conns.toList()})⇒¬ConcurrentModificationException
+  routes≡thin∧logic→services∧DI→(ktor-server-di_lightweight⊕Koin_4.2.2_complex/KMP)∧integration_test→testApplication;
+  validate_input→RequestValidation_plugin⇒RequestValidationException→StatusPages:400;
+  params⇒safe_null_guard(`?: return@put call.respond(400)`)∧¬`!!`;
+  ws_cancel⇒catch(e:CancellationException){throw e}_before_catch(e:Exception)∧broadcast⇒snapshot(synchronized(conns){conns.toList()})
 }
 
 §PAT:layout{
-  src/main/kotlin/com/example/:Application.kt(main,Application.module);plugins/{Routing,Serialization,Authentication,StatusPages,CORS}.kt;routes/{User,Auth,Health}Routes.kt;models/{User,ApiResponse}.kt;services/{User,Auth}Service.kt;repositories/{UserRepository,ExposedUserRepository}.kt;di/AppModule.kt
+  src/main/kotlin/com/example/:Application.kt(main,Application.module);plugins/{Routing,Serialization,Authentication,Validation,StatusPages,CORS,DI}.kt;routes/{User,Auth,Health}Routes.kt;models/{User,ApiResponse}.kt;services/{User,Auth}Service.kt;repositories/{UserRepository,ExposedUserRepository}.kt;di/AppModule.kt
   src/test/kotlin/com/example/:routes/UserRoutesTest.kt,services/UserServiceTest.kt
 }
 
 §PAT:entry_routing{
 ```kotlin
 fun main() { embeddedServer(Netty, port = 8080, module = Application::module).start(wait = true) }
-fun Application.module() { configureSerialization(); configureAuthentication(); configureStatusPages(); configureCORS(); configureDI(); configureRouting() }
+fun Application.module() { configureSerialization(); configureValidation(); configureAuthentication(); configureStatusPages(); configureCORS(); configureDI(); configureRouting() }
 fun Application.configureRouting() = routing { userRoutes(); authRoutes(); healthRoutes() }
 fun Route.userRoutes() {
   val svc by inject<UserService>()
@@ -27,30 +28,46 @@ fun Route.userRoutes() {
     }
     authenticate("jwt") {
       post { call.respond(HttpStatusCode.Created, svc.create(call.receive<CreateUserRequest>())) }
-      put("/{id}") { call.respond(svc.update(call.parameters["id"]!!, call.receive<UpdateUserRequest>()) ?: HttpStatusCode.NotFound) } // guard missing id→400
-      delete("/{id}") { call.respond(if (svc.delete(call.parameters["id"]!!)) HttpStatusCode.NoContent else HttpStatusCode.NotFound) }
+      put("/{id}") {
+        val id = call.parameters["id"] ?: return@put call.respond(HttpStatusCode.BadRequest, "Missing id")
+        call.respond(svc.update(id, call.receive<UpdateUserRequest>()) ?: HttpStatusCode.NotFound)
+      }
+      delete("/{id}") {
+        val id = call.parameters["id"] ?: return@delete call.respond(HttpStatusCode.BadRequest, "Missing id")
+        call.respond(if (svc.delete(id)) HttpStatusCode.NoContent else HttpStatusCode.NotFound)
+      }
     }
   }
 }
 ```
-  dsl:{route("/p"){}|call.receive<T>()|call.respond(status,body)|call.parameters["id"]|call.request.queryParameters["q"]|install(Plugin){}|authenticate("name"){}|by inject<T>()|testApplication{}}
+  dsl:{route("/p"){}|call.receive<T>()|call.respond(status,body)|call.parameters["id"]|call.request.queryParameters["q"]|install(Plugin){}|authenticate("name"){}|by inject<T>()|dependencies.create()|testApplication{}}
 }
 
 §PAT:serialization{
 ```kotlin
 fun Application.configureSerialization() = install(ContentNegotiation) {
-  json(Json { prettyPrint = true; isLenient = false; ignoreUnknownKeys = true; encodeDefaults = true; explicitNulls = false })
+  json(Json { prettyPrint = false; isLenient = false; ignoreUnknownKeys = true; encodeDefaults = true; explicitNulls = false })
 }
-@Serializable data class UserResponse(val id: String, val name: String, val email: String, val role: Role, @Serializable(with = InstantSerializer::class) val createdAt: Instant)
+// Prefer kotlin.time.Instant (stdlib 2.3+, ISO-8601); custom serializer only for java.time.Instant
+@Serializable data class UserResponse(val id: String, val name: String, val email: String, val role: Role, val createdAt: kotlin.time.Instant)
 @Serializable data class CreateUserRequest(val name: String, val email: String, val role: Role = Role.USER)
 @Serializable data class ApiResponse<T>(val success: Boolean, val data: T? = null, val error: String? = null) {
   companion object { fun <T> ok(d: T) = ApiResponse(true, d); fun <T> error(m: String) = ApiResponse<T>(false, error = m) }
 }
 @Serializable data class PaginatedResponse<T>(val data: List<T>, val total: Long, val page: Int, val limit: Int)
-object InstantSerializer : KSerializer<Instant> {
-  override val descriptor = PrimitiveSerialDescriptor("Instant", PrimitiveKind.STRING)
-  override fun serialize(e: Encoder, v: Instant) = e.encodeString(v.toString())
-  override fun deserialize(d: Decoder) = Instant.parse(d.decodeString())
+```
+}
+
+§PAT:validation{
+```kotlin
+fun Application.configureValidation() = install(RequestValidation) {
+  validate<CreateUserRequest> { req ->
+    when {
+      req.name.isBlank() || req.name.length > 100 -> ValidationResult.Invalid("Invalid name")
+      !req.email.matches(Regex(".+@.+\\..+")) -> ValidationResult.Invalid("Invalid email")
+      else -> ValidationResult.Valid
+    }
+  }
 }
 ```
 }
@@ -75,7 +92,8 @@ fun ApplicationCall.userId() = principal<JWTPrincipal>()?.payload?.getClaim("use
 
 §PAT:status_pages_cors{
   StatusPages:install(StatusPages){
-    exception<ContentTransformationException>→400(BadRequest,"Invalid request body: ${cause.message}");
+    exception<RequestValidationException>→400(BadRequest,cause.reasons.joinToString("; "));
+    exception<ContentTransformationException>→400(BadRequest,"Invalid request body");
     exception<IllegalArgumentException>→400(BadRequest,cause.message?:"Bad request");
     exception<AuthenticationException>→401(Unauthorized,"Authentication required");
     exception<AuthorizationException>→403(Forbidden,"Access denied");
@@ -86,11 +104,15 @@ fun ApplicationCall.userId() = principal<JWTPrincipal>()?.payload?.getClaim("use
   CORS:install(CORS){allowHost("localhost:3000");allowHost("example.com",schemes=listOf("https"));allowHeader(HttpHeaders.{ContentType,Authorization});allowMethod(HttpMethod.{Put,Delete,Patch});allowCredentials=true;maxAgeInSeconds=3600}
 }
 
-§PAT:validation{
-  `CreateUserRequest.validate()⇒require(name.isNotBlank());require(name.length<=100);require(email.matches(Regex(".+@.+\\..+")))`
-}
-
-§PAT:koin_di{
+§PAT:di{
+  ktor_builtin(`io.ktor:ktor-server-di:3.6.2`):
+```kotlin
+fun Application.configureDI() = dependencies {
+  provide<UserRepository> { ExposedUserRepository(resolve()) }
+  provide { UserService(resolve()) }
+} // resolve inside routes/plugins via dependencies.create(UserService::class)
+```
+  koin(`io.insert-koin:koin-ktor:4.2.2`):
 ```kotlin
 val appModule = module {
   single<Database> { DatabaseFactory.create(get()) }
@@ -98,12 +120,6 @@ val appModule = module {
   single { UserService(get()) }; single { OrderService(get(), get()) }; single { AuthService(get(), get()) }
 }
 fun Application.configureDI() = install(Koin) { modules(appModule) }
-class UserServiceTest : FunSpec(), KoinTest {
-  override fun extensions() = listOf(KoinExtension(testModule))
-  private val testModule = module { single<UserRepository> { mockk() }; single { UserService(get()) } }
-  private val repository by inject<UserRepository>(); private val service by inject<UserService>()
-  init { test("getUser") { coEvery { repository.findById("1") } returns testUser; service.getById("1") shouldBe testUser } }
-}
 ```
 }
 
@@ -122,7 +138,7 @@ fun Route.chatRoutes() {
         val msg = Json.encodeToString(ChatMessage(c.name, (f as? Frame.Text)?.readText() ?: continue))
         synchronized(conns) { conns.toList() }.forEach { it.session.send(msg) }
       }
-    } catch (e: Exception) { logger.error("WebSocket error", e) } finally { conns -= c }
+    } catch (e: CancellationException) { throw e } catch (e: Exception) { application.log.error("WebSocket error", e) } finally { conns -= c }
   }
 }
 data class Connection(val session: DefaultWebSocketSession) {
@@ -134,13 +150,13 @@ data class Connection(val session: DefaultWebSocketSession) {
 §PAT:test_application{
 ```kotlin
 testApplication {
-  application { install(Koin) { modules(testModule) }; configureSerialization(); configureStatusPages(); configureAuthentication(); configureRouting() }
+  application { install(Koin) { modules(testModule) }; configureSerialization(); configureValidation(); configureStatusPages(); configureAuthentication(); configureRouting() }
   val c = createClient { install(io.ktor.client.plugins.contentnegotiation.ContentNegotiation) { json() } }
   c.post("/users") { contentType(ContentType.Application.Json); bearerAuth(generateTestJWT("test-user")); setBody(CreateUserRequest("Alice", "alice@example.com")) }.status shouldBe HttpStatusCode.Created
   c.get("/users").run { status shouldBe HttpStatusCode.OK; body<ApiResponse<List<UserResponse>>>().run { success shouldBe true; data.shouldNotBeNull().shouldNotBeEmpty() } }
 }
 ```
-  cases:no_jwt_post→401(Unauthorized);unknown_id→404(NotFound)
+  cases:no_jwt_post→401(Unauthorized);invalid_body→400(RequestValidation);unknown_id→404(NotFound)
 }
 
 §CFG:application_yaml{
@@ -151,3 +167,4 @@ database: { url: ${DATABASE_URL}, driver: "org.postgresql.Driver", maxPoolSize: 
 ```
   read:`environment.config.property("database.{url|driver|maxPoolSize}").getString()`(.toInt())→`DatabaseConfig(dbUrl,dbDriver,maxPoolSize)`→`DatabaseFactory.create(get())`
 }
+§REL{[kotlin-exposed-patterns.md](kotlin-exposed-patterns.md); [kotlin-testing.md](kotlin-testing.md)}

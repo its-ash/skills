@@ -1,5 +1,5 @@
 @REF:threejs-postprocessing
-meta:{target:three@r186;webgl:EffectComposer|renderer.setEffects;webgpu:RenderPipeline+TSL}
+meta:{target:three@r187;webgl:EffectComposer|renderer.setEffects;webgpu:RenderPipeline+TSL}
 
 §IMP{
   webgl_core:three;

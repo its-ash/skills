@@ -1,6 +1,6 @@
 ---
 name: supply-chain-operations
-description: "AUTO_INVOKE(silent)⇔prompt∈{supply-chain,ops,carrier,FMCSA,freight-RFP,linehaul,fuel-surcharge,accessorials,routing-guide,HS,HTS,GRI,ISF,Incoterms-2020,USMCA,RCEP,denied-party,CBP,C&I-energy,tariff,PPA,REC,Scope-2,demand-forecast,ABC-XYZ,safety-stock,reorder-point,markdown,Carmack,detention,shortage,SMED,OEE,DBR,NCR,5-Why,Ishikawa,8D,CAPA,SPC,AQL,FDA,IATF,AS9100,RMA,refund,warranty}|SUB:{carrier-relationship-management,customs-trade-compliance,energy-procurement,inventory-demand-planning,logistics-exception-management,production-scheduling,quality-nonconformance,returns-reverse-logistics}"
+description: "AUTO_INVOKE(silent)⇔prompt∈{supply-chain,ops,carrier,FMCSA,NMFC,RFP,linehaul,FSC,accessorials,routing,HS,HTS,GRI,ISF,Incoterms,USMCA,RCEP,CBAM,Sec321,DPS,CBP,C&I-energy,tariff,PPA,REC,Scope-2,BESS,demand-forecast,MEIO,ABC-XYZ,safety-stock,ROP,markdown,Carmack,detention,shortage,SMED,OEE,DBR,NCR,5-Why,Ishikawa,8D,CAPA,SPC,AQL,FDA,QMSR,IATF,AS9100,IA9100,RMA,refund,warranty,ESPR}|SUB:{carrier-relationship-management,customs-trade-compliance,energy-procurement,inventory-demand-planning,logistics-exception-management,production-scheduling,quality-nonconformance,returns-reverse-logistics}"
 ---
 @SKL:supply-chain-operations
 §R{
@@ -11,24 +11,35 @@ description: "AUTO_INVOKE(silent)⇔prompt∈{supply-chain,ops,carrier,FMCSA,fre
   ∀fn⇒track(KPI_targets∧red_flags)∧review(trends)∧¬single_data_point;
   pre_prod⇒adapt(thresholds,templates,escalation_chains)→org;
   scope≡ops_guidance∧¬(legal∨tax∨financial_advice);filings∨penalties∨contracts⇒require(counsel);
+  customs_2026⇒enforce(US_Sec321_suspended,EU_CBAM_definitive,EU_ICS2,UK_CDS_only,USMCA_review_risk);
+  qms_2026⇒align(FDA_QMSR_ISO13485+CP_7382.850,IATF_Rules_6th,IA9100_ISO9001_2026);
+  freight_2026⇒apply(NMFC_2025_13tier_density,FMCSA_Motus_$75K_bond_7bd_rule,MC99_26_SDR_kg);
+  energy_2026⇒factor(PJM_capacity_spike,ERCOT_RTC+B,solar_vs_48E_BESS_ITC,Scope2_hourly_trajectory);
+  circular_2026⇒comply(EU_ESPR_unsold_apparel_ban,MEIO_probabilistic_fcst,AI_RaaS_fraud_controls);
   ref∈references/*.md⇒provides(knowledge,decision_frameworks,edge_cases,comm_templates,escalation_triggers,KPIs)
 }
 §D{
   physical_goods_ops_problem⇒load(1_matching_ref)¬load(all_refs);
   software_supply_chain_sec⇒use(../secure-coding/SKILL.md)¬this_skill;
-  build(TMS∨WMS∨ERP∨MES)⇒use(../software-architecture/SKILL.md)¬encode_playbooks_ad_hoc
+  build(TMS∨WMS∨ERP∨MES)⇒use(../software-architecture/SKILL.md)¬encode_playbooks_ad_hoc;
+  US_low_val_parcel(≤$800)⇒file(formal∨informal_entry+duties)¬assume(Sec321_duty_free);
+  US_med_device_QMS⇒map(FDA_QMSR_ISO13485)¬legacy(QSR_QSIT);
+  LTL_pricing_or_dispute⇒measure(actual_dims_density_NMFC_13tier)¬legacy_commodity_class;
+  EU_unsold_returned_apparel(large_ent)⇒route(resale∨refurb∨donation)¬destroy(ESPR_ban);
+  volatile_demand_or_multi_tier_net⇒use(probabilistic_fcst+MEIO)¬single_point_deterministic
 }
 §REF{
-  carrier_vetting(FMCSA),freight_RFPs,linehaul,fuel_surcharge,accessorials,routing_guides,scorecards→references/carrier-relationship-management.md;
-  HS_HTS(GRI),entry_docs,ISF,Incoterms_2020,FTAs(USMCA,RCEP),denied_party_screening,CBP_audits→references/customs-trade-compliance.md;
-  CI_electricity_gas_buying,tariffs,demand_charges,fixed_index_block_index_hedges,PPAs,RECs,Scope_2→references/energy-procurement.md;
-  demand_forecast,ABC_XYZ,safety_stock,reorder_points,promotions,seasonal_buys,markdowns→references/inventory-demand-planning.md;
-  delays,damage,loss,shortages,refusals,detention_disputes,Carmack_claims,exception_SOPs→references/logistics-exception-management.md;
-  job_sequencing,bottleneck(drum_buffer_rope),SMED,OEE,replan(breakdown∨shortage)→references/production-scheduling.md;
-  NCR,5_Why,Ishikawa,fault_tree,8D,CAPA,SPC,AQL,supplier_quality(FDA,IATF,AS9100)→references/quality-nonconformance.md;
-  RMA,return_grading_routing,refunds,fraud_scoring,vendor_recovery,warranty_claims→references/returns-reverse-logistics.md
+  carrier_vetting(FMCSA_SAFER,Motus,BMC-84/85),freight_RFPs,NMFC_13tier_density,linehaul,FSC,accessorials,routing_guides,scorecards→references/carrier-relationship-management.md;
+  HS_HTS(GRI),entry_docs,ISF,Incoterms_2020,Sec321_suspension,FTAs(USMCA_2026,RCEP),EU_CBAM,ICS2,UK_CDS,DPS,CBP_audits→references/customs-trade-compliance.md;
+  CI_electricity_gas_buying,tariffs,demand_charges,PJM_PLC_capacity,ERCOT_RTC+B,BESS_48E_ITC,hedges,PPAs,RECs,Scope_2_hourly→references/energy-procurement.md;
+  demand_forecast,probabilistic_fcst,MEIO,ABC_XYZ,safety_stock,reorder_points,promotions,seasonal_buys,markdowns,Kinaxis_Maestro→references/inventory-demand-planning.md;
+  delays,damage,loss,shortages,refusals,detention_disputes,Carmack_claims,Montreal_26SDR,broker_insolvency,exception_SOPs→references/logistics-exception-management.md;
+  job_sequencing,bottleneck(DBR),SMED,OEE,Opcenter_APS,replan(breakdown∨shortage)→references/production-scheduling.md;
+  NCR,5_Why,Ishikawa,FTA,8D,CAPA,SPC,AQL,supplier_quality(FDA_QMSR,ISO_13485,IATF_Rules_6th,AS9100,IA9100)→references/quality-nonconformance.md;
+  RMA,return_grading_routing,refunds,fraud_scoring(RaaS,AI),EU_ESPR_ban,vendor_recovery,warranty_claims→references/returns-reverse-logistics.md
 }
 §REL{
   ../software-architecture/SKILL.md:TMS,WMS,ERP,MES_integration_design;
-  ../database-design/SKILL.md:model(shipments,inventory,NCRs,returns)
+  ../database-design/SKILL.md:model(shipments,inventory,NCRs,returns);
+  ../machine-learning/SKILL.md:ML_demand_forecasting,AI_return_fraud_pipelines
 }

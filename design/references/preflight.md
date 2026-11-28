@@ -13,7 +13,7 @@
   1_theme,1_accent(<80%sat),1_gray,1_r_scale,oklch()+light-dark(),¬#000/#fff,0_em-dash,¬banned_serif/pal,descender_clr(§4);
   tonal_surf(canvas→card→elevated),0_1-side_border(card,callout,alert,sel),¬nested_card,uniform_pad,concentric_r(§4.4,7);
   full-w_sq_hdr,filled_round_tabs_in_track(¬underline),filled_cb/radio/sw,tonal_badge,tabular-nums(§4.6,7);
-  WCAG2.2_AA(CTA,form,badge,focus),target≥24px(touch≥44px),focus_unobscured,1L_CTA,1_lbl/intent,empty/load/err,red_mot,light+dark_light-dark()_tested(§4.5,9);
+  WCAG2.2_AA(CTA,form,badge,focus,¬color_alone),target≥24px(desk≥36px_h,touch≥44px,gap≥8px),focus_unobscured,1L_CTA,1_lbl/intent,max_1_primary_CTA/vp,7_states(def/hov/focus/act/dis/load/err),empty/load/err,red_mot,light+dark_light-dark()_tested,resp_375/768/1440px(§4.5,9);
   hero_rules,eyebrow_cap,¬split_hdr,zigzag_cap,≥4_layout_fam,bento_cells,logo_wall<hero(§4.7);
   nav_1L≤80px,mob_collapse,min-h-dvh;
   real_img(AVIF/WebP,inset_outline),¬fake_shot,list>5_reshape,quote≤3L(§4.8-4.10);

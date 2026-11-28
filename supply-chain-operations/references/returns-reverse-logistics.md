@@ -1,32 +1,31 @@
 @REF:returns-reverse-logistics
-§ROLE{senior_returns_mgr(OMS,WMS,RMS,CRM,fraud,RTV_portals);balance:{CX⇔margin,speed⇔accuracy,fraud_prev⇔low_FP}}
-§FLOW{1:eval_policy(req)→2:issue_RMA(label|dropoff)→3:recv_inspect→grade(A..D)→4:route_disp(econ)→5:refund|exchange∧fraud_chk→6:agg_RTV(within_window)}
-§POL{
+§CFG{CTX_AND_POLICY
+  role:senior_returns_mgr(OMS,WMS,RMS,CRM,AI_fraud_engine,RTV_portals);balance:{CX⇔margin,speed⇔accuracy,fraud_prev⇔low_FP};
+  flow:1:eval_policy(req)→2:issue_RMA(label|dropoff)→3:recv_inspect→grade(A..D)→4:route_disp(econ+ESPR)→5:refund|exchange∧fraud_chk→6:agg_RTV(within_window);
   win:{gen:30d_post_deliv,elec:15d,perish:∅,furn|mattress:30-90d(cond_req),holiday(Nov1..Dec31):through_Jan31(peak:mid-Jan)};
-  cond:orig_pkg∧all_acc∧¬use(>reasonable_inspect;eg.peeled_screen_film=OK);
+  cond:orig_pkg∧all_acc∧¬use(>reasonable_inspect;e.g.peeled_screen_film=OK);
   proof:{POS_lookup(card|loyalty|phone);gift_rcpt⇒exch|store_credit@purch_price(¬cash);no_rcpt⇒cap($50-75/tx,3/12mo_rolling)@lowest_recent_price};
-  restock_fee:{open_elec:15%,special_order:20-25%,bulky_ship:apply;defect|fulfill_err⇒waive;goodwill_waive⇒chk_margin(eg.$45/$300@28%)};
+  restock_fee:{open_elec:15%,special_order:20-25%,bulky_ship:apply;defect|fulfill_err⇒waive;goodwill_waive⇒chk_margin(e.g.$45/$300@28%)};
   BORIS:refund=orig_purch_price(¬shelf_price)∧accept(store_inv|route_DC);
   intl:{duty_drawback:reexport_proof(3-5y_by_country);ship>40%_val⇒returnless_refund;ret_customs≠export_docs};
   exc_types:{price_match,late_remorse,OOW_defect,loyalty_tier_override(ext_win∧fee_waive)}
 }
-§GRD{
+§PAT{GRADING_AND_DISPOSITION
   A(LikeNew):orig_pkg∧all_acc∧unused∧pass_fn⇒restock(new|open_box)@85-100%_retail,t=45-90s;
   B(Good):minor_cosmetic∧(pkg_dmg|no_sleeve)∧all_acc∧fn⇒open_box|renewed@60-80%_retail,repack=$2-5,t=90-180s;
   C(Fair):visible_wear|minor_dmg∧miss_acc(<10%_val)∧fn⇒secondary(outlet|mkt|liq)@30-50%_retail,refurb⇔cost<20%_recov;
-  D(Salvage):non_fn|heavy_dmg|miss_crit⇒parts|mat@5-15%_retail⊕recycle|destroy;
-  cat_spec:{elec:+2-4m_fn_test(pwr,screen,conn);apparel:stain|odor|stretch|tags(sniff_test,UV);cosmetics_opened⇒¬restock(health_reg)}
-}
-§DISP{
+  D(Salvage):non_fn|heavy_dmg|miss_crit⇒parts|mat@5-15%_retail⊕recycle|destroy(subj_ESPR);
+  cat_spec:{elec:+2-4m_fn_test(pwr,screen,conn);apparel:stain|odor|stretch|tags(sniff_test,UV);cosmetics_opened⇒¬restock(health_reg)};
   restock_new:A∧full_pkg∧pass_fn/safety∧¬relabel_used(FTC_risk);best:high_margin($3-8_cost≪val);
   open_box:(A∧dmg_pkg)∨B;repack($5-15)<Δmargin_vs_lower;sweet_spot:{elec,small_appl};
   refurb:cost<40%_refurb_price∧refurb_chan∧station+parts+retest;{prem_elec,pwr_tools,small_appl};
   liquidate:C∨unviable_B→{pallet(B-Stock,DirectLiquidation,Bulq),wholesale(lb:apparel,unit:elec),regional}@5-20%_retail;¬mix_cats_on_pallet(sells@lowest_cat);
   donate:tax_FMV⇔FMV>liq_recov∧tax_liab∧¬brand_dilution;
-  destroy:{recalled,counterfeit,reg_disp(batt,WEEE,hazmat),brand_strict}⇒Cert_of_Destruction;
-  MAT{
+  EU_ESPR_ban(Reg_2024/1781,eff_2026-07-19):large_EU_ent_prohibited_from_destroying(incinerate|landfill)_unsold_returned_apparel,accessories,footwear(med_ent:2030);narrow_exemptions(verified_safety_hazard,counterfeit,failed_donation)+mandatory_annual_public_discard_report⇒route_secondary_mkt|refurb|donation;
+  destroy:{recalled,counterfeit,reg_disp(batt,WEEE,hazmat),brand_strict(excl_EU_ESPR_apparel)}⇒Cert_of_Destruction;
+  cat_matrix:{
     Elec:A→restock(test)|B→open_box/renew|C→refurb(ROI>40%)⊕liq|D→parts/e-waste;
-    Apparel:A→restock(tags)|B→repack/outlet|C→liq(wt)|D→textile_recycle;
+    Apparel:A→restock(tags)|B→repack/outlet|C→liq(wt)/resale|D→textile_recycle/donate(¬destroy_EU_ESPR);
     Home_Furn:A→restock|B→open_box(disc)|C→liq(local,¬ship)|D→donate|destroy;
     Health_Beauty:A→restock(sealed)|B/C/D→destroy(reg);
     Books_Media:A→restock|B→restock(disc)|C→liq|D→recycle;
@@ -34,47 +33,34 @@
     Toys:A→restock(sealed)|B→open_box|C→liq|D→donate(safety_ok)
   }
 }
-§FRD{
-  us_cost:$24B+/yr;
-  pat:{
+§PAT{FRAUD_DETECTION_2026
+  benchmarks(NRF):overall_ret_rate~15.8%(~$850B/yr);ecomm_ret_rate~19.3%;fraud_rate~9%_of_returns;~85%_retailers_deploying_AI_fraud_analytics;
+  patterns:{
     wardrobing:event_clust|deodorant|makeup|stretch⇒UV_light∧unremoved_RFID(miss⇒worn);
     rcpt_fraud:stolen/fake_rcpt⇒ID_all_cash∧match_orig_pay∧cap_no_rcpt/ID;
     swap:fake/old/broken_in_box(elec,cosmetics)⇒serial_chk∧weight_chk∧inspect_hi_val_pre_refund;
-    serial_ret:>30%_rate∨>$5k/yr⇒seg(reason_consist,cond,net_LTV;eg.$50k-$18k=$32k>$15k);
+    serial_ret:>30%_rate∨>$5k/yr⇒seg(reason_consist,cond,net_LTV;e.g.$50k-$18k=$32k>$15k);
     bracketing:multi_size/color⇒fit/AR_tools∧free_exch+ret_fee∧educate(¬punish);
     arbitrage:buy_promo→ret_full_price(BORIS_risk)⇒tie_refund=actual_paid;
-    ORC:multi_ID@same_addr|hi_shrink_cats|geo_clust⇒escalate_LP
+    ORC_and_RaaS:Return-as-a-Service_rings,digital/loyalty_scams,multi_ID@same_addr,geo_clust⇒AI_graph_scoring+escalate_LP
   };
-  SCORE(0..100;≥65⇒flag_rev,≥80⇒hold_refund):{
-    +40:hi_val_elec∧serial_mismatch;
-    +25:|wt-exp_wt|/exp_wt>5%;
-    +15:ret_rate>30%(12mo,cat_adj);
-    +15:no_rcpt;
-    +10:reason_Δ(init→recv);
-    +10:multi_ret_same_wk(cumul_w_rate);
-    +10:ret_addr≠ship_addr(¬gift);
-    +10:acct_age<30d;
-    +5:ret≤48h_deliv;
-    +5:hi_shrink_cat(elec,cosmetics,designer_apparel)
+  rule_score(0..100;≥65⇒flag_rev,≥80⇒hold_refund;pair_with_AI_model):{
+    +40:hi_val_elec∧serial_mismatch;+25:|wt-exp_wt|/exp_wt>5%;+15:ret_rate>30%(12mo,cat_adj);+15:no_rcpt;
+    +10:reason_Δ(init→recv);+10:multi_ret_same_wk(cumul_w_rate);+10:ret_addr≠ship_addr(¬gift);+10:acct_age<30d;
+    +5:ret≤48h_deliv;+5:hi_shrink_cat(elec,cosmetics,designer_apparel)
   }
 }
-§VND{
+§D{VENDOR_RECOVERY_WARRANTY_AND_EXCEPTIONS
   RTV:batch≥min($200-500)→RTV#→ship→track_credit;¬miss_window(typ_90d_post_recv);
   defect_claim:rate>contract(2-5%)⇒submit(photos,notes,SKU_complaints);
   chargeback:vendor_err(wrong_SKU,mislabel,pkg_fail)⇒full_cost+ship+labor(compliance_sched);
   settle:{solvent⇒credit,overseas⇒repl_stock,<$200∧crit_supp⇒writeoff+log_renewal};
-  ROI:(exp_credit*P_collect)>(labor+ship+rel_cost);
-  thresh:{>$500:always(viable@50%_P);$200-500:if_RTV∧batch;<$200:batch|PO_offset(¬single_ship);overseas:min_$1000∧+30%_time}
+  vendor_ROI:(exp_credit*P_collect)>(labor+ship+rel_cost);
+  vendor_thresh:>$500⇒always(viable@50%_P)|$200-500⇒if_RTV∧batch|<$200⇒batch|PO_offset(¬single_ship)|overseas⇒min_$1000∧+30%_time;
+  warranty_sep:ret(≤30d,any_reason,retailer)≠warranty(90d..life,defect,mfg);lemon(repeat_fail)⇒CX_wants_refund∧mfg_offers_repair⇒escalate_vendor_credit;ext_plan:POS_margin_30-60%,3p_handles_claim;
+  exception_ord:1:defective⇒accept(∀win/cond)→2:top_10%_LTV⇒accept_std→3:neutral_reasonable(Nov_coat_Mar>Jun_swim_Dec)→4:disp=A⇒grant|≤C⇒margin_loss→5:precedent_risk(1off_doc=low,social=high)
 }
-§WRN{
-  ret(≤30d,any_reason,retailer)≠warranty(90d..life,defect,mfg);
-  lemon:repeat_fail⇒CX_wants_refund∧mfg_offers_repair⇒retailer_caught;
-  ext_plan:POS_margin_30-60%;3p_handles_claim;retailer_facilitates
-}
-§EXC{
-  ord:[1:defective⇒accept(∀win/cond),2:top_10%_LTV⇒accept_std,3:neutral_reasonable(eg.Nov_coat_Mar>Jun_swim_Dec),4:disp=A⇒grant|≤C⇒margin_loss,5:precedent_risk(1off_doc=low,social=high)]
-}
-§EDGE{
+§ANTI{EDGE_CASES_AND_TRAPS
   1:elec_wiped_OS+6mo_batt_cycles(claimed_defect)⇒check_hw_telemetry;
   2:unpacked_hazmat(Li-ion|chem)⇒¬std_parcel(DOT_liab)∧manage_refusal;
   3:intl_missing_drawback_docs∨ship>val;
@@ -82,36 +68,29 @@
   5:cust_mod(RAM_upg)+unrelated_defect(screen)⇒check_excl_scope;
   6:hi_LTV_serial($80k/yr,42%_ret)⇒seg_nuance(¬ban);
   7:recalled_SKU⇒recall_prog(¬std_returns);
-  8:gift_rcpt_shelf_price>$30_over_paid⇒policy=paid_price
+  8:gift_rcpt_shelf_price>$30_over_paid⇒policy=paid_price;
+  9:EU_brand_strict_destroy_apparel⇒illegal_under_ESPR(eff_2026-07-19)_without_documented_exemption⇒de-brand+donate/recycle
 }
-§COM{
+§CMD{COMMS_AND_TEMPLATES
   tone:{refund:warm,lead_amt+time;deny:empathetic+policy+(exch|credit|warranty)+esc(¬0_opts);fraud_hold:neutral,¬say("fraud"|"investigation")_ext,+timeline;restock_fee:explain_cost+confirm_net_pre;RTV:data+photos+SKU_vol+contract_sec};
-  tpl:{
-    RMA:`Return Approved — Order #{order_id}`+(RMA#,ship_instr,timeline,cond);
-    refund:"Your refund of ${amount} has been processed to your [payment method]. Please allow [X] business days.";
-    hold:"Your return is being reviewed by our processing team. We expect to have an update within [X] business days. We appreciate your patience."
-  }
+  tpl_RMA:`Return Approved — Order #{order_id}`+(RMA#,ship_instr,timeline,cond);
+  tpl_refund:"Your refund of ${amount} has been processed to your [payment method]. Please allow [X] business days.";
+  tpl_hold:"Your return is being reviewed by our processing team. We expect to have an update within [X] business days. We appreciate your patience."
 }
-§ESC{
-  trig:{
+§R{ESCALATION
+  triggers:{
     single>$5000⇒sup_appr(pre_proc);
-    fraud≥80⇒hold→fraud_team(imm);
+    fraud≥80∨RaaS_ring⇒hold→fraud_team(imm);
     simul_chargeback⇒halt→payments(≤1h);
     recalled⇒recall_coord,¬std(imm);
     SKU_defect>5%⇒merch+vendor_mgmt(≤24h);
     3rd_exc_12mo⇒mgr_rev(pre_proc);
     counterfeit⇒pull,photo,LP+brand_prot(imm);
-    regulated(pharma|hazmat|med)⇒compliance(imm)
+    regulated(pharma|hazmat|med|ESPR_exempt_destroy)⇒compliance(imm)
   };
   chain:L1(Assoc)→L2(Lead,2h)→L3(Mgr,8h)→L4(Dir_Ops,24h)→L5(VP,48h+∨item>$25k)
 }
-§KPI{
-  proc_time:<48h|>96h;
-  inspect_acc:>95%|<88%;
-  restock_rate:>45%|<30%;
-  fraud_det:>80%|<60%;
-  FP_rate:<3%|>8%;
-  vendor_recov:>70%|<45%;
-  CSAT:>4.2/5.0|<3.5/5.0;
-  cost_per_ret:<$8.00|>$15.00
+§CHK{KPIS // track weekly, trend monthly
+  proc_time:<48h|>96h;inspect_acc:>95%|<88%;restock_rate:>45%|<30%;fraud_det:>80%|<60%;
+  FP_rate:<3%|>8%;vendor_recov:>70%|<45%;CSAT:>4.2/5.0|<3.5/5.0;cost_per_ret:<$8.00|>$15.00
 }

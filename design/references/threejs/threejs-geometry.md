@@ -1,5 +1,5 @@
 @REF:threejs-geometry
-§META{ver:three.js@r186;def:WebGLRenderer;alt:WebGPURenderer(three/webgpu+three/tsl)}
+§META{ver:three.js@r187;def:WebGLRenderer;alt:WebGPURenderer(three/webgpu+three/tsl)}
 
 §PAT{quickstart:WebGL}
 ```js

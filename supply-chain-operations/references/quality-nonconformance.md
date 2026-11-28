@@ -1,59 +1,52 @@
 @REF:quality-nonconformance
-
-§CTX{
-  reg∈{FDA_21CFR820(QSR),IATF_16949(auto),AS9100(aero),ISO_13485(med)};
+§CFG{CTX_AND_SYSTEMS
+  reg∈{FDA_QMSR(21CFR820_eff_2026-02_incorp_ISO_13485:2016),IATF_16949(Rules_6th_Ed_2025),AS9100/IA9100(ISO_9001:2026_align),ISO_13485(med)};
   sys∈{eQMS(MasterControl,ETQ,Veeva),SPC(Minitab,InfinityQS),ERP(SAP_QM,Oracle_Quality),CMM,supplier_portals};
   flow:detect(insp|SPC|complaint)→contain(quarantine,prod_hold,ship_stop)→classify(critical|major|minor)→RCA→MRB_disp→CA_impl→verify+validate_CAPA→close
 }
-
 §R{NCR_LIFECYCLE
   1_id:anyone_init;rec:{who,where∈{incoming,in_process,final,field},spec_violated,qty,lot_trace};imm_seg(red_tag|hold_tag→MRB_area)∧ERP_hold(¬exc);
-  2_doc:QMS_NCR#,part#,rev,PO|WO,spec_clause,actuals_vs_tol,photos,inspector_ID;reg:{FDA:21CFR820.90,auto:IATF16949§8.7};
-  3_inv:scope(isolated vs systemic);check(upstream_lots,same_prod_run,WIP,FG_period);contain_BEFORE_RCA;
-  4_MRB(quality,eng,mfg;AS9100⇒cust_partic?):{
-    use_as_is:¬meet_dwg∧func_OK⇒eng_justif(concession/dev;¬"need_parts");AS9100§8.7.1⇒cust_approval;IATF⇒cust_notice;
+  2_doc:QMS_NCR#,part#,rev,PO|WO,spec_clause,actuals_vs_tol,photos,inspector_ID;reg:{FDA_QMSR:ISO13485_§8.3,auto:IATF16949_§8.7};
+  3_inv:scope(isolated_vs_systemic);check(upstream_lots,same_prod_run,WIP,FG_period);contain_BEFORE_RCA;
+  4_MRB(quality,eng,mfg;AS9100/IA9100⇒cust_partic?):{
+    use_as_is:¬meet_dwg∧func_OK⇒eng_justif(concession/dev;¬"need_parts");AS9100/IA9100_§8.7.1⇒cust_approval;IATF⇒cust_notice;
     rework:approved_proc∧doc_WI→re_insp(orig_spec)+track_cost;
     repair:¬orig_spec∧func_OK(perm_dev)⇒eng_disp+cust_concession;
     RTV:SCAR/CAR+debit_memo|repl_PO+track_SLA+upd_scorecard;
     scrap:doc(qty,cost,lot_trace,auth_signoff(>$_thresh));(serial|safety_crit)⇒witness_destruct
   }
 }
-
 §D{NCR_DISP_PRIORITY // evaluate top-down, first match governs
   1:safety_crit∨reg_req⇒¬use_as_is;rework(full_conf)⊕scrap(exc⇔formal_risk_assess+reg_notice);
   2:cust_spec>design_spec∧meets_design⇒cust_concession_pre_disp;
-  3:func_impact(form|fit|func):∅∧within_MRB_auth⇒use_as_is(eng_justif) | ∃⇒rework⊕scrap;
+  3:func_impact(form|fit|func):∅∧within_MRB_auth⇒use_as_is(eng_justif)|∃⇒rework⊕scrap;
   4:reworkable(approved_proc)⇒(rework_cost>0.60*repl_cost?scrap:rework);
   5:supplier_caused⇒RTV+SCAR(exc:line_stop⇒use_as_is|rework+cost_recovery)
 }
-
 §PAT{RCA_METHODS
   5_Whys(1-2h):linear_chain;∀why⇒data_verified(¬opinion);fails(multi_factor);
   Ishikawa_6M(4-8h,w/5_Whys):{Man,Machine,Material,Method,Measurement,Mother_Nature/Env}⇒hypothesis_gen(¬standalone_RCA);
-  FTA(40-80h):top_down_deductive(AND/OR_gates),quant(failure_rates);req(AS9100_safety,ISO14971_med);
+  FTA(40-80h):top_down_deductive(AND/OR_gates),quant(failure_rates);req(AS9100/IA9100_safety,ISO14971_med);
   8D(20-40h,auto_OEM_req(GM,Ford,Stellantis)):D0_emerg→D1_team→D2_def(IS/IS-NOT)→D3_contain→D4_RCA(fishbone+5Whys)→D5_sel_CA→D6_impl→D7_prevent→D8_recog
 }
-
-§ANTI{RCA
-  RC∋"error"(human_error≠RC);CA≡"retrain_operator"(weakest_CA);RC≡reworded_problem
+§ANTI{RCA_AND_LEGACY_TRAPS
+  RC∋"error"(human_error≠RC);CA≡"retrain_operator"(weakest_CA);RC≡reworded_problem;
+  FDA_legacy_QSR/QSIT:citing_retired_21CFR820.90/.100/.198_or_QSIT_audit_prep⇒non_compliant_under_QMSR_2026(ISO_13485+CP_7382.850)
 }
-
 §R{CAPA_SYS
   triggers:repeat_NC(≥3x_same_mode)∨cust_complaint∨audit_finding∨field_fail∨SPC_trend∨reg_obs;¬over_init(backlog)∧¬under_init(audit_risk);
-  CA(existing_NC,stop_recur)≠PA(potential_NC via trend|risk|near_miss)⇒both_req;
+  CA(existing_NC,stop_recur)≠PA(potential_NC_via_trend|risk|near_miss)⇒both_req;
   action_spec:{specific,measurable,targets_verified_RC,owner,due_date,evidence(e.g.calibrated_torque±2%+WI_rev+eff_date)};
   verif(impl_as_planned)≠valid(0_recur_in_prod);close@verif_wo_valid⇒FDA_finding;
   close_min:objective_evidence(impl∧eff)∧monitor≥max(90d_prod_procΔ,3_prod_lots_matΔ,1_audit_cyc_sysΔ);recur⇒reopen+re_inv(¬new_CAPA);check_leading_ind(PPM,complaints);
-  reg:{FDA:21CFR820.198+820.90→820.100,820.250;IATF16949:§10.2.3-10.2.6;AS9100:§10.2;ISO13485:§8.5.2-8.5.3}
+  reg:{FDA_QMSR:ISO13485_§8.2.2/§8.3/§8.5.2-3+FDA_subparts;IATF16949:§10.2.3-10.2.6;AS9100/IA9100:§10.2;ISO13485:§8.5.2-8.5.3}
 }
-
 §PAT{SPC
   charts:{Xbar_R:cont(n=2-10),Xbar_S:cont(n>10),I_MR:cont(n=1,batch|destruct),p:prop_def(var_n),np:cnt_def(fix_n),c:defects/unit(fix_area),u:defects/unit(var_area)};
   cap:{Cp:spread_vs_spec(pot),Cpk:centered(act),Cp/Cpk:within_subgrp(ST),Pp/Ppk:overall(LT);Cp=2.0∧Cpk=0.8⇒shift_mean(¬var);IATF:Cpk≥1.33(est),Ppk≥1.67(new)};
   WE_rules:{R1:1pt>3σ⇒imm_action;R2:9consec_same_side_CL;R3:6consec_mono_↑|↓;R4:14consec_alt_↑↓};R2-R4⇒inv_assignable_cause_pre_OOS("in_spec"≠"in_control");
   causes:{common:inherent⇒process/equip/mat/env_Δ;special:assignable⇒tool_wear/new_lot/shift};adjust(common)≡tampering(↑var)⇒adjust_ONLY_on_WE_special
 }
-
 §CFG{AQL_INSPECTION // ANSI/ASQ Z1.4 | ISO 2859-1
   params:{level∈{I,II(std),III},lot_size,AQL,code_letter};
   defaults:{critical:0,major:1.0-2.5,minor:2.5-6.5};
@@ -69,14 +62,12 @@
   };
   CoC:{new_sup⇒always_insp;qual_hist⇒CoC+reduced_verif;crit/safety_dim⇒always_insp;req:doc_agree+periodic_audit(sup_final_insp,¬paperwork)}
 }
-
 §R{SUPPLIER_QM
   audits:{process(observe,interview,sample),system(QMS_docs/recs),product(chars)};sched:{high:1yr,med:2yr,low:3yr}+cause;system⇒announced;process_concern⇒unannounced;
   scorecard(qtrly,weighted):{PPM,OTD,SCAR_resp,SCAR_eff(recur),lot_acc_rate}⇒drives(insp_level,alloc,ASL);
   ASL:{entry:qual(FAI,cap_study,sys_audit);provisional:cond_approved;removal:proc+eng+qual_agree+trans_plan};
   dev_vs_switch:{develop⇔(unique_cap∧↑switch_cost∧strong_rel∧fixable_gap);switch⇔(unwilling_invest∨deteriorating_despite_CARs∨alt_qual_↓TCOQ)}
 }
-
 §PAT{SCAR_ESCALATION
   L1_SCAR(1_sig_NC∨≥3_minor/90d):formal_SCAR(8D)@10bus_d_resp/30d_impl;
   L2_watch(late_SCAR∨ineff_CA):↑insp+probation+proc_notice@60d_improve;
@@ -84,18 +75,16 @@
   L4_new_src(fail_CS):qual_alt+↓alloc@3-12mo;
   L5_ASL_rem(fail|unwilling):remove_ASL+trans_all_parts_pre_final_PO
 }
-
-§CFG{REG_AND_COQ
-  FDA_820:{.90:NC,.100:CAPA,.198:complaints,.250:stat};focus:{CAPA_eff,complaint_trend,RCA_rigor};
-  IATF_16949:{control_plan(living:chars,methods,freq,n,react,owner),PPAP,MSA,8D,special_chars,cust_notice(Δ,disp)};
-  AS9100:{safety,counterfeit_prev,cfg_mgmt,FAI(AS9102),key_chars,cust_approval(use_as_is),OASIS};
+§CFG{REGULATORY_STANDARDS_2026_AND_COQ
+  FDA_QMSR(21CFR820,replaced_QSR):incorporates_ISO_13485:2016_by_ref(§8.3_NC,§8.5.2-3_CAPA,§8.2.2_complaints)+FDA_subparts;QSIT_retired→Compliance_Program_7382.850;focus:{risk_based_QMS,CAPA_eff,complaint_trend,RCA_rigor};
+  IATF_16949:{control_plan(living:chars,methods,freq,n,react,owner),PPAP,MSA,8D,special_chars,cust_notice(Δ,disp);Rules_6th_Ed(eff_2025-01-01):strict_audit_planning,Stage1_readiness,SA-RSL_audits,tight_transfer_rules};
+  IA9100_AS9100:{IAQG_global_rebrand_consolidating_AS9100/EN9100/JISQ9100_following_ISO_9001:2026;elevates_product_safety,data_prot/cybersecurity,counterfeit_prev,ethical_leadership/quality_culture,risk_vs_opp_sep;cfg_mgmt,FAI(AS9102),key_chars,cust_approval(use_as_is),OASIS};
   ISO_13485:{EU_align,ISO14971_risk,traceability,design_ctrl,clinical→NC};
   Juran_COQ:{prev:5-10%($1→$10-100_avoid),appraisal:20-25%,int_fail:25-40%,ext_fail:25-40%(highest/incident,volatile)}
 }
-
 §PAT{EDGE_CASES
   1_field_fail_pass_intern:audit_test_coverage(¬dismiss_cust_data);
-  2_falsified_CoC:quarantine_ALL(in+WIP+FG)∧reg_report(AS9100_counterfeit/med);
+  2_falsified_CoC:quarantine_ALL(in+WIP+FG)∧reg_report(AS9100/IA9100_counterfeit/med);
   3_SPC_OK_cust_fail:cust_sensitive_within_spec⇒collab_functional_req;
   4_shipped_NC:contain(cust_stock+WIP+downstream);safety⇒imm_notice;
   5_symptom_CAPA_recur:if(RC~"error"∨CA~"retrain")⇒restart_RCA;
@@ -103,19 +92,16 @@
   7_intermittent_no_repro:↑n+freq,check_env(shift,T,RH,vib),nested_Gauge_RR;
   8_audit_NC:ack+doc+formal_NCR/RCA/CAPA(¬minimize)
 }
-
 §CMD{COMMS_AND_TEMPLATES
   tone:{routine_int:factual+data+contain;mgmt:impact_first(prod,cust,$);SCAR:objective_data+spec+SLA;cust_ship:knowns+contain+cust_act+SLA;reg_483:ack+inv+CA+verif/valid_evid};
   tpl_NCR:`NCR-{number}: {part_number} — {defect_summary}`→{finding,spec,qty,contain,scope};
   tpl_SCAR:`SCAR-{number}: Non-Conformance on PO# {po_number} — Response Required by {date}`→{part#,lot,spec,meas,qty,impact,req_fmt};
   tpl_cust_notice:{contain,lot/serial_trace,cust_actions,CA_timeline,QE_contact}
 }
-
 §R{ESCALATION
   triggers:{safety_crit→VP_Qual+Reg≤1h;field_fail|complaint→inv+acct≤4h;shipped_NC→cust_notice+contain≤4h;repeat_NC(≥3x)→CAPA+mgmt≤24h;ext_audit→mgmt+plan≤48h;CAPA_late>30d→Qual_Dir≤1wk;NCR_backlog>50→rev+mgmt≤1wk;falsified_doc→quarantine_all+reg+legal_imm};
   chain:L1_QE→L2_Supv(4h)→L3_Mgr(24h)→L4_Dir(48h)→L5_VP(72h+∨safety_crit)
 }
-
 §CHK{KPIS // track weekly, trend monthly
   NCR_med_close:<15bus_d(red>30d);CAPA_ontime:>90%(red<75%);CAPA_eff:>85%(red<70%);
   sup_PPM:<500(red>2000);COQ_%rev:<3%(red>5%);int_defect:<1000PPM(red>5000);

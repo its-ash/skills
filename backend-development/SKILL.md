@@ -1,6 +1,6 @@
 ---
 name: backend-development
-description: "AUTO_INVOKE(silent)⇔prompt∈{backend,API,REST,GraphQL,gRPC,OpenAPI,protobuf,microservice,Kafka,RabbitMQ,SQS,NATS,JWT,OAuth,mTLS,rate_limit,Redis,BullMQ,Lambda,serverless,multi-tenant,SaaS,PM2,NestJS,FastAPI,Django,Celery,Laravel,Rails,Firebase,Node.js,Zod,Pydantic,RFC9457,DLQ,idempotent,circuit_breaker,CQRS,Saga,OTel}|SUB:{api-design,nodejs-patterns,saas-multi-tenant,serverless,contract-first,error-handling,django-celery,django-security,django-testing,laravel-security,laravel-testing,rails,nestjs,fastapi,django,php-laravel,firebase-backend}"
+description: "AUTO_INVOKE(silent)⇔prompt∈{backend,API,REST,GraphQL,gRPC,tRPC,OpenAPI,AsyncAPI,protobuf,microservice,Kafka,RabbitMQ,SQS,NATS,JWT,OAuth,mTLS,rate_limit,Redis,BullMQ,Lambda,serverless,multi-tenant,SaaS,PM2,Hono,NestJS,FastAPI,Django,Celery,Laravel,Rails,Firebase,Node.js,Zod,Pydantic,RFC9457,DLQ,idempotent,circuit_breaker,CQRS,Saga,OTel}|SUB:{api-design,nodejs-patterns,saas-multi-tenant,serverless,contract-first,error-handling,django-celery,django-security,django-testing,laravel-security,laravel-testing,rails,nestjs,fastapi,django,php-laravel,firebase-backend}"
 ---
 @SKL:backend-development
 §R{
@@ -8,12 +8,12 @@ description: "AUTO_INVOKE(silent)⇔prompt∈{backend,API,REST,GraphQL,gRPC,Open
   pre_design⇒capture({latency,throughput,consistency,availability});
   start(coarse_svcs)∧split⇔clear_bounded_context_boundary∧log(ADR,tradeoff);
   ∀svc⇒stateless∧own_DB_schema;
-  contract_first(OpenAPI∨GraphQL_SDL∨proto)∧err_resp∈{RFC_9457_Problem_Details,{error:{code,message,details}}}+exact_HTTP_status;
-  large_sets⇒cursor_pagination;version∈{/v1,Accept_hdr}+pub_deprecation_timeline;
+  contract_first(OpenAPI_3.2/3.1∨AsyncAPI_3∨GraphQL_SDL∨proto)∧err_resp∈{RFC_9457_Problem_Details,{error:{code,message,details}}}+exact_HTTP_status;
+  large_sets⇒cursor_pagination;version∈{/v1,Accept_hdr}+pub_deprecation_timeline(`Sunset`→`410`);
   layer:(controller≡thin→svc≡logic→repo≡data_access);
-  ∀input@edge⇒schema_val(Zod_4∨Valibot∨JSON_Schema_2020-12∨Pydantic_v2);
+  ∀input@edge⇒schema_val(Standard_Schema(Zod_4∨Valibot∨ArkType)∨JSON_Schema_2020-12∨Pydantic_v2);
   enforce(TLS∧svc2svc_mTLS)∧JWT≡short_lived∧rotate(signing_keys);
-  ∀outbound_call⇒timeout∧retry(transient_err_only,exp_backoff,cap);
+  ∀outbound_call⇒timeout∧retry(transient_err_only,exp_backoff+jitter,cap);
   {write_handlers,msg_consumers}⇒idempotent(req_IDs,dedup_keys)∧failed_msg→DLQ;
   log≡JSON({traceId,spanId})∧export({RED_metrics,OTel_traces});
   expose({/health/live,/health/ready})∧migrations→new_pods_start;
@@ -22,6 +22,7 @@ description: "AUTO_INVOKE(silent)⇔prompt∈{backend,API,REST,GraphQL,gRPC,Open
 §D{
   CRUD_HTTP⇒REST¬GraphQL_simple_CRUD;
   clients_need_flexible_reads⇒GraphQL¬many_bespoke_REST;
+  TS_monorepo_int_API⇒tRPC_v11¬hand_rolled_REST_SDK;
   high_perf_internal_RPC⇒gRPC¬JSON_REST_hot_svcs;
   decouple_producer_consumer⇒queue(RabbitMQ∨SQS)∨stream(Kafka∨NATS)¬sync_call_chain;
   distributed_tx⇒Saga(choreography∨orchestration)¬2PC_cross_svc;
@@ -36,26 +37,26 @@ description: "AUTO_INVOKE(silent)⇔prompt∈{backend,API,REST,GraphQL,gRPC,Open
 }
 §REF{
   integration,event_driven,sec_list,resilience_tbl,circuit_breaker,obs,caching_code,jobs,test_levels,Dockerfile,deploy_steps,feature_checklist→references/service-architecture.md;
-  REST,GraphQL,tRPC,versioning,pagination,auth,rate_limits,status_codes→references/api-design.md;
-  shared_contract,OpenAPI,AsyncAPI,protobuf,JSON_Schema,gen_types,drift→references/contract-first.md;
-  err_hierarchies,Result_types,err_envelopes,retries_jitter,TS_Python_Go→references/error-handling.md;
-  Node.js_fw_choice,layers,async,val,pitfalls→references/nodejs-patterns.md;
-  NestJS_11,modules,DI,guards,pipes,interceptors,TypeORM,Passport_JWT→references/nestjs.md;
-  FastAPI,Pydantic_v2,SQLAlchemy_2.0,async_tests→references/fastapi.md;
-  Django_5.2_LTS_6.1,DRF,Channels,async_ORM,django.tasks,deploy→references/django.md;
-  Django_Celery,beat,chords,DLQ→references/django-celery.md;
-  Django_sec,auth,CSRF,CSP→references/django-security.md;
-  Django_tests,factory_boy,verification_loop→references/django-testing.md;
-  PHP_8.3+,Laravel_12_13→references/php-laravel.md;
-  Laravel_sec,Sanctum,policies→references/laravel-security.md;
-  Laravel_tests,Pest,fakes,verification_loop→references/laravel-testing.md;
+  REST,GraphQL,tRPC_v11,OpenAPI_3.2,RFC9457,versioning,pagination,auth,rate_limits,status_codes→references/api-design.md;
+  shared_contract,OpenAPI_3.2,AsyncAPI_3,protobuf,JSON_Schema,gen_types,drift→references/contract-first.md;
+  err_hierarchies,Result_types,RFC9457,err_envelopes,retries_jitter,TS_Python_Go→references/error-handling.md;
+  Node_24_26_LTS,Express_5,Fastify_5,Hono,layers,async,Standard_Schema,pitfalls→references/nodejs-patterns.md;
+  NestJS_12,native_ESM,Standard_Schema,modules,DI,guards,pipes,interceptors,TypeORM,Prisma,Passport_JWT→references/nestjs.md;
+  FastAPI,Pydantic_v2,SQLAlchemy_2.0,pwdlib,async_tests→references/fastapi.md;
+  Django_5.2_LTS_6.1,DRF,Channels,async_ORM,django.tasks,fetch_mode,native_CSP,deploy→references/django.md;
+  Django_Celery_5.7,beat,chords,DLQ,django.tasks→references/django-celery.md;
+  Django_sec,auth,CSRF,native_CSP,Argon2→references/django-security.md;
+  Django_tests,factory_boy,drf_spectacular,verification_loop→references/django-testing.md;
+  PHP_8.4_8.5,Laravel_12_13,bootstrap_app→references/php-laravel.md;
+  Laravel_sec,Sanctum,Passport,Passkeys,bootstrap_app,policies→references/laravel-security.md;
+  Laravel_tests,Pest_5,PHPUnit_13,fakes,verification_loop→references/laravel-testing.md;
   Laravel_pkg,LaraPlugins_MCP→references/laravel-plugin-discovery.md;
-  Rails_7.2+_8.1,services,Solid_Queue,Hotwire→references/rails.md;
-  multi_tenant_SaaS,Postgres_RLS,tenant_middleware→references/saas-multi-tenant.md;
-  AWS_Lambda,API_Gateway,DynamoDB,SQS,Azure_Functions,Cloudflare_Workers→references/serverless.md;
-  Firebase,Firestore,rules,Cloud_Functions,Storage→references/firebase-backend.md;
+  Rails_8.1,Ruby_3.4_4.0,services,Solid_Queue,Hotwire,Kamal→references/rails.md;
+  multi_tenant_SaaS,Postgres_RLS,Prisma_7_$extends,tenant_middleware→references/saas-multi-tenant.md;
+  AWS_Lambda_Node24_Py314,API_Gateway,DynamoDB,SQS,Azure_Functions_v4_NET10,Cloudflare_Workers→references/serverless.md;
+  Firebase_SDK_13,Functions_v7,Firestore,Data_Connect,rules,App_Hosting,Storage→references/firebase-backend.md;
   add_API_connector_in_repo_pattern→references/api-connector-builder.md;
-  transactional_email,Mailtrap,SPF_DKIM_DMARC→references/mailtrap-email-integration.md;
+  transactional_email,Mailtrap,Nodemailer_10,SPF_DKIM_DMARC→references/mailtrap-email-integration.md;
   cache_file_processing_by_SHA-256_content_hash→references/content-hash-cache-pattern.md;
 }
 §REL{

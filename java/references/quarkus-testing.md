@@ -1,15 +1,15 @@
 @REF:quarkus-testing
-@VERSION:Quarkus_3.x(LTS)
+@VERSION:Quarkus_4.0|3.40_LTS(Java_21+/25,JUnit_6)
 §SCOPE{
   use∈{pre_PR,post_refactor,dep_upgrade,pre_deploy,new_feature,REST,bug_fix,data_access,security,reactive,CompletableFuture,LogContext,Camel_routes,RabbitMQ,conditional_flow};
   tdd:1:write_failing_test→2:minimal_code→3:refactor_green→4:jacoco_enforce(LINE≥0.80,BRANCH≥0.70)
 }
 §DEPS{
   maven_test_scope:[
-    `io.quarkus:quarkus-junit5`,
-    `io.quarkus:quarkus-junit5-mockito`,
-    `org.mockito:mockito-core`,
-    `org.assertj:assertj-core:3.24.2`,
+    `io.quarkus:quarkus-junit` (3.31+_renamed_from_quarkus-junit5),
+    `io.quarkus:quarkus-junit-mockito` (3.31+_renamed_from_quarkus-junit5-mockito),
+    `org.mockito:mockito-core` (5.24+),
+    `org.assertj:assertj-core:3.27.7` (CVE-2026-24400_fix),
     `io.rest-assured:rest-assured`,
     `org.apache.camel.quarkus:camel-quarkus-junit5`
   ]
@@ -77,7 +77,7 @@ given().contentType(ContentType.JSON).body(json)
 §JACOCO{
   pom:```xml
 <plugin>
-  <groupId>org.jacoco</groupId><artifactId>jacoco-maven-plugin</artifactId><version>0.8.13</version>
+  <groupId>org.jacoco</groupId><artifactId>jacoco-maven-plugin</artifactId><version>0.8.16</version>
   <executions>
     <execution><id>prepare-agent</id><goals><goal>prepare-agent</goal></goals></execution>
     <execution><id>report</id><phase>verify</phase><goals><goal>report</goal></goals></execution>
@@ -141,7 +141,7 @@ mvn test jacoco:report jacoco:check
 mvn org.owasp:dependency-check-maven:check
 mvn package -Dnative -Dquarkus.native.container-build=true
 ```;
-  ci_gh_actions:`on:[push,pull_request]`→`actions/checkout@v4`→`actions/setup-java@v4(java-version:'21',distribution:'temurin',cache:maven)`→P1(`mvn clean verify -DskipTests`)→P3(`mvn test jacoco:report jacoco:check`)→P4(`mvn org.owasp:dependency-check-maven:check`)
+  ci_gh_actions:`on:[push,pull_request]`→`actions/checkout@v6`→`actions/setup-java@v5(java-version:'25',distribution:'temurin',cache:maven)`→P1(`mvn clean verify -DskipTests`)→P3(`mvn test jacoco:report jacoco:check`)→P4(`mvn org.owasp:dependency-check-maven:check`)
 }
 §CHK{
   build:0_warnings∧0_high_or_medium_static_issues;

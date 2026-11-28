@@ -1,22 +1,25 @@
 ---
 name: swift-ios
-description: "AUTO_INVOKE(silent)⇔prompt∈{Swift,SwiftUI,.swift,Xcode,iOS,macOS,@Observable,@State,@Binding,@Bindable,@Environment,NavigationStack,ViewModifier,LazyVStack,LazyHStack,ForEach,@ViewBuilder,#Preview,Equatable,.task,Swift-6.2,@MainActor,@concurrent,Sendable,data-race,actor,DI,Swift-Testing,@Test,#expect,FoundationModels,LanguageModelSession,@Generable,Liquid-Glass,glassEffect,GlassEffectContainer,UIGlassEffect,WidgetKit,UIKit}|SUB:{swift-concurrency,swift-actor-persistence,swift-protocol-di-testing,foundation-models-on-device,liquid-glass-design}"
+description: "AUTO_INVOKE(silent)⇔prompt∈{Swift,SwiftUI,.swift,Xcode,iOS,macOS,Swift-6.4,@Observable,@State,@Binding,@Bindable,@Environment,@Entry,@Previewable,NavigationStack,TabView,LazyVStack,@ViewBuilder,#Preview,.task,@MainActor,@concurrent,nonisolated,Sendable,Mutex,actor,SwiftData,Swift-Testing,@Test,#expect,#require,FoundationModels,LanguageModelSession,@Generable,Liquid-Glass,glassEffect,GlassEffectContainer,UIGlassEffect,WidgetKit,UIKit}|SUB:{swiftui-patterns,swift-concurrency,swift-actor-persistence,swift-protocol-di-testing,foundation-models-on-device,liquid-glass-design}"
 ---
 @SKL:swift-ios
 §R{
+  baseline⇒Swift6.4∧Xcode27∧iOS26–27(SwiftBuild_default_in_SwiftPM6.4);
   models⇒@Observable∧¬(ObservableObject∨@Published∨@StateObject∨@EnvironmentObject)∧migrate_legacy;
   property_wrapper⇒simplest_fit(§D);
   model_state⇒`private(set) var`∧mutate_via_methods;
-  DI⇒init(dep:any_Repository=Default())∧shared⇒(.environment(obj)+@Environment(Type.self));
+  DI⇒init(dep:any_Repository=Default())∧shared⇒(.environment(obj)+@Environment(Type.self))∧custom_keys⇒@Entry;
   VM_ownership⇒@State_only_in(data_owning_view)∧pass_down→children;
-  views⇒split(small_structs)⇒Δstate_invalidates_only(reader);
-  reusable_styling⇒ViewModifier+View_ext;
-  routing⇒NavigationStack(path:)+Hashable_Destination_enum+@Observable_router_in_env;
+  views⇒split(small_structs)⇒Δstate_invalidates_only(reader)∧reusable_styling⇒ViewModifier+View_ext;
+  routing⇒NavigationStack(path:)+Hashable_Destination_enum+@Observable_router_in_env∧tabs⇒TabView{Tab(...)};
   (body∨init)⇒¬(IO∨network∨heavy_work);async_work⇒.task{}∧auto_cancels_on_disappear;
-  large_collections⇒(LazyVStack∨LazyHStack)∧ForEach_stable_IDs∧¬indices;
-  conditional_views⇒(@ViewBuilder∨Group)∧¬AnyView;
-  cross_actor_data⇒Sendable;
-  previews⇒#Preview_per_state(empty,loaded)+mock_repositories
+  large_collections⇒(LazyVStack∨LazyHStack)∧ForEach_stable_IDs∧¬indices∧conditional⇒(@ViewBuilder∨Group)∧¬AnyView;
+  concurrency⇒ApproachableConcurrency(MainActor_default+nonisolated(nonsending))∧@concurrent_only_for_profiled_CPU∧Swift6.4_async_defer;
+  cross_actor_data⇒Sendable∧sync_shared_state⇒Synchronization.Mutex(¬DispatchQueue∨NSLock);
+  testing⇒SwiftTesting(@Suite,@Test,#expect,#require,processExitsWith,Attachment.record,Test.cancel)∧XCTest_only_for(XCUITest);
+  foundation_models⇒chk_availability∧prewarm∧@Generable∧snapshot.content∧Tool_Output:PromptRepresentable∧handle_GenerationError;
+  liquid_glass⇒mandatory_in_Xcode27(UIDesignRequiresCompatibility_ignored)∧wrap_siblings_in(GlassEffectContainer);
+  previews⇒#Preview_per_state+@Previewable_@State+mock_repositories
 }
 §D{
   view_local_val(toggle∨field∨sheet_flag)⇒@State¬@Observable_class;
@@ -25,16 +28,19 @@ description: "AUTO_INVOKE(silent)⇔prompt∈{Swift,SwiftUI,.swift,Xcode,iOS,mac
   readonly_model_from_parent⇒plain_@Observable_ref(no_wrapper)¬@State_in_child;
   two_way_bind_@Observable_prop⇒@Bindable¬manual_Binding(get:set:);
   app_wide_dep⇒.environment(obj)+@Environment(Type.self)¬@EnvironmentObject;
+  custom_env_or_tx_key⇒@Entry¬manual_EnvironmentKey_struct;
   expensive_body_stable_inputs⇒conform(Equatable)¬rerender_∀parent_Δ;
-  scrolling_list_effects⇒sparse(.shadow,.blur,.mask,.geometryGroup,.sensoryFeedback)¬offscreen_effects_per_row
+  scrolling_list_effects⇒sparse(.shadow,.blur,.mask,.geometryGroup,.sensoryFeedback)¬offscreen_effects_per_row;
+  local_persist⇒(simple_JSON⇒actor_repo+.atomic)⊕(relational/queries⇒SwiftData_@Model+@ModelActor)⊕(sync_lock⇒Mutex);
+  async_work_placement⇒stay_on_calling_actor(nonisolated(nonsending))¬@concurrent_unless_profiled_CPU
 }
 §REF{
-  @Observable_VM_view,env,composition,ViewModifier,router,lazy_lists,Equatable_view,previews→references/swiftui-patterns.md;
-  Swift6.2_concurrency,@concurrent,MainActor_default,isolated_conformances,migration,data_race_errors→references/swift-concurrency.md;
-  actor_repo,in_mem_cache+atomic_file_writes,@Observable_VMs→references/swift-actor-persistence.md;
-  Sendable_protocol_DI(FS,network,APIs),mocks,Swift_Testing(@Test,#expect)→references/swift-protocol-di-testing.md;
-  FoundationModels(iOS26+),availability,LanguageModelSession,@Generable,tools,streaming,4096_tok_limit→references/foundation-models-on-device.md;
-  Liquid_Glass,.glassEffect(),GlassEffectContainer,glassEffectID,UIKit_UIGlassEffect,WidgetKit→references/liquid-glass-design.md
+  @Observable_VM,@Entry,@Previewable,@Animatable,TabView,NavigationStack,ViewModifier,lazy_lists,Equatable→references/swiftui-patterns.md;
+  Swift6.2–6.4_concurrency,ApproachableConcurrency,nonisolated(nonsending),@concurrent,MainActor_default,async_defer,Mutex,SPM→references/swift-concurrency.md;
+  actor_repo,Sendable_cache+atomic_writes,SwiftData_@ModelActor,Mutex_boundary,@Observable_VMs→references/swift-actor-persistence.md;
+  Sendable_protocol_DI,Mutex_mocks,SwiftTesting(@Suite,@Test,#expect,#require,processExitsWith,Attachment,Test.cancel,Issue.record)→references/swift-protocol-di-testing.md;
+  FoundationModels(iOS26–27),availability,prewarm,LanguageModelSession,@Generable,Tool_PromptRepresentable,snapshot.content,GenerationError→references/foundation-models-on-device.md;
+  Liquid_Glass(Xcode27_mandatory),.glassEffect(.regular|.clear|.identity),GlassEffectContainer,ConcentricRectangle,tabBarMinimizeBehavior,UIKit,WidgetKit→references/liquid-glass-design.md
 }
 §REL{
   ../design/references/mobile-design.md:iOS_Android_conventions,touch_targets,layouts;

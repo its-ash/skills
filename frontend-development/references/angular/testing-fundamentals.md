@@ -1,8 +1,8 @@
 @REF:testing-fundamentals
 
 §R{
-  use_configured_test_runner;
-  async_first(signals+zoneless_CD_schedule_async);
+  runner:Vitest+jsdom_default(v22+,Node_exec,Jest-compat_`describe`/`it`/`expect`,replaces_deprecated_Karma/Jasmine);else_use_configured_workspace_runner;
+  async_first(signals+zoneless+OnPush_CD_schedule_async);
   pattern:Act(set_input/click)→Wait(`await fixture.whenStable()`)→Assert;
   initial_binding_also_needs`await fixture.whenStable()`
 }

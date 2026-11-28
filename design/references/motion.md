@@ -38,8 +38,8 @@
 }
 
 §CFG{13_15
-  13:BaseUI_1.0/Radix,ArkUI,cmdk,sonner,input-otp,Leva,motion,NumberFlow,torph,Cobe,Satori,shiki,Liveline/recharts,dnd_kit,Virtuoso,zustand,clsx/cva;theme=color-scheme+light-dark()(next-themes_only_manual_persist);rm:{custom_toasts,div_dialogs,rerender_tickers,1k+_unvirt_rows,nested_cn_ternaries};
-  15:gate=@supports/feat(WebGPU→WebGL2);BL={ViewTrans(same/cross-doc;React19.3<ViewTransition>@Next16.4),@starting-style,scroll-anim,anchor,@property,WAAPI,Workers,OffscreenCanvas,WASM};prog(Chrome137+/139+,¬BL)={CSS_if(),@function,sibling-index(),corner-shape};polish_20%
+  13:@base-ui/react_1.x/Radix,ArkUI,cmdk,sonner,input-otp,Leva,motion(v14+),NumberFlow,torph,Cobe,Satori,shiki,Liveline/recharts,dnd_kit,Virtuoso,zustand,clsx/cva;theme=color-scheme+light-dark()(next-themes_only_manual_persist);rm:{custom_toasts,div_dialogs,rerender_tickers,1k+_unvirt_rows,nested_cn_ternaries};
+  15:gate=@supports/feat(WebGPU→WebGL2);BL={ViewTrans(same-doc;React19.3<ViewTransition>_stable@Next16),@starting-style,scroll-anim(Base2026),anchor(Base2026),field-sizing(Base2026),@property,WAAPI,Workers,OffscreenCanvas,WASM};prog(¬BL)={x-doc_VT(Cr/Sf),CSS_if(),@function,corner-shape,grid-lanes};polish_20%
 }
 
 §CHK{16_17_18
@@ -50,6 +50,6 @@
 
 §MAP{19_22
   hero:{AsymSplit,EditManifesto,VideoMask,KineticType,CurtainReveal,ScrollPinned};nav:{StickyHdr,StaticHdr,DockMag,MagneticBtn,GooeyMenu,DynamicIsland,RadialMenu,MegaMenu};layout:{Bento,Masonry,SplitScroll,StickyStack};cards:{TonalSurf,ParallaxTilt,SpotlightBorder,GlassPanel,SwipeStack,MorphModal};scroll:{HorizHijack,ZoomParallax,ProgressPath};media:{Coverflow,DragPan,HoverTrail};txt:{Marquee,MaskReveal,Scramble,CircularPath};micro:{SkeletonShimmer,Ripple,SVGLineDraw,MeshGrad};
-  libs:{Motion_def;GSAP_3.13(free,all_plugins)+ScrollTrigger+Lenis;Three_r186+/R3F_9(isolated+cleanup);¬mix(GSAP/Three,Motion)_1_tree};
+  libs:{Motion_v14+_def;GSAP_3.15+(free≥3.13,all_plugins)+ScrollTrigger+Lenis;Three_r187+/R3F_9(isolated+cleanup);¬mix(GSAP/Three,Motion)_1_tree};
   22_fix:¬transition:all⇒prop_list;+§5-9{¬scale(0),¬ease-in,orig=trig,¬kbd_anim,UI≤250ms,hover_media,trans>kf,exit<enter,stag30-80ms,transform/opacity,red_mot_fade,filled_tab,full_hairline,¬nested_card}
 }

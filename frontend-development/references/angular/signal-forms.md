@@ -1,7 +1,7 @@
 @REF:signal-forms
 
 §R{
-  prefer_signal_forms_when_Angular_supports;
+  stable_v22(@angular/forms/signals;exp_v21)⇒prefer_signal_forms_when_Angular_supports;
   model_driven∧type_safe∧signal_based;
   ∀field:¬(`null`∨`undefined`)in_val_or_type⇒init(`''`,`0`,`[] as T[]`);
   ¬import{`FormControl`,`FormGroup`,`FormArray`,`FormBuilder`}from`@angular/forms`;¬builder;¬`FormState`(use`FieldState`);
@@ -27,7 +27,7 @@
   create:`userForm=form(this.userModel,(p)=>{...}[,{injector}])`;
   validators:`required(p.x,{message?,when?:({valueOf})=>bool})`,`email(p.x,{message?})`,`min(p.n,18,{message?})`,`max(p.n,100)`,`minLength(p.s,8)`,`maxLength(p.s,500)`,`pattern(p.s,/^\d{5}$/)`;
   rules:`disabled(p.pw,({valueOf})=>!valueOf(p.acct))`,`hidden(p.ship,({valueOf})=>valueOf(p.same))`(keeps_in_model),`readonly(p.u)`,`debounce(p.u,300)`(ms_UI→model);
-  state_sigs:`f.x().value()`,`f().valid()`,`f().invalid()`,`f().errors():ValidationError[]`,`f().pending()`,`f().touched()`,`f().dirty()`,`f().disabled()`,`f().hidden()`,`f().readonly()`,`f().reset()`;
+  state_sigs:`f.x().value()`,`f().valid()`,`f().invalid()`,`f().errors():ValidationError[]`,`f.x().getError('minLength')`,`f().pending()`,`f().touched()`,`f().dirty()`,`f().disabled()`,`f().hidden()`,`f().readonly()`,`f().reset()`;
   err_shape:`interface ValidationError{readonly kind:string;readonly message?:string;}`;
   rule_ctx:`({value,fieldTree,state,valueOf,stateOf,pathKeys})=>{...}`(`value:Signal<T>`,`fieldTree:FieldTree<T>`,`state:FieldState<T>`,`valueOf:(p)=>T`,`stateOf:(p)=>FieldState`,`pathKeys:Signal<string[]>`)
 }

@@ -1,15 +1,19 @@
 @REF:resource
 §R{
-experimental(@angular/core);async_fetch→signal_reactivity;
+stable_v22(@angular/core:`resource`,@angular/common/http:`httpResource`,@angular/core/rxjs-interop:`rxResource`);async_fetch→signal_reactivity;
 params=reactive_fn→Δ_refetch;loader=async({params,abortSignal});
 params_Δ_in_flight⇒aborts_prev(ALWAYS_pass_abortSignal→fetch);
 reload():rerun_without_params_Δ;value.set(v):optimistic_mut→status='local';
-HttpClient⇒prefer(httpResource)[interceptors+same_API]
+HttpClient(Fetch_API_default_v22)⇒prefer(`httpResource`)[interceptors+signal_states+OnPush_auto-dirty]
 }
 §PAT{
 ```ts
+import{httpResource}from'@angular/common/http';
 import{resource,signal,computed}from'@angular/core';
 id=signal('123');
+// Preferred for HTTP (interceptors + Fetch default):
+user=httpResource<User>(() => `/api/users/${this.id()}`);
+// Generic async resource:
 r=resource({
   params:()=>({id:this.id()}),
   loader:async({params,abortSignal})=>{

@@ -1,5 +1,5 @@
 @REF:threejs-fundamentals
-§META{r186;def:WebGLRenderer;webgpu_tsl:WebGPURenderer}
+§META{r187;def:WebGLRenderer;webgpu_tsl:WebGPURenderer(default_future+auto_WebGL2_fb)}
 
 §PAT{quickstart_webgl
 ```js
@@ -19,8 +19,8 @@ addEventListener("resize",()=>{c.aspect=innerWidth/innerHeight;c.updateProjectio
 
 §CFG{importmaps
   `<script type="importmap">`:
-  webgl:`{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.186.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.186.0/examples/jsm/"}}`
-  webgpu(∀4_keys_req;`three.tsl.js` imports `three/webgpu`):`{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.186.0/build/three.webgpu.js","three/webgpu":"https://cdn.jsdelivr.net/npm/three@0.186.0/build/three.webgpu.js","three/tsl":"https://cdn.jsdelivr.net/npm/three@0.186.0/build/three.tsl.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.186.0/examples/jsm/"}}`
+  webgl:`{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.187.0/examples/jsm/"}}`
+  webgpu(∀4_keys_req;`three.tsl.js` imports `three/webgpu`):`{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.webgpu.js","three/webgpu":"https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.webgpu.js","three/tsl":"https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.tsl.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.187.0/examples/jsm/"}}`
 }
 
 §API{scene
@@ -41,7 +41,7 @@ addEventListener("resize",()=>{c.aspect=innerWidth/innerHeight;c.updateProjectio
   `new THREE.WebGLRenderer({canvas?,antialias:true/*MSAA*/,alpha:true,stencil:true/*def:false*/,powerPreference:"high-performance",preserveDrawingBuffer:true/*readPixels/screenshots*/})`
   `setPixelRatio(Math.min(devicePixelRatio,2))`(cap_hiDPI);`setSize(w,h)`;`setClearColor(0x000000,0)`(alpha=0_for_`alpha:true`)
   `toneMapping`∈{`NoToneMapping`(def),`ACESFilmicToneMapping`,`AgXToneMapping`,`NeutralToneMapping`};`toneMappingExposure=1.0`;`outputColorSpace=THREE.SRGBColorSpace`(def)
-  `shadowMap.enabled=true`;`shadowMap.type`∈{`PCFShadowMap`(def,soft),`VSMShadowMap`,`BasicShadowMap`}
+  `shadowMap.enabled=true`;`shadowMap.type`∈{`PCFShadowMap`(def,soft),`VSMShadowMap`,`BasicShadowMap`};r187:`setViewport()`/`setScissor()`_¬DPR_scale_when_RT_bound;`await r.compileAsync(s,c)`_avoids_1st_frame_stutter;r177_deprs_removed
 }
 
 §API{objects

@@ -1,5 +1,5 @@
 @REF:threejs
-§CFG{Three_r186+(WebGL,WebGPU/TSL)+R3F_9+drei_10;use:{3D,viewer,hero,API(cam,light,mat,load,shdr,fx),WebGL→WebGPURenderer/TSL,R3F,perf/asset};scroll/3D:[immersive-web.md](immersive-web.md);src:https://github.com/cloudai-x/threejs-skills(MIT,©2026_CloudAI-X)}
+§CFG{Three_r187+(WebGPU/TSL+WebGL2_fb,WebGL)+R3F_9+drei_10;use:{3D,viewer,hero,API(cam,light,mat,load,shdr,fx),WebGL→WebGPURenderer/TSL,R3F,perf/asset};scroll/3D:[immersive-web.md](immersive-web.md);src:https://github.com/cloudai-x/threejs-skills(MIT,©2026_CloudAI-X)}
 
 §REF{LOAD_1_MATCH
   scene|cam|renderer|resize|arrange⇒[fund](threejs/threejs-fundamentals.md);

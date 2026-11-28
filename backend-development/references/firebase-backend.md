@@ -3,7 +3,7 @@
   Auth:identity,OAuth,passkeys(Identity_Platform);
   Firestore:NoSQL_docs,vector_search,pipelines;
   Data_Connect:relational(Cloud_SQL_PostgreSQL)+generated_typed_SDKs;
-  Cloud_Functions_v2:`firebase-functions` v6/v7,Node 22|24;
+  Cloud_Functions_v2:`firebase-functions` v7(`7.4+`),Node 22|24(¬EOL_Node_20);
   Storage&App_Hosting:files,SSR(Next.js|Angular);
   Security_Rules_v2&App_Check:access_control,client_attestation
 }
@@ -36,7 +36,7 @@ match /users/{userId} { allow read, write: if request.auth != null && request.au
     ¬`onSnapshot`_on_large_colls;
     paginate:`startAfter`∨`limit`;
     aggregate:`count()`,`sum()`,`avg()`(¬fetch_all);
-    modular_SDK12:```javascript
+    modular_SDK13(`firebase` v13.4+):```javascript
 import { getFirestore, collection, getDocs } from 'firebase/firestore';
 ```
   }
@@ -45,19 +45,15 @@ import { getFirestore, collection, getDocs } from 'firebase/firestore';
   SQL_thinking(normalize+client_joins)⇒high_read_cost∧slow;
   client_admin_logic(e.g.subscription_status)⇒insecure;
   UI_hiding_as_security(missing_rules);
-  RTDB_for_complex_queries(use Firestore=structured_data,RTDB=simple_high-freq_sync)
+  RTDB_for_complex_queries(use Firestore=structured_data,RTDB=simple_high-freq_sync);
+  legacy_compat_SDK_v8_namespaces(use_modular_v13)
 }
 §CHK{
   rules∀collection∧storage_path;
   query-optimized_data_model;
-  modular_SDK_imports;
-  functions_v2∧idempotent∧`firebase-admin`∧App_Check_enforced;
+  modular_SDK_v13_imports;
+  functions_v2(`firebase-functions` v7,Node_22/24)∧idempotent∧`firebase-admin`∧App_Check_enforced;
   pagination∀large_lists;
   Firebase_Emulators(local_dev/test)
 }
-§REL{
-  [backend-development](../SKILL.md);
-  [database-design](../../database-design/SKILL.md);
-  [cloud-architecture](../../devops-iac/references/cloud-architecture.md);
-  [flutter](../../flutter/SKILL.md)
-}
+§REL{../SKILL.md,../../database-design/SKILL.md,../../devops-iac/references/cloud-architecture.md,../../flutter/SKILL.md}

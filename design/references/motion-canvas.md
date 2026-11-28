@@ -1,6 +1,8 @@
 @REF:motion-canvas
 §USE{TS_programmatic_video(generators,signals,Vite_editor):init|scenes|fix_setup_import_build|shapes_text_custom|audio_sync}
 §CMD{
+  npm init @motion-canvas@latest # preferred v3.x scaffold (TS+Vite+@motion-canvas/*)
+  # manual fallback:
   mkdir proj && cd proj && npm init -y
   npm i -D @motion-canvas/core @motion-canvas/2d @motion-canvas/vite-plugin @motion-canvas/ui vite typescript
   npm run dev # http://localhost:5173

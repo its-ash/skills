@@ -1,5 +1,5 @@
 @REF:threejs-react-three-fiber
-§META{three:r186;r3f:9.8(verified:9.8.2);react:19(Html_bug:19.2);drei:10.7(verified:10.7.9);default_renderer:WebGLRenderer;webgpu_sec:WebGPURenderer}
+§META{three:r187;r3f:9.8.2(React19;v10_alpha=WebGPU_def);react:19(Html_bug:19.2);drei:10.7(verified:10.7.9);default_renderer:WebGLRenderer;webgpu_sec:WebGPURenderer}
 
 §CFG{QuickStart
   <Canvas> owns WebGLRenderer+scene+camera;fills parent⇒parent needs explicit height.

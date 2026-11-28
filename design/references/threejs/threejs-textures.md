@@ -1,5 +1,5 @@
 @REF:threejs-textures
-§META{ver:"three.js r186"|"three@0.186.0";def:WebGLRenderer;wgpu:WebGPURenderer}
+§META{ver:"three.js r187"|"three@0.187.0";def:WebGLRenderer;wgpu:WebGPURenderer}
 
 §BOOT{
   ```js
@@ -74,7 +74,7 @@
   ktx2.detectSupport(r); // req before load; WebGPU: after await r.init()
   const map = await ktx2.loadAsync("diffuse.ktx2");
   ```
-  transcoder:from_three_pkg;setTranscoderPath()_ONLY_if_self_hosted@"three@0.186.0";
+  transcoder:from_three_pkg;setTranscoderPath()_ONLY_if_self_hosted@"three@0.187.0";
   colorSpace:auto_from_file;fmt:Basis_Universal→GPU_compressed(fallback:uncompressed_RGBA);
   limits:flipY=false(author_UVs),embedded_mips_req;detectSupportAsync_deprecated_r181
 }
@@ -89,7 +89,7 @@
   env.mapping = THREE.EquirectangularReflectionMapping; // w/o⇒flat screen quad
   scene.environment = env; scene.background = env;
   ```
-  prefilter:renderers_convert_equirect→larger_cubemap(ship_low_res_for_mem;¬PMREMGenerator.fromEquirectangular);
+  prefilter:renderers_convert_equirect→larger_cubemap(ship_low_res_for_mem;¬PMREMGenerator.fromEquirectangular;r187:`CubeUVReflectionMapping`_removed,`PMREMGenerator`_outputs_cube_RTs);
   scene_ctrl:scene.{environmentIntensity(≠mat.envMapIntensity),environmentRotation.y,backgroundBlurriness(0..1),backgroundIntensity,backgroundRotation.y};
   generated:PMREMGenerator+RoomEnvironment("three/addons/environments/RoomEnvironment.js"):
   ```js
@@ -174,7 +174,7 @@
   pmrem.fromEquirectangular(hdr)→redundant;
   scene.background=hdr_w/o_mapping→flat_quad;
   ktx2.detectSupportAsync→deprecated_r181(await r.init();ktx2.detectSupport(r));
-  ktx2.setTranscoderPath→only_self_host@0.186.0;
+  ktx2.setTranscoderPath→only_self_host@0.187.0;
   WebGLMultipleRenderTargets→removed_r162(WebGLRenderTarget(w,h,{count:2}));
   WebGPU:WebGLCubeRenderTarget→CubeRenderTarget;
   loader.load(...,onProgress)→unsupported(LoadingManager.onProgress);

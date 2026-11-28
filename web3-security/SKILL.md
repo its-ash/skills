@@ -1,41 +1,47 @@
 ---
 name: web3-security
-description: "AUTO_INVOKE(silent)⇔prompt∈{Solidity,.sol,DeFi,AMM,swap,ERC-20,decimals,EVM,WAD,Keccak-256,sha3-256,selector,storage_slot,ethers,viem,web3,web3.py,OpenZeppelin,SafeERC20,TWAP,reentrancy,CEI,Slither,Echidna,Foundry,agent_wallet,spend_limit,x402,@x402,agentwallet-sdk,OKX_Payments,MEV,prediction_market,Solana}|SUB:{defi-amm-security,evm-token-decimals,nodejs-keccak256,llm-trading-agent-security,agent-payment-x402,prediction-market-oracle-research,prediction-market-risk-review}"
+description: "AUTO_INVOKE(silent)⇔prompt∈{Solidity,.sol,DeFi,AMM,ERC-4626,ERC-20,decimals,EVM,WAD,Keccak-256,sha3-256,selector,storage_slot,viem,ethers,@noble/hashes,web3.py,OpenZeppelin,SafeERC20,EIP-7702,ERC-7579,Uniswap_v4,Chainlink,TWAP,reentrancy,CEI,Slither,Aderyn,Medusa,Echidna,Halmos,Foundry,eth_simulateV1,session_keys,agent_wallet,spend_limit,x402,@x402,agentwallet-sdk,ERC-8004,OKX_Payments,MEV,prediction_market,Solana}|SUB:{defi-amm-security,evm-token-decimals,nodejs-keccak256,llm-trading-agent-security,agent-payment-x402,prediction-market-oracle-research,prediction-market-risk-review}"
 ---
 @SKL:web3-security
 §R{
   fail_closed:(check∨oracle∨budget_store∨simulation)_fails⇒block_action;
-  libs:hardened(OpenZeppelin,SafeERC20,FullMath.mulDiv)¬custom_guards;
-  accounting:internal¬raw_balanceOf(address(this))_in_share/reserve_math;
+  libs:hardened(OZ_v5,SafeERC20,Math.mulDiv,ReentrancyGuardTransient)¬custom_guards;
+  accounting:internal_tracking∧ERC4626(_decimalsOffset∨dead_shares)¬raw_balanceOf(address(this));
+  eip7702:¬assume(tx.origin==msg.sender∨extcodesize==0⇒EOA);guard_all_state_mut_fns;
+  oracle:TWAP∨Chainlink(answer>0,staleness,L2_sequencer_up+grace)¬spot_reserves;
   decimals:query(decimals()@runtime)∧exact_math(Decimal,BigInt)¬floats;
-  hash(EVM):Keccak-256(ethers∨viem∨web3)¬crypto.createHash('sha3-256');
-  spend_policy:orchestrator_sets_pre_delegation∧agent¬modify_own_limits;
+  hash(EVM):Keccak-256(viem∨ethers_v6∨@noble/hashes_v2)¬crypto.createHash('sha3-256')∧¬web3.js(sunset);
+  agent_auth:scoped_session_keys(ERC-7579/EIP-7702)∨orchestrator_policy∧agent¬modify_own_limits;
   pre_sig:validate(network,asset,recipient,amount)_from_server_challenge;
-  tx:simulate_pre_send∧∀swap:require(amountOutMin∧deadline);
-  keys∈(env_vars∨secret_manager)∧dedicated_hot_wallet(session_funds_only);
-  untrusted_LLM_in←{on_chain_text,token_names,social_feeds};
+  tx:eth_simulateV1/eth_call_pre_send∧∀swap:require(amountOutMin∧deadline)∧private_RPC(MEV);
+  keys∈(env_vars∨secret_manager∨enclave)∧dedicated_hot_wallet(session_funds_only);
+  untrusted_LLM_in←{on_chain_text,token_names,social_feeds};structural_isolation¬regex_only;
   prediction_market_prices=signals¬truth∧¬investment_advice
 }
 §D{
-  entrypoint_reentrant⇒nonReentrant+CEI(checks-effects-interactions)¬ext_call_before_state_update;
-  contract_reads_price⇒TWAP∨manipulation_resistant_oracle¬spot_reserves_1_pool;
-  admin_fns⇒access_control+2_step_ownership_transfer¬single_step_transferOwnership;
-  pre_prod⇒Slither(static)+Echidna/Foundry(fuzz)¬manual_review_only;
-  agent_spends_funds⇒spend_limits+circuit_breakers+audit_logs(indep_of_model_out)¬model_editable_limits;
-  payment_client⇒pin_pkg_versions∧testnet_first¬floating_versions_on_mainnet;
+  entrypoint_reentrant⇒ReentrancyGuardTransient(EIP-1153)∨ReentrancyGuard+nonReentrantView+CEI¬ext_call_before_state_update;
+  vault_erc4626⇒OZ_v5_ERC4626(_decimalsOffset∨dead_shares)+Math.mulDiv(Rounding)¬naive_balanceOf_ratio;
+  uniswap_v4_hook⇒require(msg.sender==poolManager)+verify_flag_bits+flash_accounting_invariants¬open_callbacks;
+  contract_reads_price⇒TWAP∨Chainlink(staleness+L2_sequencer_uptime+grace)¬spot_reserves_1_pool;
+  admin_fns⇒AccessManager∨Ownable2Step+timelock+pause_tested¬single_step_transferOwnership;
+  pre_prod⇒Slither+Aderyn(static)+Foundry_invariant+Medusa/Echidna(fuzz)+Halmos(symbolic)¬manual_review_only;
+  js_ts_evm⇒viem_v2∨ethers_v6∨@noble/hashes_v2(.js_subpath)¬web3.js(sunset_2025-03);
+  agent_spends_funds⇒ERC-7579/EIP-7702_session_keys+spend_limits+circuit_breakers+audit_logs¬unbounded_EOA_or_model_editable_limits;
+  payment_client⇒pin_exact_v2_pkg_versions(@x402/*,¬x402-fetch_v1)+testnet_first¬floating_versions_on_mainnet;
   general_web_app_sec⇒../secure-coding/SKILL.md¬this_skill
 }
 §REF{
-  Solidity_AMM/pool/swap_audit,reentrancy,CEI,donation/inflation_attacks,oracle_manip,slippage,admin,safe_math,audit_tools→references/defi-amm-security.md;
-  wrong_order_of_mag,runtime_decimals(),chain_cache,WAD_norm→references/evm-token-decimals.md;
-  wrong_selector/sig/slot/addr,NIST_SHA3_vs_Keccak-256_JS/TS→references/nodejs-keccak256.md;
-  agent_wallet_auth,prompt_inj,hard_spend_limits,sim,circuit_breakers,MEV,wallet_isolation→references/llm-trading-agent-security.md;
-  x402_agent_pay,spend_policy,non_custodial_wallets,agentwallet-sdk,OKX_Payments,@x402,facilitators,replay_guards→references/agent-payment-x402.md;
-  prediction_markets_data_src/oracle_signal,signal_quality_checks→references/prediction-market-oracle-research.md;
+  Solidity_AMM/vault/ERC-4626/Uniswap_v4_hooks,EIP-7702,reentrancy,CEI,donation/inflation,Chainlink/TWAP,slippage,admin,OZ_v5_math,Slither/Aderyn/Foundry/Medusa/Echidna/Halmos→references/defi-amm-security.md;
+  wrong_order_of_mag,runtime_decimals(),chain_cache,WAD_norm,viem_multicall,web3.py_v7→references/evm-token-decimals.md;
+  wrong_selector/sig/slot/addr,NIST_SHA3_vs_Keccak-256_JS/TS,viem,ethers_v6,@noble/hashes_v2,web3.js_sunset→references/nodejs-keccak256.md;
+  agent_wallet_auth,ERC-7579/EIP-7702_session_keys,prompt_inj,hard_spend_limits,eth_simulateV1,circuit_breakers,MEV,wallet_isolation→references/llm-trading-agent-security.md;
+  x402_v2_agent_pay,spend_policy,non_custodial_wallets,agentwallet-sdk,ERC-8004,OKX_Payments,@x402,facilitators,replay_guards→references/agent-payment-x402.md;
+  prediction_markets_data_src/oracle_signal,UMA_dispute_risk,signal_quality_checks→references/prediction-market-oracle-research.md;
   review_pred_mkt/trading_agent_wf:advice_boundary,venue_rules,data_qual,sec,privacy→references/prediction-market-risk-review.md
 }
 §REL{
   ../secure-coding/SKILL.md:secrets,input_val,Solana_sig_checks;
-  ../typescript/SKILL.md:strict_types(ethers,viem,@x402);
-  ../python/SKILL.md:web3.py_bots,trading_agents
+  ../typescript/SKILL.md:strict_types(viem,ethers,@x402);
+  ../python/SKILL.md:web3.py_v7_bots,trading_agents;
+  ../ai-agent-engineering/SKILL.md:agent_guardrails,MCP_tool_boundaries
 }

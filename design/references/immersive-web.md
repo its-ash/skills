@@ -7,20 +7,20 @@
 }
 §USE{long_form_storytelling;cinematic_landing;portfolios(scroll_reveal|3D_configurator);scroll_primary_nav}
 §STACK{
-  scroll_anim:GSAP_ScrollTrigger(medium,powerful)⊕Framer_Motion(React,low_barrier)⊕CSS_scroll-timeline(native,simple_reveals);
-  parallax:GSAP_layer_tweens⊕CSS_transforms⊕JS;
+  scroll_anim:CSS_scroll-timeline(Base2026:Cr/Sf/FF159+,native)⊕GSAP_ScrollTrigger(3.15+,complex/pinned)⊕Motion(motion/react_v14+,React);
+  parallax:CSS_view()_timeline⊕GSAP_layer_tweens;
   sticky:CSS_position_sticky⊕GSAP_pin;
   snap_horiz:CSS_scroll-snap-type⊕GSAP_horiz_panels;
-  smooth_scroll:Locomotive_Scroll(smooth+parallax)⊕Lenis(lightweight_only)[iff_native_insufficient];
-  3d:React_Three_Fiber(prefer_React)⊕Three.js(vanilla,max_ctrl)⊕Spline(rapid_proto);
-  opt:`@gltf-transform/cli`(Draco+WebP);loader:`@react-three/drei`(`useProgress`+`Html`)
+  smooth_scroll:Lenis(lightweight)⊕GSAP_ScrollSmoother[iff_native_insufficient;¬scroll_hijack];
+  3d:React_Three_Fiber_9+drei_10(React)⊕Three.js_r187+(WebGPU/TSL+WebGL2_fb)⊕Spline(rapid_proto);
+  opt:`@gltf-transform/cli`(Draco+WebP/KTX2);loader:`@react-three/drei`(`useProgress`+`Html`)
 }
 §PAT{
   1_gsap_scroll:`gsap.registerPlugin(ScrollTrigger); gsap.to('.element',{scrollTrigger:{trigger:'.element',start:'top center',end:'bottom center',scrub:true},y:-100,opacity:1})`;
-  2_framer:`const{scrollYProgress}=useScroll(); const y=useTransform(scrollYProgress,[0,1],[0,-200]);`→`<motion.div style={{y}}>`(`framer-motion`);
-  3_css_reveal_2024:`@keyframes reveal{from{opacity:0;transform:translateY(50px)}to{opacity:1;transform:translateY(0)}} .animate-on-scroll{animation:reveal linear;animation-timeline:view();animation-range:entry 0% cover 40%}`;
+  2_motion:`const{scrollYProgress}=useScroll(); const y=useTransform(scrollYProgress,[0,1],[0,-200]);`→`<motion.div style={{y}}>`(`motion/react`);
+  3_css_reveal_base2026:`@keyframes reveal{from{opacity:0;transform:translateY(50px)}to{opacity:1;transform:translateY(0)}} .animate-on-scroll{animation:reveal linear;animation-timeline:view();animation-range:entry 0% cover 40%}`;
   4_parallax_speeds:`gsap.to('.background',{scrollTrigger:{scrub:true},y:'-20%'}); gsap.to('.foreground',{scrollTrigger:{scrub:true},y:'-50%'});`;
-  5_sticky_css:`.sticky-container{height:300vh} .sticky-element{position:sticky;top:0;height:100vh}`;
+  5_sticky_css:`.sticky-container{height:300dvh} .sticky-element{position:sticky;top:0;height:100dvh}`;
   6_sticky_gsap:`gsap.to('.content',{scrollTrigger:{trigger:'.section',pin:true,start:'top top',end:'+=1000',scrub:true},x:'-100vw'})`;
   7_horiz_gsap:`const panels=gsap.utils.toArray('.panel'); gsap.to(panels,{xPercent:-100*(panels.length-1),ease:'none',scrollTrigger:{trigger:'.horizontal-container',pin:true,scrub:1,end:()=>'+='+document.querySelector('.horizontal-container').offsetWidth}});`;
   8_r3f_scroll:```tsx

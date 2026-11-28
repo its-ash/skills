@@ -1,48 +1,56 @@
 ---
 name: fullstack-development
-description: "AUTO_INVOKE(silent)⇔prompt∈{fullstack,new_project,tech_stack,scaffold,monorepo,Turborepo,React,Next.js,Node.js,Express,FastAPI,GraphQL,Apollo,REST,API_routes,PostgreSQL,Prisma,Drizzle,zod,Joi,Clerk,Auth0,bcrypt,CSRF,CSP,rate_limit,OpenAPI,Jest,Vitest,Playwright,migrations,PM2,Docker,Compose,Kubernetes,Vercel,Railway,Render,Stripe,SaaS,Redis,ISR}|SUB:{scaffolding,deployment}"
+description: "AUTO_INVOKE(silent)⇔prompt∈{fullstack,new_project,tech_stack,scaffold,monorepo,Turborepo,React19,Next.js,Next16,TanStackStart,Astro,Nuxt4,Node.js,Hono,Express5,Fastify,tRPC,FastAPI,GraphQL,REST,ServerActions,proxy.ts,PostgreSQL,Prisma7,Drizzle,Zod4,StandardSchema,BetterAuth,Clerk,Auth0,Argon2id,CSRF,CSP,rate_limit,RFC9457,Pino,OTel,OpenAPI,Biome,Vitest,Playwright,migrations,PM2,Docker,standalone,Compose,Kubernetes,Vercel,Cloudflare,OpenNext,Railway,Render,Fly.io,Stripe,SaaS,Valkey,Redis,cacheComponents}|SUB:{scaffolding,deployment}"
 ---
 @SKL:fullstack-development
 §R{
   first⇒detect(project_type)→pick(1_template@references/scaffolding.md);
-  default_stack:{UI:Next.js+TypeScript;API:Node_API_routes∨Express∨Apollo_GraphQL;DB:PostgreSQL+Prisma;auth:Clerk∨Auth0;storage:Cloudinary∨Supabase_Storage};
-  data_flow:client(TanStackQuery∨ApolloClient)→API(validate∧authorize)→service(business_logic)→ORM→PostgreSQL;
-  ∀req_body@API_boundary⇒validate(zod(TS)∨Joi);
-  errors⇒throw_typed(HttpError(status,message))∧central_mw→{error,code}∧server_log(winston);
-  secrets∈.env∧commit(.env.example_only)∧¬commit(.env);
-  queries⇒parameterized_only(Prisma_default);
-  sec:{form_post⇒CSRF;headers⇒CSP;rate_limit⇒express-rate-limit;transport⇒HTTPS_everywhere(local:mkcert)};
-  passwords⇒hash(bcrypt)∨3p_auth;
-  schema⇒version_with_migrations(prisma_migrate);
-  public_API⇒doc(OpenAPI∨GraphQL_schema_comments);
-  perf⇒measure_before_opt(WebVitals,pg_stat_statements);
-  list_resp⇒paginate∧small_payloads;
-  CI_gate⇒lint∧type-check∧tests∧image_build∧npm_audit;
+  runtime:Node_26_LTS(Active)∨Node_24_LTS(Maint)∨Bun;¬Node_20(EOL_2026-04);
+  default_stack:{UI:Next.js16(AppRouter,React19,Turbopack)+TS;API:ServerActions∨RouteHandlers∨Hono∨tRPC;DB:PostgreSQL_18/19+(Drizzle∨Prisma7);auth:BetterAuth∨Clerk;storage:R2/S3_presigned∨Supabase_Storage;cache:Valkey9∨Redis8};
+  data_flow:client(RSC∨TanStackQuery∨tRPC)→boundary(validate+authz)→DAL/service(biz_logic)→ORM→PostgreSQL;
+  ∀(req_body,ServerAction,env)⇒validate(Zod4∨Valibot∈StandardSchema;Py:Pydantic_v2)∧fail_fast(@t3-oss/env);
+  authz⇒enforce@DAL+every_Action/Route(¬proxy.ts/middleware_only);sessions:HttpOnly+Secure+SameSite=Lax|Strict;
+  passwords⇒Argon2id(OWASP:m≥19MiB,t≥2,p=1;lazy_rehash_legacy)∨managed_auth(¬new_bcrypt);
+  errors⇒RFC_9457(`application/problem+json`:{type,title,status,detail})∧¬leak_stack∧log(Pino_JSON+redact+OTel_traceId);
+  secrets∈secret_store/env∧commit(.env.example_only)∧¬commit(.env_to_pub_repo);
+  queries⇒parameterized_only(Drizzle∨Prisma7_driver_adapter)∧schema⇒versioned_migrations(drizzle-kit∨prisma_migrate_deploy);
+  sec:{mutations⇒CSRF+Origin_check;headers⇒nonce_CSP(¬unsafe-inline)+HSTS+nosniff;rate_limit⇒distributed(Valkey/Redis/edge¬in_mem);HTTPS_everywhere};
+  billing⇒Stripe(verify_webhook_sig+idempotency_keys+async_event_store¬hand_rolled_billing);
+  API_contract⇒OpenAPI(REST)∨tRPC/ServerFn_types(TS_monorepo)∨GraphQL_SDL;
+  obs+perf⇒OTel_traces+health(/health/live,/health/ready)∧measure_before_opt(CWV,pg_stat_statements);
+  list_resp⇒cursor_pagination∧explicit_field_select(¬SELECT_*);
+  tooling⇒Biome2(fmt+lint;¬removed_`next lint`)∧Vitest5(unit/int)∧Playwright(E2E+sec_headers);
+  CI_gate⇒biome/lint∧tsc_noEmit∧Vitest+Playwright∧img_build∧(audit+Trivy/Scout_scan);
 }
 §D{
-  SaaS⇒default_stack+Stripe¬hand_rolled_billing;
-  mobile_app⇒ReactNative(Expo)∨Flutter¬Next.js;
-  static∨marketing_site⇒Next.js_static_export∨Nuxt¬unneeded_server_runtime;
-  API_only⇒Express_template∨FastAPI¬full_Next.js_app;
-  multi-package_repo⇒Turborepo+pnpm_workspaces¬copy-paste_shared_code;
-  hosting_managed⇒Vercel(FE)+(Railway∨Render)(BE)¬self-managed_VMs;
-  hosting_self-hosted⇒Docker+Kubernetes¬bare_npm_start_on_host;
-  read-heavy_query⇒Redis∨edge_cache¬recompute_per_request;
-  pre-renderable_page⇒ISR∨static_gen¬SSR_per_request;
-  heavy_client_cmp⇒React.lazy+Suspense¬main_bundle;
+  SaaS⇒Next.js16+BetterAuth/Clerk+PostgreSQL+Stripe_webhooks¬hand_rolled_auth_or_billing;
+  type-safe_app_wo_RSC_magic⇒TanStackStart(createServerFn+Vite)¬forced_Next.js;
+  content∨marketing_site⇒Astro5∨Next.js_static_export∨Nuxt4_generate¬unneeded_server_runtime;
+  mobile_app⇒Expo_SDK58(ReactNative)∨Flutter¬web_wrapper_in_Next.js;
+  API_only⇒Hono∨Fastify5∨Express5∨FastAPI¬full_Next.js_app;
+  TS_ORM⇒Drizzle(SQL_perf,edge/serverless)⊕Prisma7(prisma.config.ts+driver_adapter)¬legacy_Prisma_Rust_engine;
+  auth_choice⇒BetterAuth(self_hosted,own_DB,passkeys/orgs)⊕Clerk(turnkey_B2B_UI)¬Auth.js_legacy_new_builds;
+  multi-package_repo⇒Turborepo2(tasks)+pnpm11/bun_workspaces¬copy-paste_shared_code;
+  hosting_managed⇒Vercel⊕Cloudflare_Workers(OpenNext)⊕Railway/Render/Fly.io¬self-managed_VMs;
+  hosting_self-hosted⇒Docker(`output:'standalone'`,non-root)+Uncloud/Compose/CloudRun⊕K8s(@scale)¬bare_npm_start;
+  read-heavy_query⇒Valkey9/Redis8∨edge_cache(with_invalidation_plan)¬recompute_per_request;
+  cacheable_Next16_UI⇒`cacheComponents:true`+`'use cache'`+`cacheLife`/`cacheTag`∨ISR¬uncached_SSR_per_req;
+  heavy_client_cmp⇒`next/dynamic`∨`React.lazy`+`Suspense`¬main_bundle;
+  Next16_req_intercept⇒`proxy.ts`(optimistic_routing/headers)¬deprecated_`middleware.ts`_or_auth_only_gate;
 }
 §REF{
-  project-type_keywords,templates,setup_steps,folder_layout,commands,agent_order→references/scaffolding.md;
-  Dockerfile,Compose,Kubernetes_manifest,release_checklist→references/deployment.md;
+  project-type_detect,templates,monorepo,Turborepo2,Next16,TanStackStart,Prisma7,Drizzle,Biome2,Vitest5,commands,agent_order→references/scaffolding.md;
+  Next16_standalone_Dockerfile,compose.yaml(PG18/19,Valkey,watch),K8s_hardened,OpenNext_Cloudflare,migrations_job,release_checklist→references/deployment.md;
 }
 §REL{
-  ../frontend-development/SKILL.md:React,Next.js,TanStack,MUI_UI;
-  ../frontend-development/references/nextjs.md:Next.js_AppRouter_patterns;
-  ../backend-development/SKILL.md:API_design,services,resilience;
-  ../node/SKILL.md:Node_conventions,scripts,tsconfig;
-  ../database-design/SKILL.md:schema,migrations,Prisma,Drizzle;
-  ../typescript/SKILL.md:TS_types,tsconfig;
-  ../devops-iac/SKILL.md:CI/CD,Docker,Kubernetes;
-  ../secure-coding/SKILL.md:auth,injection,XSS,CSRF;
-  ../unit-testing-patterns/SKILL.md:Jest,Vitest,Playwright_tests;
+  ../frontend-development/SKILL.md:React19,Next16,TanStack,Vue,Nuxt4,Astro;
+  ../frontend-development/references/nextjs.md:Next16_AppRouter,CacheComponents,proxy.ts;
+  ../backend-development/SKILL.md:API_design,Hono,Fastify,FastAPI,RFC9457,resilience;
+  ../node/SKILL.md:Node26_LTS,Bun,pnpm11,supply_chain,PM2;
+  ../database-design/SKILL.md:schema,PostgreSQL,migrations,Prisma,Drizzle,Redis;
+  ../typescript/SKILL.md:TS_strict,Zod4,StandardSchema,monorepo_tsconfig;
+  ../devops-iac/SKILL.md:CI/CD,Docker,Kubernetes,Cloudflare,OTel;
+  ../secure-coding/SKILL.md:auth,Argon2id,CSRF,CSP,OWASP,secrets;
+  ../unit-testing-patterns/SKILL.md:Vitest,Playwright,TDD,browser_qa;
+  ../software-architecture/SKILL.md:bounded_contexts,ADR,modular_monolith;
 }

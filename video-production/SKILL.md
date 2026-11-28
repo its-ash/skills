@@ -1,45 +1,48 @@
 ---
 name: video-production
-description: "AUTO_INVOKE(silent)⇔prompt∈{video,edit,cut,footage,transcript,EDL,FFmpeg,Remotion,Manim,fal.ai,Descript,CapCut,Screen_Studio,ElevenLabs,Playwright_demo,VideoDB,Blender,MIDI,DAW,vlog,tutorial,demo,launch_video,reel,TikTok,Reels,YouTube,9:16,1:1,16:9,subtitles,captions,overlays,voiceover,b-roll,scene_detect,silence_detect,reframe,visual_taste}|SUB:{remotion,manim-video,fal-ai-media,ui-demo,videodb,blender-motion-state-inspection,visual-taste}"
+description: "AUTO_INVOKE(silent)⇔prompt∈{video,edit,cut,footage,transcript,EDL,FFmpeg,AV1,loudnorm,whisper,Remotion,Mediabunny,Manim,fal.ai,Veo,Kling,Seedance,FLUX,Descript,CapCut,Screen_Studio,ElevenLabs,elevenlabs-mcp,Playwright_demo,screencast,VideoDB,Blender,MIDI,DAW,vlog,tutorial,demo,launch_video,reel,TikTok,Reels,YouTube,9:16,1:1,16:9,subtitles,captions,overlays,voiceover,b-roll,scene_detect,silence_detect,reframe,visual_taste}|SUB:{ffmpeg-cookbook,remotion,manim-video,fal-ai-media,ui-demo,videodb,blender-motion-state-inspection,visual-taste}"
 ---
 @SKL:video-production
 §R{
   goal:edit_real_footage(compress,structure,augment)¬gen_whole_video;
-  pipeline(ordered,1_job/layer,skip=∅):capture(Screen_Studio,Playwright,camera)→plan(Claude/Codex)→cut(FFmpeg)→compose(Remotion)→generate(ElevenLabs/fal.ai)→polish(Descript/CapCut);
+  pipeline(ordered,1_job/layer,skip=∅):capture(Screen_Studio,Playwright,camera)→plan(transcript→EDL)→cut(FFmpeg)→compose(Remotion|Manim)→generate(ElevenLabs/fal.ai)→polish(Descript/CapCut);
   structure>style:transcript→topics→dead_sections(pauses,tangents,retakes)→EDL(timestamps);
   ref_driven:set_look_first(references/visual-taste.md)→edit;
-  ∀deterministic_op(split,trim,concat,proxy,audio_extract,loudness)⇒FFmpeg;
-  FFmpeg(-c copy)⇒keyframe_cuts_only;frame_exact_cuts⇒re-encode;
-  repeated(overlay∨scene)⇒Remotion_component;
-  gen_only(asset∉existing)∧require(user_approval_first;cost∧uploads_data);
+  ∀deterministic_op(split,trim,concat,proxy,audio_extract,loudness,transcode,whisper_ASR)⇒FFmpeg(7.1_LTS|8.0+|9.x;`-fps_mode`¬`-vsync`);
+  FFmpeg(`-c copy`)⇒keyframe_cuts_only;frame_exact_cuts∨web_MP4⇒re-encode(`-pix_fmt yuv420p -movflags +faststart`);
+  repeated(overlay∨scene)⇒Remotion_4x(`@remotion/media`+`mediabunny`¬`@remotion/media-parser`;`useDelayRender()`¬raw`delayRender()`);
+  gen_only(asset∉existing)∧require(user_approval_first;cost∧uploads_data)∧run(`search`/`find`/`estimate_cost`_pre_gen);
   human_polish_layer←{pacing,caption_cleanup,color,final_mix,export};
   pre/post(live_editor∨DAW Δ):save(versioned_checkpoint)∧verify(file_exists);API_readback⇒mem_state≠disk_save;
   handoff:track_separate_states(rendered_media,editable_project,creative_approval);
   MIDI_audio:match_pitches(target_instrument_note_map)∧audition(clip_may_be_silent);
   reconstructed_proj:native_load∧save∧sort_events(time)∧verify(sample_links,mutes)∧audition_export(silence_check);
-  editor_bridge:capability_handshake_before_new_cmds∧¬enable(upload∨training_telemetry)_side_effect
+  editor_bridge:capability_handshake_before_new_cmds∧¬enable(upload∨training_telemetry)_side_effect;
+  Blender_5+:`action.fcurves`/`groups`/`id_root`_REMOVED⇒use_slotted_actions(`action_slot`+`channelbag.fcurves`)
 }
 §D{
   long_rec→short_clips⇒transcript+scene/silence_detect→EDL→FFmpeg_batch_cut¬manual_scrub;
+  local_ASR_subtitles⇒FFmpeg8+`whisper`_filter∨Remotion_whisper_cpp¬paid_API_when_offline;
+  web_delivery_encode⇒H.264(`yuv420p`+`faststart`)∨AV1(`libsvtav1`)¬raw_WebM_or_unoptimized_MP4;
   overlays∨lower_thirds∨charts∨templates⇒Remotion¬manual_keyframes_per_video;
-  precise_tech∨diagram_anim⇒Manim¬Remotion∨real_footage;
-  scripted_web_demo⇒Playwright_rec(references/ui-demo.md)¬unscripted_screen_capture;
+  precise_tech∨diagram_anim⇒Manim(v0.22+,`--seed`,`.always`)¬Remotion∨real_footage;
+  scripted_web_demo⇒Playwright_v1.59+`page.screencast`∨`recordVideo`(references/ui-demo.md)¬unscripted_screen_capture;
   polished_adhoc_screen_rec⇒Screen_Studio¬raw_OS_recorder;
-  narration⇒ElevenLabs∨VideoDB:generate_voice¬synthetic_voice_whole_video;
-  music∨SFX∨b-roll∨thumbnails⇒fal.ai¬gen_shootable_footage;
-  server_search∨timeline∨smart_reframe⇒VideoDB(uploads_media)¬local_tools_when_upload_disallowed;
+  narration⇒ElevenLabs(`eleven_v3`|`eleven_flash_v2_5`;`elevenlabs-mcp`)∨VideoDB:generate_voice¬synthetic_voice_whole_video;
+  music∨SFX∨b-roll∨thumbnails⇒fal.ai(Veo3.1|Kling|Seedance|FLUX|Nano_Banana;verify_slug_first)¬gen_shootable_footage;
+  server_search∨timeline∨smart_reframe⇒VideoDB(MCP:`https://mcp.videodb.io/mcp`|`videodb.editor`4-layer)¬local_tools_when_upload_disallowed;
   aspect(9:16∨1:1)_from_16:9⇒FFmpeg_center_crop∨VideoDB_smart_reframe(track_subject)¬letterbox;
   Blender_rig∨pose_wrong⇒inspect_state(references/blender-motion-state-inspection.md)¬trust_render
 }
 §REF{
-  FFmpeg_cmds,scene/silence_detect,platform_sizes/crops,plan_prompts,ElevenLabs/fal.ai_snippets→references/ffmpeg-cookbook.md;
-  Remotion:compositions,calculateMetadata,springs,seq,transitions,media,captions,fonts,charts,3D→references/remotion.md;
-  Manim:scene_plan,render_conventions,starter_scene→references/manim-video.md;
-  fal.ai_MCP:Nano_Banana,Seedance,Kling,Veo_3,CSM-1B,ThinkSound,cost_checks→references/fal-ai-media.md;
-  Playwright_demo:discover,rehearse,record,cursor_overlay,pacing,subtitles→references/ui-demo.md;
-  VideoDB:ingest,spoken/scene_search,timeline_edits,transcode,reframe,gen_audio,RTSP_alerts→references/videodb.md;
-  Blender:rig,pose,retarget,ground_contact,facing_checks→references/blender-motion-state-inspection.md;
-  visual_taste:genre_dir,mood,palette,beat_synced_cuts,match_ref_grade→references/visual-taste.md
+  FFmpeg(7.1+/8+/9+):`-fps_mode`,cuts,AV1,`whisper`,loudnorm,WebM→MP4,specs,ElevenLabs→references/ffmpeg-cookbook.md;
+  Remotion_4x:compositions,`@remotion/media`,Mediabunny,springs,seq,transitions,`useDelayRender`,captions,charts,3D→references/remotion.md;
+  Manim_v0.22+:scene_plan,`--seed`,`.always`,transparent_`-t`,render_flags,starter_scene→references/manim-video.md;
+  fal.ai+ElevenLabs_MCP:Veo3.1,Kling,Seedance,FLUX,Nano_Banana,`eleven_v3`,`eleven_flash_v2_5`,cost_gate→references/fal-ai-media.md;
+  Playwright_demo:P1_discover,P2_rehearse,`page.screencast`(v1.59+),DOM_fallback,pacing,MP4_export→references/ui-demo.md;
+  VideoDB:MCP_endpoint,`videodb.editor`(Timeline/Track/Clip/Asset),search,reframe,gen_audio,RTStream→references/videodb.md;
+  Blender_4.5/5+:slotted_actions,`channelbag.fcurves`,rig,pose,retarget,ground_contact,facing→references/blender-motion-state-inspection.md;
+  visual_taste:genre_dir,mood,palette,beat_synced_cuts,CIE_Lab_measured_grade→references/visual-taste.md
 }
 §REL{
   ../content-writing/SKILL.md:scripts,captions,platform_distribution;

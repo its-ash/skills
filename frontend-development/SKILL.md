@@ -1,6 +1,6 @@
 ---
 name: frontend-development
-description: "AUTO_INVOKE(silent)⇔prompt∈{React,Next.js,Next16,TSX,.tsx,.vue,.astro,TypeScript,MUIv7,sx,SxProps,TanStackQuery,TanStackRouter,useSuspenseQuery,useMutation,Suspense,ErrorBoundary,ServerComponents,SSR,hydration,bundle,re-render,waterfall,CWV,CLS,ReactCompiler,ReactNative,Expo,FlashList,NativeWind,Vue3,Pinia,Nuxt4,Angular,signals,Vite,Turbopack,Astro,D3,PWA,useEffect,form,Zod,a11y,ARIA,virtualization}|SUB:{mui,react-patterns,react-performance,nextjs,astro,d3-visualization,progressive-web-app,react-native,vue,nuxt,ui-to-vue,angular,vite}"
+description: "AUTO_INVOKE(silent)⇔prompt∈{React,Next.js,Next16,TSX,.tsx,.vue,.astro,TypeScript,MUIv9,sx,SxProps,TanStackQuery,TanStackRouter,TanStackStart,useSuspenseQuery,Suspense,ErrorBoundary,ServerComponents,SSR,hydration,bundle,re-render,waterfall,CWV,CLS,ReactCompiler,ViewTransition,ReactNative,Expo,FlashList,NativeWind,Vue3,Vapor,Pinia,Nuxt4,Angular,signals,SignalForms,Vite,Rolldown,Turbopack,Astro,D3,PWA,useEffect,form,Zod,a11y,ARIA,virtualization}|SUB:{mui,react-patterns,react-performance,nextjs,astro,d3-visualization,progressive-web-app,react-native,vue,nuxt,ui-to-vue,angular,vite}"
 ---
 @SKL:frontend-development
 §R{
@@ -11,43 +11,45 @@ description: "AUTO_INVOKE(silent)⇔prompt∈{React,Next.js,Next16,TSX,.tsx,.vue
   ¬early_return(loading_spinner)⇒stable_layout(prevent_CLS);
   heavy_cmp∨route_page⇒lazy()+<Suspense fallback={<SuspenseLoader/>}>;
   style⇒sx∧(cmp_lines>100⇒<Component>.styles.ts);
-  MUIv7_Grid⇒<Grid size={{xs:12,md:6}}/>;
-  sort⇒items.toSorted(fn)(ReactCompiler_memoized)∧¬Array.prototype.sort(mutates);
+  MUIv9(v7+)_layout⇒<Grid size={{xs:12,md:6}}/>∧<Stack>(vertical)∧sx_only(¬direct_system_props);
+  sort⇒items.toSorted(fn)(immutable,ReactCompiler_safe)∧¬Array.prototype.sort(mutates);
   long_list⇒@tanstack/react-virtual;
   app⇒ErrorBoundary∧user_err⇒useMuiSnackbar;
   interactive_widget⇒keyboard_support∧focus_mgmt∧ARIA_roles;
   new_feature⇒*.test.tsx∧lint_pass;
 }
 §D{
-  server_state⇒TanStack_Query¬(useEffect+useState_fetch);
+  server_state⇒TanStack_Query_v5¬(useEffect+useState_fetch);
   shared_mutable_client_state⇒Context+useReducer¬deep_prop_drilling;
   isolated_reusable_logic⇒custom_hook(useDebounce,useToggle)¬copy_logic_across_cmps;
   no_data_lib_allowed⇒ref_fallback_hook(hooks-and-ui)¬inline_fetcher∈effect_deps(infinite_loop);
-  re-render_cost⇒ReactCompiler(eslint-plugin-react-hooks_v6)¬manual(useMemo∨useCallback∨memo);
-  simple_form⇒validate_on_submit∧Record<field,string>_errors¬silent_submit_fail;
-  complex_form⇒(ReactHookForm∨TanStackForm)+Zod¬hand_rolled_nested_validation;
+  re-render_cost⇒ReactCompiler_1.0(eslint-plugin-react-hooks_v7)¬manual(useMemo∨useCallback∨memo);
+  non_reactive_effect_cb⇒useEffectEvent(React19.3)¬stale_closure∨dep_churn;
+  simple_form⇒useActionState∨validate_on_submit+Record<field,string>¬silent_submit_fail;
+  complex_form⇒(ReactHookForm∨TanStackForm)+Zod4¬hand_rolled_nested_validation;
   large_bundle⇒(@next/bundle-analyzer∨rollup-plugin-visualizer)∧code_split¬barrel_imports(heavy_libs);
-  stack∈{Next.js16_AppRouter,server_actions,Turbopack}⇒read(nextjs)¬∅;
+  stack∈{Next.js16.4_AppRouter,CacheComponents,Turbopack,proxy.ts}⇒read(nextjs)¬∅;
+  stack∈{TanStackStart_v1,TanStackRouter_v1}⇒read(react-patterns∧vite)¬∅;
   stack≡content_site∧zero_JS_default⇒read(astro)¬∅;
-  stack≡mobile(Expo)⇒read(react-native)¬∅;
-  stack∈{Vue3,Nuxt4,Angular}⇒read(vue∨nuxt∨angular)¬∅;
+  stack≡mobile(Expo58/RN0.88)⇒read(react-native)¬∅;
+  stack∈{Vue3.6,Pinia3,Nuxt4,Angular22}⇒read(vue∨nuxt∨angular)¬∅;
 }
 §REF{
   setup,aliases,file_layout,feature_checklist,cmp_checklist,cmp_template,TanStack_route,MUI_styling_basics→references/project-conventions.md;
   useDebounce,fallback_async_hook,ErrorBoundary,Motion(motion/react),forms,a11y→references/hooks-and-ui.md;
-  MUIv7_cmps,sx,theme,responsive,MUI_hooks→references/mui.md;
-  cmp_design,hooks,state_selection,React19.3,composition,UI_states,useEffect_rules→references/react-patterns.md;
-  waterfalls,bundle_size,SSR,re-renders,WebVitals→references/react-performance.md;
-  Next.js16+_AppRouter,CacheComponents,route_handlers,server_actions,metadata,Supabase_auth,proxy.ts→references/nextjs.md;
-  Astro_islands,content_collections,SSG,SSR→references/astro.md;
-  D3_charts,scales,axes,transitions,zoom,force,maps→references/d3-visualization.md;
-  PWA_manifest,service_worker_cache,install,offline,push→references/progressive-web-app.md;
-  ReactNative,ExpoRouter,FlashList,NativeWind,secure_storage→references/react-native.md;
-  Vue3_CompositionAPI,Pinia,VueRouter→references/vue.md;
-  Nuxt4_hydration,useFetch,useAsyncData,route_rules→references/nuxt.md;
+  MUIv9(v7+)_cmps,sx,slots/slotProps,BaseUI,theme,responsive,MUI_hooks→references/mui.md;
+  cmp_design,hooks,state_selection,React19.3(ViewTransition,Activity,useEffectEvent),TanStackStart,composition,UI_states→references/react-patterns.md;
+  waterfalls,bundle_size,SSR,re-renders,ReactCompiler_1.0,WebVitals→references/react-performance.md;
+  Next.js16.4_AppRouter,CacheComponents,revalidateTag/updateTag,next/image_preload,server_actions,Supabase_auth,proxy.ts→references/nextjs.md;
+  Astro7_islands,ContentLayer(src/content.config.ts,glob,astro/zod),ClientRouter,SSG,SSR→references/astro.md;
+  D3v7_charts,scales,axes,transitions,zoom,force,maps→references/d3-visualization.md;
+  PWA_manifest,service_worker_cache,Workbox7.4,vite-plugin-pwa,install,offline,push→references/progressive-web-app.md;
+  ReactNative0.88,ExpoSDK58,NewArch,ExpoRouter,FlashList_v2,NativeWind,secure_storage→references/react-native.md;
+  Vue3.5/3.6_CompositionAPI,VaporMode,Pinia3,VueRouter→references/vue.md;
+  Nuxt4_app_dir,hydration,useFetch,useAsyncData,route_rules→references/nuxt.md;
   screenshots_to_Vue3_cmps(Vant,ElementPlus,AntDesignVue)→references/ui-to-vue.md;
-  Angular_signals,forms,DI,routing,SSR,testing,detail∈references/angular/→references/angular.md;
-  vite.config.ts,plugins,HMR,env,proxy,library_mode→references/vite.md;
+  Angular22_zoneless,OnPush_default,SignalForms,httpResource,Vitest,DI,routing,SSR,detail∈references/angular/→references/angular.md;
+  Vite8_Rolldown,Oxc,plugin-react_v6,HMR,env,proxy,library_mode→references/vite.md;
 }
 §REL{
   ../typescript/SKILL.md:types,tsconfig,Zod_schemas;

@@ -1,24 +1,27 @@
 @REF:investor-materials
 §USE{deck,1pager,memo,fin_model,milestones,use_of_funds,accel_app,doc_align,cold_email(angel|VC|strategic|accel),warm_intro,followup(post_mtg|no_reply),update}
 §R{
-  SSOT≺draft:{traction,pricing+rev_assump,raise+instr,use_of_funds,team(bios+titles),milestones+dates};
+  SSOT≺draft:{traction,pricing+rev_assump,unit_econ(ARR/MRR,NDR/GRR,gross_margin,burn_multiple,runway),raise+instr(post_money_SAFE|priced_equity),use_of_funds,team(bios+titles),milestones+dates};
   conflict(SSOT)⇒STOP∧resolve≺draft;
-  outreach:{personalize(∀msg),low_friction_ask,proof¬adj,concise,¬any_investor_copy};
-  voice⇒VOICE_PROFILE@[brand-voice.md](brand-voice.md)∧keep(inv_struct+ask_disc)∧shared_hard_bans∧¬{thesis_praise,vague_adj,begging,soft_Q(when_direct_clearer)};
+  benchmarks(DocSend):{review_time≈3m44s(Seed)|4m10s(Pre-Seed),completion≈58%,cold_deck_to_mtg≈1-2%}⇒front_load(wedge,traction,proof)∧keep_10-12_slides(+appx);
+  outreach:{personalize(∀msg),low_friction_ask,proof¬adj,concise,¬any_investor_copy,auth_domain(SPF+DKIM+DMARC,spam<0.1%)};
+  voice⇒VOICE_PROFILE@brand-voice.md∧keep(inv_struct+ask_disc)∧shared_hard_bans∧¬{thesis_praise,vague_adj,begging,soft_Q(when_direct_clearer)};
 }
 §PAT{
   flow:1:inv_SSOT→2:missing_assump→3:pick_asset→4:draft(explicit_logic)→5:xcheck(SSOT);
   deck:1:co+wedge→2:prob→3:sol→4:prod/demo→5:mkt→6:biz_model→7:traction→8:team→9:comp+diff→10:ask→11:funds+milestones→12:appx;
-  web_deck⇒[../../design/references/html-slides.md](../../design/references/html-slides.md);
+  deck_dist:tracked_link(DocSend|Papermark)→monitor_slide_dropoff→tailor_followup;
+  web_deck⇒../../design/references/html-slides.md;
   1pager|memo:{1_sent(what),why_now,early(traction+proof),exact_ask,verifiable};
-  model:{explicit_assump,{bear,base,bull}(if_useful),layer_rev_logic,spend→milestones,sensitivity(key_assump)};
+  model:{explicit_assump,{bear,base,bull}(if_useful),layer_rev_logic,AI_or_infra_COGS_in_gross_margin,spend→milestones,sensitivity(key_assump)};
   accel:{exact_Q,lead(traction,insight,team_edge),¬puffery,metrics≡deck+model};
   cold:1:subj(short,spec)→2:opener(why_this_inv)→3:pitch(what,why_now,proof)→4:ask(1_next_step)→5:sign(name,role,1_cred_if_need);
-  pers_src:{rel_port_cos,pub(thesis|talk|post|art),mutual@[lead-intelligence.md](lead-intelligence.md),mkt/prod_fit};
+  pers_src:{rel_port_cos,pub(thesis|talk|post|art),mutual@lead-intelligence.md,mkt/prod_fit};
   ∅pers_ctx⇒flag("needs_personalization")¬mark_done;
   cadence:D0:init→D4-5:followup(+1_data_pt)→D10-12:final(clean_close)→STOP(unless_req_longer);
   warm_intro:{why_fit,blurb<100w};
   post_mtg:{topic,promised_ans/upd,+1_proof(if_avail),next_step};
 }
-§ANTI{unverifiable,mkt_size(∅assump),role/title_mismatch,rev_¬sum,high_certainty(fragile_assump)}
-§CHK{∀num≡SSOT;sum(funds,rev_layers);visible_assump;clear¬hype;partner_defensible;pers∧explicit_ask∧proof∧tight¬{praise,softener}}
+§ANTI{unverifiable,mkt_size(∅assump),role/title_mismatch,rev_¬sum,high_certainty(fragile_assump),buried_traction(>slide_7_or_slow_skim),hidden_compute_COGS}
+§CHK{∀num≡SSOT;sum(funds,rev_layers);visible_assump;skimmable<4m;clear¬hype;partner_defensible;pers∧explicit_ask∧proof∧tight¬{praise,softener}}
+§REL{../SKILL.md:parent;brand-voice.md:voice+hard_bans;lead-intelligence.md:warm_paths;../../design/references/html-slides.md:web_decks}

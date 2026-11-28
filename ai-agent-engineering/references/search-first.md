@@ -25,9 +25,9 @@
   full_agent:`Agent(subagent_type="general-purpose",prompt="Research: [DESC]\nLang:[LANG]\nConstraints:[ANY]\nSearch: npm/PyPI,MCP,Claude skills,GitHub\nReturn: structured comparison + rec")`[legacy:`Task(...)`]
 }
 §SHORTCUTS{
-  dev:{lint:(eslint,ruff,textlint,markdownlint),fmt:(prettier,black,gofmt),test:(jest,pytest,go test),pre_commit:(husky,lint-staged,pre-commit)};
-  ai_llm:{claude_sdk:Context7,prompts:MCP,docs:(unstructured,pdfplumber,mammoth)};
-  data_api:{http:(httpx[Py],ky/undici[Node]),val:(zod[TS],pydantic[Py]),db:MCP_first};
+  dev:{lint_fmt:(biome,oxlint,ruff,gofmt,textlint,markdownlint),test:(vitest,pytest,go test),pkg:(uv,pnpm,bun),pre_commit:(husky,lint-staged,pre-commit)};
+  ai_llm:{agent_sdks:(`@anthropic-ai/claude-agent-sdk`,`claude-agent-sdk`,openai-agents-sdk),mcp:(`@modelcontextprotocol/server`,`mcp`_v2),docs_mcp:Context7,doc_parse:(unstructured,pdfplumber,mammoth)};
+  data_api:{http:(httpx[Py],ky/undici[Node]),val:(zod_v4/Standard_Schema[TS],pydantic[Py]),db:MCP_first};
   content:{md:(remark,unified,markdown-it),img:(sharp,imagemin)}
 }
 §INT{

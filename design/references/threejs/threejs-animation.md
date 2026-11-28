@@ -1,5 +1,5 @@
 @REF:threejs-animation
-§META{target:three.js@r186;renderers:{WebGLRenderer(default),WebGPURenderer(WebGPU/TSL)}}
+§META{target:three.js@r187;renderers:{WebGLRenderer(default),WebGPURenderer(WebGPU/TSL)}}
 §ARCH{
   AnimationClip:"stateless keyframe tracks(times,values)";
   AnimationMixer:"1/root→drives root+descendants;CPU_only(identical WebGL|WebGPU)";

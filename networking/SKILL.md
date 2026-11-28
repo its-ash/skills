@@ -1,51 +1,58 @@
 ---
 name: networking
-description: "AUTO_INVOKE(silent)⇔prompt∈{network,homelab,enterprise,gateway,switch,AP,IP_plan,DHCP,DNS,home.arpa,VLAN,trunk,SSID,firewall,Pi-hole,DoH,cloudflared,WireGuard,DDNS,UniFi,OPNsense,pfSense,MikroTik,Cisco_IOS,IOS-XE,ACL,Netmiko,TextFSM,SSH,BGP,prefix-list,route-map,AS_path,CRC,drops,runts,giants,flaps,duplex_mismatch,double_NAT,UPS,PoE}|SUB:{homelab-network-readiness,homelab-vlan-segmentation,homelab-pihole-dns,homelab-wireguard-vpn,cisco-ios-patterns,netmiko-ssh-automation,network-bgp-diagnostics,network-config-validation,network-interface-health}"
+description: "AUTO_INVOKE(silent)⇔prompt∈{network,homelab,gateway,switch,AP,IP_plan,DHCP,Kea,DNS,home.arpa,VLAN,trunk,SSID,WPA3,firewall,ZBF,Pi-hole,DoH,Unbound,WireGuard,nftables,Tailscale,CGNAT,DDNS,UniFi,OPNsense,pfSense,MikroTik,Cisco_IOS,IOS-XE,ACL,Netmiko,Nornir,Scrapli,Batfish,TextFSM,SSH,BGP,RPKI,prefix-list,route-map,AS_path,CRC,drops,flaps,duplex,double_NAT,PoE,UPS}|SUB:{homelab-network-readiness,homelab-vlan-segmentation,homelab-pihole-dns,homelab-wireguard-vpn,cisco-ios-patterns,netmiko-ssh-automation,network-bgp-diagnostics,network-config-validation,network-interface-health}"
 ---
 @SKL:networking
 §R{
   role_sep⇒modem/ONT→gateway(NAT,fw,DHCP,DNS,inter-VLAN)→switch→(APs,servers,clients)
   VPN_planned⇒¬192.168.1.0/24(collides:hotels,offices,ISP_routers)
   IP_plan⇒non_overlap_/24/zone∧.1=gw∧.2-.49=infra∧.50-.240=DHCP∧.241-.254=spare
-  local_DNS⇒home.arpa∧¬ad_hoc(home.lan)
+  local_DNS⇒home.arpa(RFC8375)∧¬.local(mDNS)∧¬ad_hoc(home.lan)
   DHCP_res⇒∀host∈(SSH,bookmark,monitor,expose:NAS,Pi-hole,HomeAssistant)
-  DHCP_srv⇒exact_1/subnet∧disable_DHCP(routers_reused_as_AP)
-  DNS_assign⇒gw_until_local_resolver∧Pi-hole:(reserve_IP_first→point_DHCP_DNS)
-  NAT⇒¬double_NAT∨documented_reason
-  trust_zones⇒¬flat_zone(cameras,IoT,laptops,servers)
-  pre_change⇒collect_ro_evidence(show,logs,counters)
-  change_safety⇒staged∧written_rollback∧out_of_band_access
+  DHCP_srv⇒exact_1/subnet∧disable_DHCP(reused_AP)∧prefer(Kea∨dnsmasq)¬EOL_ISC_DHCP
+  DNS_assign⇒gw_until_local_resolver∧Pi-hole_v6(pihole.toml,FTLCONF_*,HTTPS:443):reserve_IP→DHCP_DNS
+  NAT⇒¬double_NAT∨documented_reason∧detect_CGNAT(100.64.0.0/10∨WAN_IP≠public_IP)
+  trust_zones⇒¬flat_zone(cameras,IoT,laptops,servers)∧default_deny+named_exceptions
+  VPN_sec⇒WireGuard(PresharedKey,nftables)∨overlay(Tailscale/Headscale@CGNAT)¬port_fwd_admin
+  BGP_sec⇒RFC8212(explicit_eBGP_pol)∧RPKI_ROV(drop_invalid,allow_Valid|NotFound)
+  mgmt_crypto⇒SSHv2(SHA2,AES-CTR/GCM)∧SNMPv3(authPriv:SHA256+AES)∧disable_unused_HTTP_UI
+  pre_change⇒collect_ro_evidence(show,logs,counters)∧shift_left(linter+Batfish)
+  change_safety⇒staged∧revert_timer(IOS-XE:configure_terminal_revert_timer)∧written_rollback∧OOB
 }
 §D{
   basic_inet_only⇒ISP_router¬extra_gear_unneeded;
-  managed_home+UI⇒UniFi_gw¬handbuilt_Linux_router;
-  flex_homelab(VLAN,VPN,DNS)⇒OPNsense∨pfSense¬ISP_router(weak_VLAN);
-  adv_power_user⇒MikroTik+reviewed_cfg¬untested_Δ@primary_gw;
-  can_run_Ethernet_AP⇒wired_backhaul+PoE_switch¬wireless_mesh_backhaul;
+  managed_home+UI⇒UniFi_gw(Net9+/ZBF)¬handbuilt_Linux_router;
+  flex_homelab(VLAN,VPN,DNS)⇒OPNsense(Kea/dnsmasq)∨pfSense_2.8+¬ISP_router(weak_VLAN);
+  hybrid_homelab⇒OPNsense_edge+UniFi_switch/AP¬compromised_fw_or_WiFi;
+  adv_power_user⇒MikroTik(RouterOS7,bridge_vlan-filtering,Safe_Mode)¬untested_Δ@primary_gw;
+  can_run_Ethernet_AP⇒wired_backhaul(2.5GbE+PoE+/PoE++)¬wireless_mesh_backhaul;
+  WiFi_sec⇒WPA3/WPA2-WPA3(Trusted)∧isolated_SSID/VLAN(IoT)¬shared_PSK;
   freq_power_cuts⇒UPS(gw,switch,DNS,NAS)¬unprotected_core;
-  need_iso_now⇒VLANs+inter_VLAN_fw_rules¬flat_net;
+  need_iso_now⇒VLANs+ZBF/inter_VLAN_fw¬flat_net;
   need_iso_later⇒VLAN_ready(IP_plan,hw)_now¬re_address_all_later;
-  remote_access⇒WireGuard@gw+DDNS¬port_fwd_admin_UIs;
-  symptom∈{CRC,drops,runts,giants,flaps,duplex_mismatch}⇒read_first:network-interface-health;
-  symptom∈{BGP_down,missing_routes}⇒read_first:network-bgp-diagnostics;
-  symptom∈{DNS_fail,ads_not_blocked}⇒read_first:homelab-pihole-dns;
-  symptom=VPN_handshake_fail⇒read_first:homelab-wireguard-vpn;
+  remote_access+public_IP⇒WireGuard@gw(PresharedKey)+DDNS¬port_fwd_admin_UIs;
+  remote_access+ISP_CGNAT⇒Tailscale/Headscale∨WG_outbound→VPS¬inbound_port_fwd;
+  fleet_net_auto⇒Nornir+(Netmiko_4.x|Scrapli)+Batfish_prechk¬blind_push;
+  symptom∈{CRC,drops,runts,giants,flaps,duplex,DOM_optics}⇒read_first:network-interface-health;
+  symptom∈{BGP_down,Est_0_pfx,RPKI_invalid,missing_routes}⇒read_first:network-bgp-diagnostics;
+  symptom∈{DNS_fail,ads_not_blocked,Pi-hole_v6}⇒read_first:homelab-pihole-dns;
+  symptom∈{VPN_handshake_fail,CGNAT,nftables_NAT}⇒read_first:homelab-wireguard-vpn;
   symptom=pre_push_cfg⇒read_first:network-config-validation;
 }
 §REF{
-  dev_role_diag,gw_tbl,IP_plan_ex,cabling,upgrade_ex→references/home-network-plan.md;
-  pre_change:inventory,trust_zones,staged_seq,rollback→references/homelab-network-readiness.md;
-  VLANs(UniFi,pfSense,OPNsense,MikroTik):trunks,SSIDs,fw_rules→references/homelab-vlan-segmentation.md;
-  Pi-hole:install,blocklists,DoH(cloudflared),DHCP,local_DNS→references/homelab-pihole-dns.md;
-  WireGuard:srv/peers,keys,split/full_tunnel,DDNS,handshake_fix→references/homelab-wireguard-vpn.md;
-  Cisco_IOS/IOS-XE:modes,show_cmds,wildcard_masks,ACLs,chg_win→references/cisco-ios-patterns.md;
-  Netmiko_SSH:ro_collect,batches,TextFSM,guarded_push→references/netmiko-ssh-automation.md;
-  BGP:states,prefix-lists,route-maps,AS_path_regex→references/network-bgp-diagnostics.md;
-  pre_deploy_chk:danger_cmds,dup_IPs,overlaps,VTY_risk→references/network-config-validation.md;
-  iface_errs(routers,switches,Linux_hosts)→references/network-interface-health.md;
+  dev_role_diag,gw_choices,IP_plan,2.5GbE_PoE,upgrade_ex→references/home-network-plan.md;
+  pre_change:inventory,trust_zones,ZBF,CGNAT,staged_seq,rollback→references/homelab-network-readiness.md;
+  VLANs(UniFi_ZBF,OPNsense_Kea/dnsmasq,pfSense,RouterOS7):trunks,SSIDs,fw→references/homelab-vlan-segmentation.md;
+  Pi-hole_v6(FTLCONF,pihole.toml,CLI),nmcli,Unbound,DoH,home.arpa→references/homelab-pihole-dns.md;
+  WireGuard(nftables,PresharedKey,split/full),CGNAT(Tailscale/Headscale/VPS),DDNS→references/homelab-wireguard-vpn.md;
+  Cisco_IOS/IOS-XE_17.x:modes,archive,revert_timer,SSH/SNMPv3_harden,ACLs→references/cisco-ios-patterns.md;
+  Netmiko_4.x,Scrapli,Nornir,Batfish,TextFSM,guarded_push+archive_rb→references/netmiko-ssh-automation.md;
+  BGP:states,RFC8212,RPKI_ROV,prefix-lists,route-maps,AS_path_regex→references/network-bgp-diagnostics.md;
+  pre_deploy_chk:danger_cmds,dup_IPs,overlaps,VTY/SSH/SNMPv3,Batfish→references/network-config-validation.md;
+  iface_errs,optical_DOM,ring_drops,FEC(IOS-XE,Linux)→references/network-interface-health.md;
 }
 §REL{
   ../devops-iac/SKILL.md:cloud_net,K8s_net,IaC;
   ../secure-coding/SKILL.md:cloud_net_iso,fw_checklists;
-  ../python/SKILL.md:Netmiko,parser_scripts;
+  ../python/SKILL.md:Netmiko,Nornir,parser_scripts;
 }

@@ -1,6 +1,6 @@
 @REF:threejs-performance
 
-§META{target:"three.js r186";default_renderer:WebGLRenderer;webgpu_sec:WebGPURenderer+TSL}
+§META{target:"three.js r187";default_renderer:WebGLRenderer;webgpu_sec:WebGPURenderer+TSL}
 
 §PAT:Measure{
   rule:"optimize measured bottlenecks; read renderer.info AFTER render()";

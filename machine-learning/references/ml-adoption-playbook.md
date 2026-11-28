@@ -1,33 +1,36 @@
 @REF:ml-adoption-playbook
 §USE{add_ML|algo→existing_SWE;integrate(recsys|cls|forecast)→non_ML_app;adaptive_MLOps}
 §P1:FRAMING{
-  heuristic:simple_rule(regex|rule_sort)_faster⇒use_first;
-  metric:biz_KPI(CTR|latency_red);
-  mistake_budget:def(bad_pred)∧sys_handling
+  heuristic:simple_rule(regex|SQL_rank|rule_sort)_faster⇒ship_first∧use_as_baseline;
+  metric:biz_KPI(CTR|precision@K|latency_red)+stated_cost_owner;
+  mistake_budget:def(bad_pred)∧sys_handling(abstain|fallback|human_rev)
 }
 §P2:DATA{
-  src∈{live_DB,static_CSV,API};
-  contract:in_schema∧req_feats∧missing_feat_policy;
-  leak:split_¬future_leak(chronological@time_series)
+  src∈{live_DB,Iceberg/Parquet_snap,static_CSV,API};prep:Polars|DuckDB¬slow_pandas;
+  contract:in_schema∧req_feats∧missing_feat_policy∧fresh_SLA∧snapshot_ID;
+  leak:PIT_joins∧chronological_split@time_series¬random_split
 }
 §P3:DECOUPLE{
   ¬couple(infer,core_logic);
-  boundary:API(`backend-development/references/fastapi.md`|`backend-development/references/django.md`)∨svc_cls;
-  fallback:timeout∨err⇒hardcoded_rule;
-  flag:feature_flag(infer)⇒safe_rollout/rollback
+  boundary:API(`backend-development/references/fastapi.md`|`backend-development/references/django.md`)∨svc_cls∨ONNX_Runtime;
+  safe_load:skops.io(get_untrusted_types→load)|ONNX|safetensors¬untrusted_pickle;
+  fallback:timeout∨err∨stale_feat⇒hardcoded_rule;
+  flag:feature_flag(infer)⇒shadow→canary→rollback
 }
 §P4:TRAIN{
-  baseline_first:sklearn_LogisticRegression|bare_PyTorch_Linear;
-  repro:[pytorch-patterns.md](pytorch-patterns.md)→{seeds,device_agnostic,explicit_shapes};
-  evidence:tests(transforms∧infer_schema)∧eval_script(vs_baseline)⇒gate_accept
+  baseline_ladder:heuristic→sklearn_LogisticRegression→HistGradientBoostingClassifier|LightGBM|CatBoost≺deep_nets(bare_PyTorch_Linear_1st);
+  thresh_calib(sklearn_1.9+):TunedThresholdClassifierCV|CalibratedClassifierCV(FrozenEstimator(clf))¬0.5_default|deprecated_cv='prefit';
+  repro:[pytorch-patterns.md](pytorch-patterns.md)→{seeds,torch.accelerator,bfloat16,explicit_shapes,safetensors};
+  evidence:tests(transforms∧infer_schema∧train_serve_equiv)∧eval_script(vs_baseline,per_slice)⇒fail_closed_gate
 }
 §P5:MLOPS{
-  parent:[machine-learning](../SKILL.md)→{exp_track,registry,drift_det};
-  cicd:CI+=model_eval(block_perf_regress)
+  parent:[machine-learning](../SKILL.md)→{MLflow_3_LoggedModel|lightweight_manifest,3_drift(data,pred,concept),rollback_artifact};
+  cicd:CI+=model_eval(block_perf_regress)∧retrain_generates_candidate_only¬auto_deploy
 }
 §WORKFLOW{
   1:ask_Q→finish(§P1)≺arch;
   2:draft(§P2.contract)→approval;
-  3:impl(§P3.boundary)≺train_loop;
-  4:deliver(§P4.repro_script→train+save_artifact)
+  3:impl(§P3.boundary+fallback+flag)≺train_loop;
+  4:deliver(§P4.repro_script→train+safe_artifact+slice_eval)→§P5_gates
 }
+§ANTI{ML_before_heuristic;train_in_web_request_handler;untrusted_pickle_deploy;no_fallback_on_timeout;skip_feature_flag;auto_deploy_retrain_sans_gates}

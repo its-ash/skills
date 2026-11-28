@@ -16,11 +16,11 @@ CTF/artifact→prompt,orig,embedded,meta,deps | intermed_ans≠downstream
 scene/obj→frames,map_geom,alt_views,model_refs | vis_sim≠match≠cam_pos
 event/time→progs,org_recs,orig_vid,dated_posts,arch | edition≠attend≠pub≠cap_t
 org→jurisd,legal_ID,dated_reg,filings,reg_recs | brand≠sub≠parent≠namesake
-domain/infra→RDAP/WHOIS,DNS,certs,BGP,arch,passive | shared_infra∨proxy≠owner
+domain/infra→RDAP(JSON;ICANN_WHOIS_sunset_2025-01-28),RDRS(redacted_req),DNS,certs,BGP,arch,passive[,legacy_WHOIS_ccTLD_only] | shared_infra∨proxy∨redacted≠owner
 acct_auth→domain_links,recip_links,plat_recs,arch | handle/avatar_sim≠same_owner
 prof_claim→roles,pubs,filings,recs | self_desc∨alleg≠finding
 auth_exp→notif_svcs,domain/mail_auth | exp≠auth(pwds∨priv_data)
-news/media→orig_stmt,primary,indep/local | recycled_img≠disproof
+news/media→orig_stmt,primary,indep/local,C2PA_manifest | recycled_img≠disproof
 def_threat→CERT/vendor_adv,IOCs,passive_ctx | rep≠campaign≠actor_attr
 off_notice→indep_site,ref_no,corr/curr_status | hist_pub≠curr∧¬track
 monitor→off_feeds,kw,baseline,chg_srcs | edit∨synd∨fetch_fail≠new_evt
@@ -52,14 +52,14 @@ reuse:`sig→meth→fals→verif_cond`(¬old_ans∨fixed_site);chk(era,prereq,fa
 keep:{ev_ID,claim,URL/file,pub,src_cls,dates,acc_t,obs,lineage,contra,¬estab}
 hier:primary/orig>indep>transp_sec;org_stmt≡said≠truth;N_copy≡1_lin;DB_wrap≡1_lin⇒indep_mech
 time:sep(task,evt,cap,up,pub/edit,arch,acc);unk⇒unk;arch⊃old_media;rm≠withdrawn;¬sub(now,hist)
-fid:keep(bytes,xf_hist);hash≡byte_ID≠truth;OCR/ML≡cand;diag(rec,seg,persp,fmt,ctx)∧raw;¬gen_restore
+fid:keep(bytes,xf_hist);hash≡byte_ID≠truth;C2PA(Content_Credentials,IPTC_digitalSourceType,offline_sig_chk)⇒verif(capture/edit_chain)≠scene_truth(absent/stripped≠fake);OCR/ML≡cand;diag(rec,seg,persp,fmt,ctx)∧raw;¬gen_restore
 carriers(QR/bar/lay):branch(payload);chk(alt_fr/lay,sig_xf:rot|mir|inv|thr|chan);1_dec≠exhaust;¬arb_mut;¬exec_dec
 
 §PAT{6_vis_geom}
 def:{gran(reg|ven|obj|st|dir|t),rel(behind|across|adj|refl)};keep(orig,meta_lim,xf_hist,vid_ts)
 pre_name:desc(FG,MG,BG,view,occl,perm_vs_trans);sweep(full,crops);sep(raw,alt,interp,verif)
 §CFG{clue_12}
-txt:{part,script,diacrit,unit,dom,alt_OCR}|civic:{seal,flag,agency}|veh:{fmt,liv,side;¬priv_ID}|road:{mark,sig,curb,rail,cross,drain}|arch:{fac,roof,win,mas,setb,reno}|furn:{lamp,boll,bin,pole,hyd,cab}|obj:{silh,dmg,plaq,base,morph}|biz:{frag,ord,inst}|geo:{terr,shore,geol,veg,seas}|lgt:{shad,sun,wx,constr,temp}|prov:{cred,bord,first,crop/edit}|neg:{abs_req,imp_adj/ord}
+txt:{part,script,diacrit,unit,dom,alt_OCR}|civic:{seal,flag,agency}|veh:{fmt,liv,side;¬priv_ID}|road:{mark,sig,curb,rail,cross,drain}|arch:{fac,roof,win,mas,setb,reno}|furn:{lamp,boll,bin,pole,hyd,cab}|obj:{silh,dmg,plaq,base,morph}|biz:{frag,ord,inst}|geo:{terr,shore,geol,veg,seas}|lgt:{shad,sun,wx,constr,temp}|prov:{C2PA,cred,bord,first,crop/edit}|neg:{abs_req,imp_adj/ord}
 hi_conf_loc⇒(≥3_fams)∧(≥2_indep→city/reg)∧(≥2_falsif);primary⇒may_cut(src_cnt),¬cut(geom_chk)
 rank:{read,spec,stab,indep,fals};weak≠anchor
 lanes:{txt,obj/rev_img,admin,built,geo/t,prov};cand:{sup,contra,unk,disc};score≠erase(contra)
@@ -90,7 +90,7 @@ Q:"st behind cam+May25 fest?"|pkt:{notch,statue→road→shop,2_maps,Aug23_arch,
 4:Aug23_arch⇒bnd(exist),¬cap_t,¬May25_fest(req_dated_rec)
 5:rep(Harbor St,rej_KG,fest=unres);method_only,¬reuse_facts
 
-§ANTI{anchor(1st_name/no/mod);count(mirror|wrap)as_corr;rep_srch(¬Δev);cur|gen_pix|ok|score≡proof;spill(loc→t|ID|evt);hide_contra∨drop_orig∨withhold_prov}
+§ANTI{anchor(1st_name/no/mod);count(mirror|wrap)as_corr;rep_srch(¬Δev);cur|gen_pix|ok|score≡proof;C2PA_sig≡scene_truth;no_C2PA≡fake;spill(loc→t|ID|evt);hide_contra∨drop_orig∨withhold_prov}
 
 §REL
 ../SKILL.md:research;exa-search.md:opt_disc;../../secure-coding/SKILL.md:app_sec(≠OSINT)

@@ -1,5 +1,5 @@
 @REF:tinystruct-patterns
-# tinystruct v1.7.37 | CLI+HTTP dual-mode Java framework | ¬main() | minimal cfg
+# tinystruct v1.7.39 (Java 17+) | CLI+HTTP dual-mode Java framework | ¬main() | minimal cfg
 
 §CORE{
   principle:CLI⇔HTTP_equal_citizens;
@@ -101,10 +101,10 @@ finally { op.close(); }
 }
 
 §MCP{
-  since:1.7.0(core dep org.tinystruct:tinystruct:1.7.37);
+  since:1.7.0(core dep org.tinystruct:tinystruct:1.7.39);
   pkg:org.tinystruct.mcp.{MCPTool,MCPServer,MCPException};
   sec_prompt_inj:tool returns enter model context→∀caller_args validate(nullity,length,charset) before embedding in return string;
-  tool_rules:extend MCPTool; @Action(value,description,arguments={@Argument(key,description,type,optional)}); bind params explicitly in method sig(¬getContext().getAttribute);
+  tool_rules:extend MCPTool(∨1.7.x_direct_POJO_exposure); @Action(value,description,arguments={@Argument(key,description,type,optional)}); bind params explicitly in method sig(¬getContext().getAttribute);
 ```java
 public class MyCustomTool extends MCPTool {
   public MyCustomTool() { super("custom", "A custom tool for demonstrating MCP"); }
@@ -164,7 +164,7 @@ handlers=java.util.logging.ConsoleHandler
 
 §SEC[static_files]{
   roots:server.static.dirs(","|";"-sep) else server.static.dir(def:static);
-  v1.7.37_behavior:checks normalized path names BEFORE symlink resolution(rejects .|.., allows sibling dirs outside CWD, symlinked root→project/ancestor bypasses check ∧ serves before isProjectRootFile);
+  symlink_caution(v1.7.37+_verify):checks normalized path names BEFORE symlink resolution(rejects .|.., allows sibling dirs outside CWD, symlinked root→project/ancestor bypasses check ∧ serves before isProjectRootFile);
   req_rejects:"."|".." segments, hidden(".git",".env"), trailing "."|" ";
   rule:real dedicated dir(e.g. static/)∧¬symlinked root/parent components; verify containment;
   ref:https://github.com/tinystruct/tinystruct/blob/089ec19022f3bb5d87f1e83e30b2034b24f7e77f/src/main/java/org/tinystruct/system/HttpServer.java#L569-L720

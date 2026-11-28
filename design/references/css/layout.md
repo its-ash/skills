@@ -22,7 +22,7 @@ shell:grid-template:"head head" auto "side main" 1fr "foot foot" auto/15rem minm
 stack⇒children grid-area:1/1(sizes to largest);
 bleed:grid-template-columns:[full-start]minmax(1rem,1fr)[content-start]min(65ch,100% - 2rem)[content-end]minmax(1rem,1fr)[full-end];grid-column:content|full(¬100vw scrollbar overflow);
 subgrid:grid-row:span 3;grid-template-rows:subgrid(Baseline 2023:Chrome 117,FF 71,Safari 16);
-masonry:@supports(display:grid-lanes){display:grid-lanes}(exp,fallback grid/multi-col);
+masonry:@supports(display:grid-lanes){display:grid-lanes}(Sf26.4+/dev,+fit-tolerance;fb:grid/multi-col);
 gap_decor:column-rule/row-rule+(-inset,-break,-outset),gap-rule-paint-order(Chrome/Edge 149+)
 }
 §PAT:MultiCol_Sizing{

@@ -1,22 +1,23 @@
 ---
 name: secure-coding
-description: "AUTO_INVOKE(silent)⇔prompt∈{security,secrets,auth,authz,input_val,SQLi,XSS,CSRF,API_sec,rate_limit,hardening,payments,sec_report,JWT,OAuth,SQL,env,API_key,npm,pip,go_mod,httpOnly,SameSite,bcrypt,argon2,CSP,CORS,RLS,Supabase,file_upload,wallet,OWASP,Python|JS|TS|Go_sec}|SUB:{web-vulnerability-testing,data-privacy-compliance,security-bounty-hunter,cloud-infrastructure-security}"
+description: "AUTO_INVOKE(silent)⇔prompt∈{security,secrets,auth,authz,input_val,SQLi,XSS,CSRF,SSRF,API_sec,rate_limit,hardening,payments,sec_report,JWT,jose,OAuth,PKCE,OIDC,passkeys,WebAuthn,SQL,env,API_key,npm,pip,go_mod,httpOnly,SameSite,argon2id,bcrypt,CSP,Trusted_Types,Sec-Fetch-Site,CORS,RLS,Supabase,file_upload,wallet,OWASP,ASVS,NIST,supply_chain,SBOM,IMDSv2,semgrep,gitleaks,trivy,Python|JS|TS|Go_sec}|SUB:{web-vulnerability-testing,data-privacy-compliance,security-bounty-hunter,cloud-infrastructure-security}"
 ---
 @SKL:secure-coding
 §R{
   trust_boundary⇒val(∀in,schema:{type,fmt,range,len,allowlist})∧¬trust(client_data);
-  allowlist≻blocklist;fail_closed⇒deny_by_default;
-  ¬hardcode(secrets)→env_load∧(missing⇒fail_startup);.env*∉git;exposed⇒rotate∧purge;
+  allowlist≻blocklist;fail_closed⇒deny_by_default∧safe_exceptional_paths(OWASP25_A10);
+  ¬hardcode(secrets)→secrets_mgr∨env(missing⇒fail_startup);.env*∉git;scan(gitleaks|trufflehog);exposed⇒rotate∧purge;
   ¬concat(in,SQL)→param_query∨ORM;select(needed_cols_only)∧¬return(hash∨secret);
-  ∀protected_endpoint⇒authn;∀(obj∧fn)⇒authz(ownership,role,policy);
-  token_store⇒cookie(httpOnly∧Secure∧SameSite)¬localStorage;
-  JWT:{secret≥256bit,exp≈1h,val(iss,aud),¬sensitive_payload,srv_refresh+revocation};
-  pwd:{hash∈{bcrypt(cost≥10),argon2},len≥12∨strength_scorer};
-  pub_ID⇒long_rand(UUIDv4∨rand_hex)¬seq_ID;
-  rate_limit⇒per_IP∧per_user(stricter@{login,signup,search,expensive_ops});
-  err⇒generic_resp∧log_detail(srv_only);¬log(pwd,token,card,secret);
-  out⇒fw_default_escape;user_HTML⇒allowlist_sanitize;CSP≡strict;
+  ∀protected_ep⇒authn(passkeys/WebAuthn∨MFA);∀(obj∧fn)⇒authz(ownership,role,policy);OAuth2⇒RFC9700(AuthCode+PKCE,exact_redirect,¬Implicit¬ROPC);
+  token_store⇒cookie(__Host-∧httpOnly∧Secure∧SameSite)¬localStorage;JWT:{jose(EdDSA|ES256|HS256≥256b),exp≤1h,alg_allowlist,val(iss,aud),srv_refresh+rot+revoke,¬sens_payload};
+  pwd(NIST_800-63B-4):Argon2id(m≥19MiB,t≥2,p=1)≻scrypt≻bcrypt(legacy,72B_cap);len≥15(1FA)∨≥8(MFA),max≥64,all_ASCII+Unicode,¬comp_rules,¬periodic_rot,HIBP_blocklist,allow_paste;
+  pub_ID⇒CSPRNG(UUIDv4∨rand_hex≥128b)¬seq_ID;SSRF(OWASP25_A01)⇒URL_allowlist+block_priv_IP/IMDSv1+IMDSv2+egress_filter;
+  rate_limit⇒per_IP∧per_user(stricter@{login,signup,reset,search,expensive})+IETF_RateLimit_hdrs;
+  err⇒generic_resp∧srv_log_only;¬log(pwd,token,card,secret,PII);
+  out⇒fw_escape;user_HTML⇒DOMPurify(allowlist);CSP≡strict(nonce+'strict-dynamic'+object-src_'none'+base-uri_'self'+frame-ancestors_'none'+require-trusted-types-for_'script');
+  supply_chain(OWASP25_A03):lockfile+SHA_pinned_CI_actions+vuln_scan(OSV-Scanner|Trivy|audit)+SBOM+¬untrusted_deser;
   controls(REST)≡controls(GraphQL)≡controls(WebSocket);
+  std:OWASP_Top10:2025∧ASVS_5.0∧API_Top10:2023∧NIST_800-63B-4∧RFC9700;
   prio:proj_sec_docs∧approved_exc≻generic_rules;∀bypass⇒doc;
 }
 §D{
@@ -24,24 +25,28 @@ description: "AUTO_INVOKE(silent)⇔prompt∈{security,secrets,auth,authz,input_
   edit∧crit_issue⇒flag+ask_pre_fix(passive_mode)¬silent_unrelated_fix;
   req≡audit⇒full_review_report+fix_1_finding/commit¬mixed_finding_commits;
   local_dev∧¬TLS⇒env_flag(disable_Secure_cookie)+¬report_missing_TLS¬HSTS_pre_rollback_plan;
-  need_inline_script_or_style⇒CSP(nonce∨hash)+log_debt(removal_plan)¬default('unsafe-inline','unsafe-eval');
-  state_changing_req⇒CSRF_token+(stateless⇒double_submit_cookie)+SameSite=Strict¬CORS_only;
-  multi_tenant_DB(Supabase)⇒RLS_policies¬app_only_tenant_filters;
-  dist_rate_limit⇒shared_store(Redis)+429+std_headers¬per_instance_mem_counters;
-  file_upload⇒chk(size,MIME,ext,content)+rand_name+store_outside_web_root¬trust_user_filename;
+  need_inline_script_or_style⇒CSP(nonce∨hash+'strict-dynamic')+log_debt(removal_plan)¬('unsafe-inline'|'unsafe-eval');
+  state_changing_req⇒Fetch_Metadata(Sec-Fetch-Site+Origin;Go:http.CrossOriginProtection)+SameSite+(legacy_cli⇒CSRF_tok/double_submit)¬CORS_only;
+  file_path_access⇒sandbox_root(Go:os.OpenRoot|realpath+trailing_sep_prefix_chk)¬string_strip('../');
+  multi_tenant_DB(Supabase)⇒RLS_policies(USING+WITH_CHECK)¬app_only_tenant_filters;
+  dist_rate_limit⇒shared_store(Redis)+429+RateLimit_hdrs(draft-8)¬per_instance_mem_counters;
+  file_upload⇒chk(size,MIME,ext,magic_bytes)+reencode_img+rand_name+outside_web_root/obj_store¬trust_user_filename;
   wallet∨blockchain⇒verify_sig+chk(recipient,amount,balance)¬blind_signing;
   CORS⇒explicit_trusted_origins¬(*_with_credentials);
+  CI/CD_workflow⇒OIDC+full_40char_SHA_pin+persist-credentials:false+zizmor¬floating_tags(@v4,@main)¬static_cloud_keys;
 }
 §REF{
-  examples(zod,JWT,authz,rate_limit,Helmet,CSP,CSRF,RLS,Solana,tests)→references/secure-patterns.md;
-  report_fmt,pre_deploy_chk,OWASP_API_Top10,sources→references/review-checklist.md;
-  pentest,OWASP_scans,Burp,ZAP,ffuf,nuclei→references/web-vulnerability-testing.md;
-  GDPR,CCPA,HIPAA,consent,DSAR,DPIA→references/data-privacy-compliance.md;
-  bug_bounty,PoC,disclosure_report→references/security-bounty-hunter.md;
-  cloud_IAM,secrets_mgr,WAF,CICD_sec,backups→references/cloud-infrastructure-security.md;
+  examples(zod4,jose,argon2id,Sec-Fetch-Site,os.Root,SSRF,authz,rate_limit,Helmet,CSP,TrustedTypes,RLS,Solana,tests)→references/secure-patterns.md;
+  report_fmt,pre_deploy_chk,OWASP25_Top10,ASVS5,OWASP_API_Top10,sources→references/review-checklist.md;
+  pentest,OWASP25_scans,Burp,Caido,ZAP,ffuf,nuclei_v3,dalfox→references/web-vulnerability-testing.md;
+  GDPR,CCPA/CPRA,Sec-GPC,HIPAA,consent,DSAR,DPIA→references/data-privacy-compliance.md;
+  bug_bounty,PoC,disclosure_report,semgrep,opengrep→references/security-bounty-hunter.md;
+  cloud_IAM,secrets_mgr,S3_BucketOwnerEnforced,IMDSv2,WAF,CICD_SHA_pin,zizmor,OSV-Scanner,Trivy,backups→references/cloud-infrastructure-security.md;
 }
 §REL{
   ../code-review/SKILL.md:general_PR_review_beyond_sec;
-  ../golang/SKILL.md:Go_sec_idioms;
+  ../golang/SKILL.md:Go_sec_idioms(os.Root,CrossOriginProtection);
   ../web3-security/SKILL.md:smart_contract,DeFi_audits;
+  ../devops-iac/SKILL.md:IaC,K8s,Docker,CI/CD_hardening;
+  ../ai-agent-engineering/SKILL.md:prompt_injection,MCP,agent_sec;
 }

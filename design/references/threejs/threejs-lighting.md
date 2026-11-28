@@ -1,5 +1,5 @@
 @REF:threejs-lighting
-§META{ver:"three.js r186",def_renderer:WebGLRenderer,webgpu_sec:WebGPURenderer}
+§META{ver:"three.js r187",def_renderer:WebGLRenderer,webgpu_sec:WebGPURenderer}
 
 §PAT{quick_start}
 ```js
@@ -67,7 +67,7 @@ scene.environment=pmrem.fromScene(room,.04).texture;room.dispose();pmrem.dispose
 await new THREE.CubeTextureLoader().loadAsync(["px.jpg","nx.jpg","py.jpg","ny.jpg","pz.jpg","nz.jpg"]);
 ```
 - Material_support(`scene.environment`):WebGL={Standard,Physical,Lambert,Phong};WebGPU={Standard,Physical}(¬Lambert,¬Phong)
-- Renderers auto-prefilter equirect env⇒¬`pmrem.fromEquirectangular`
+- Renderers auto-prefilter equirect env⇒¬`pmrem.fromEquirectangular`;r187:`CubeUVReflectionMapping`_removed(`PMREMGenerator`_uses_cube_RTs_directly⇒higher_IBL_fidelity)
 
 §PAT{light_probes}
 ```js

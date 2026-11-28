@@ -1,0 +1,90 @@
+@REF:fitness-and-c4
+§USE{
+  prevent_arch_drift∈CI;
+  enforce(modular_monolith,Clean_Arch,Hexagonal,Vertical_Slice)_bounds;
+  living_C4_diagrams+arc42_model_as_code
+}
+§REL{
+  parent:../SKILL.md;
+  patterns:patterns-and-ddd.md;
+  hex:hexagonal-architecture.md;
+  adr:architecture-decision-records.md;
+  gov:module-governance.md;
+  reg:module-regression.md;
+  docs:../../documentation/SKILL.md
+}
+§FIT_R{
+  def:executable_automated_checks∈CI_validating_arch_characteristics(modularity,dep_direction,acyclicity,public_API_encapsulation,layering,naming,coupling,SLO_budgets);
+  modes:{atomic(unit/build_time_structural),holistic(cross_sys_load/resilience/chaos);triggered(PR_CI),continuous(prod_telemetry)};
+  shift_left:fail_PR_on_arch_violation¬rely_on_quarterly_audits_or_manual_code_review;
+  legacy_baseline:freeze_existing_violations_in_baseline_file→fail_CI_only_on_NEW_violations→ratchet_down_incrementally;
+  adr_link:∀structural_ADR⇒pair_with_CI_fitness_test_so_decision_cannot_silently_drift
+}
+§FIT_ECO{
+  Java_Kotlin:{
+    ArchUnit:bytecode_JUnit_tests(`layeredArchitecture()`,`slices().matching(..).should().beFreeOfCycles()`,annotation/naming_rules);
+    Spring_Modulith:convention_modular_monolith(`ApplicationModules.of(Application.class).verify()`,subpkg=module,forbids_internal_pkg_access_&_cycles,transactional_event_publication_registry)
+  };
+  TS_JS:{
+    dependency-cruiser:AST/import_graph_validator(`.dependency-cruiser.cjs`),blocks(cycles,orphans,domain→infra,client→server),exports_dep_graph(JSON/DOT/SVG);
+    eslint-plugin-boundaries:monorepo/workspace_element_rules(`shared|ui|features|apps`),blocks_cross_feature_deep_imports
+  };
+  Python:{
+    Tach:Rust_CLI(`tach.yml`),modular_monolith_dep_graph+strict_public_interface(`__init__.py`)enforcement,fast_CI+incremental_adoption;
+    import-linter:declarative_import_contracts(layers,forbidden,independence)
+  };
+  DotNet:{
+    ArchUnitNET:fluent_C#_bytecode_arch_tests(layers,deps,naming,inheritance);
+    NetArchTest.eNhancedEdition:actively_maintained_community_fork_of_NetArchTest_for_fast_namespace_rules
+  };
+  Go:{
+    go-arch-lint:YAML_pkg_dependency_tree_enforcement(domain¬imports_http/db);
+    depguard:golangci-lint_plugin_restricting_internal_&_external_pkg_imports
+  };
+  Rust:{
+    cargo-modules:crate_module_tree,visibility_&_coupling_audit,cycle_detection;
+    workspace_crates:compiler_enforced_boundary_per_domain_crate
+  }
+}
+§CMD{
+  TS:`npx depcruise src --config .dependency-cruiser.cjs`;
+  Python:`tach check`∧`lint-imports`;
+  Java_Spring:`mvn test -Dtest=ModularityTests` (`ApplicationModules.of(App.class).verify()`);
+  Go:`go-arch-lint check`∧`golangci-lint run`;
+  Rust:`cargo modules dependencies --lib`
+}
+§C4{
+  levels:{
+    L1_Context:system+users+ext_systems(exec/stakeholder_view);
+    L2_Container:deployable_units(web,API,worker,DB,queue,tech_choices);
+    L3_Component:major_internal_modules/facades_inside_1_container;
+    L4_Code:classes/types(auto_gen_from_IDE/AST_only,¬hand_maintain)
+  };
+  paradigm:Model_as_Code≻Diagram_as_Code(single_source_of_truth_model_in_Git→project_L1/L2/L3/Deployment_views,¬duplicate_text_files_per_diagram);
+  benefits:Git_versioned+PR_reviewed+LLM_parseable+IDP_publishable(Backstage)
+}
+§C4_TOOLS{
+  Structurizr:unified_Spring_Boot_app(vNext:`java -jar structurizr.war local`,DSL=`.dsl`,strict_C4_semantics);EOL_WARNING:¬use_deprecated_Structurizr_Lite_or_standalone_Structurizr_CLI;
+  LikeC4:TS/Node_first_C4_model_as_code(`.c4`/`.likec4`,CLI=`npx likec4 start`,live_React_Flow_UI,custom_types,exports_Mermaid/D2/PNG/SVG/static_site,¬JVM);
+  D2:declarative_diagram_lang(fast_auto_layout_engines_e.g.TALA,clean_routing_for_complex_topologies);
+  Mermaid:markdown_native(`C4Context`,`C4Container`,`flowchart`),zero_setup_GitHub/GitLab/PR_render;best_for_small_embedded_views¬large_enterprise_models
+}
+§ARC42{
+  synergy:arc42(prose_structure_in_Markdown/AsciiDoc)+C4_Model_as_Code(embedded_in_Ch3,5,6,7);
+  chapters:{1:Intro_&_Goals;2:Constraints;3:Context_&_Scope(C4_L1);4:Solution_Strategy;5:Building_Block_View(C4_L2/L3);6:Runtime_View(seq/flows);7:Deployment_View;8:Crosscutting_Concepts;9:Arch_Decisions(→docs/adr/);10:Quality_Reqs(scenarios/SLOs);11:Risks_&_Tech_Debt;12:Glossary(→CONTEXT.md)};
+  rule:keep_lean(skip_empty_chapters,link_ADRs_&_glossary¬duplicate)
+}
+§ANTI{
+  Visio/Lucidchart/wiki_diagrams_detached_from_Git;
+  EOL_Structurizr_Lite_or_standalone_Structurizr_CLI⇒unified_`structurizr.war`_or_LikeC4;
+  hand_drawn_L4_Code_diagrams;
+  manual_PR_review_only_for_layer_rules⇒CI_fitness_functions;
+  strict_rules_on_legacy_sans_baseline⇒baseline_&_ratchet
+}
+§CHK{
+  CI_runs_ecosystem_fitness_check_on_PR;
+  inward_deps+no_cycles+public_facade_only_verified_automatically;
+  legacy_violations_baselined_&_¬growing;
+  C4_L1_&_L2_stored_as_code_in_Git(LikeC4|Structurizr_unified|D2|Mermaid);
+  arc42_links_ADRs_&_glossary_sans_duplication
+}

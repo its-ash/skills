@@ -1,18 +1,21 @@
 @REF:design-system
-§REL{../SKILL.md:parent+§map;visual-design-direction.md:ref_study;brand-theming.md:brand;make-interfaces-feel-better.md:polish}
+§REL{../SKILL.md:parent+§map;component-library.md:comp_anatomy+states;visual-design-direction.md:ref_study;brand-theming.md:brand;make-interfaces-feel-better.md:polish}
 §WHEN{new_DS,audit_UI,pre_redesign(§14),fix_off_UI,style_PR}
 §R:§26_DS{
-  flow:principles→tokens(oklch_50-950,tonal_elev,fluid_type,8pt_space,1_radius+concentric,bg_shadows,bp)→light-dark()→atomic_components→WCAG_2.2_AA→docs→semver;
-  tokens:1_ver_src;semantic(`color.semantic.surface.card`,`color.semantic.border.subtle`,`color.semantic.accent.primary`)→oklch();¬(#000|#fff);
-  elev:4_layers(canvas,surface,surface-muted,surface-elevated)+border-subtle+border-strong;dark⇒step_L_up(¬heavy_shadow);
+  flow:principles→tokens(oklch_50-950,60-30-10_balance,tonal_elev,fluid_type,8pt_space,1_radius+concentric,bg_shadows,bp)→light-dark()→atomic_components→WCAG_2.2_AA→docs→semver;
+  tokens:1_ver_src;semantic(`color.semantic.surface.card`,`color.semantic.border.subtle`,`color.semantic.accent.primary`)→oklch();¬(#000|#fff);60%canvas/surf+30%sec/type+10%accent/status;
+  type_scale:{Disp:36-48px/1.1/700/-0.03em;H1:28-32px/1.2/600-700/-0.02em;H2:20-24px/1.3/600/-0.015em;H3:16-18px/1.4/600/-0.01em;Body:14-16px/1.5/400/0(max-w-prose_60-75ch);BodySm:13-14px/1.45/400-500;Lbl/Cap:12px/1.4/500/0.01em;Overline:11px/1.3/600/0.06em_up};tabular-nums@nums;
+  space_8pt:{4:icon_gap/badge,8:ctrl_gap/lbl_in,12:compact_pad/list,16:std_pad/field,24:card_pad/grid_gap,32:sec_sep,48-64:mktg_sec};
+  radius:{sm:6px(cb/tag/tip),md:8-10px(btn/in/drop),lg:12-16px(card/modal/drawer),full:9999px(avatar/pill/sw)};concentric(in=max(0,out-pad));
+  elev:4_layers(canvas,surface,surface-muted,surface-elevated)+border-subtle(8%)+border-strong(16%);tiers:{elev0:flat+1px,elev1:card_soft,elev2:drop/pop,elev3:modal/cmdk};dark⇒step_L_up(¬heavy_shadow);
   theme:color-scheme:light dark+light-dark();`data-theme="light|dark"`∈<html>_override_only;TW4⇒@theme+light-dark()(¬`dark:`_sprawl);
   comp:atoms→molecules→organisms→templates→pages;props(variant,size,disabled,loading);`<Card.Header>`>bools;as|render;§7:{fullwidth_sq_hdr,filled_round_tabs_muted_track,0_1sided_borders,0_nested_cards,filled_check/radio/switch,soft_tonal_badges};
-  a11y(WCAG_2.2_AA):kb_reach,`:focus-visible`¬obscured,targets≥24px(touch≥44px),`<dialog>`,`[popover]`+anchor,`aria-label`,`aria-expanded`,`role="alert"`,axe-core+manual,Storybook_10_a11y,Playwright_a11y_snap
+  a11y(WCAG_2.2_AA):kb_reach,`:focus-visible`¬obscured,targets≥24px(desk≥36px_h,touch≥44px,gap≥8px),`<dialog>`,`[popover]`+anchor,`aria-label`,`aria-expanded`,`role="alert"`,axe-core+manual,Storybook_10_a11y,Playwright_a11y_snap
 }
 §ANTI:pitfalls{raw_hex,inconsistent_props,no_focus_ring,dark_contrast,unversioned_tokens,1sided_card_border,underline_tabs,`dark:`_sprawl}
 §PAT:mode1_gen{
   1:scan(CSS,@theme,styles)→2:extract+count(colors,type,space,radius,shadows,bp)+merge_dupes(`#1a1a1a`≈`#1b1b1b`)→3:opt_3refs(visual-design-direction.md⇔browser∧user_ok)→4:propose(oklch_50-950,1_accent<80%_sat,status[success,warning,danger,info];semantic[canvas,surface,surface-muted,surface-elevated,border-subtle,border-strong,text-primary,text-muted,accent,accent-soft]∈light-dark();clamp()_type;8pt;1_--radius-sm/md/lg_concentric;bg_shadows)→5:DESIGN.md(rationale)→6:design-preview.html(0_deps,all_tokens,data-theme,filled_tabs,tonal_cards,btns,inputs,filled_controls,badges,<dialog>);
-  out:{design-tokens.json:DTCG_2025($value,$type,Style_Dict_4/5),tokens.css:color-scheme+light-dark(),DESIGN.md,design-preview.html};
+  out:{design-tokens.json:DTCG_2025($value,$type,Style_Dict_5_native_DTCG),tokens.css:color-scheme+light-dark(),DESIGN.md,design-preview.html};
   must:1_accent∧1_gray∧1_radius∧concentric∧uniform_pad∧0_1sided∧filled_tabs∧AA
 }
 ```json

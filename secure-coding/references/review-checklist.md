@@ -1,5 +1,30 @@
 @REF:review-checklist
-§RPT{path:`security_best_practices_report.md`∨user;has:{exec_sum,sev_findings(id,file,lines),1sent_impact/crit,closing(path)};fix:1→cmt(practice+why)→test→1/commit}
-§CHK{¬hardcoded_secrets(env|mgr);val_in∧param_SQL;sanitized_HTML∧CSP;CSRF(state_Δ);httpOnly_cookies∧authz(∀obj,fn);rate_limit(∀ep);HTTPS_prod∧hdrs;gen_err∧¬sens_logs;deps_audit(¬vulns);RLS(multi_tenant);CORS(trusted);val_uploads;wallet_sig(chain)}
-§API10{1:BOLA;2:Auth;3:BOPLA;4:ResConsume;5:BFLA;6:BizFlow;7:SSRF;8:Misconfig;9:Inventory;10:UnsafeAPI}
-§SRC{API10:https://owasp.org/www-project-api-security/;OWASP10:https://owasp.org/www-project-top-ten/;RFC8725:https://tools.ietf.org/html/rfc8725;Next:https://nextjs.org/docs/security;Supa:https://supabase.com/docs/guides/auth;PortSwigger:https://portswigger.net/web-security}
+§RPT{path:`security_best_practices_report.md`∨user;has:{exec_sum,sev_findings(id,CWE,file,lines),1sent_impact/crit,remediation,closing(path)};fix:1→cmt(practice+why)→test→1/commit}
+§CHK{
+  ¬hardcoded_secrets(secrets_mgr|env+gitleaks/trufflehog);
+  val_in(schema/allowlist)∧param_SQL∧safe_path(os.Root|realpath+sep);
+  sanitized_HTML(DOMPurify)∧strict_CSP(nonce+'strict-dynamic'+TrustedTypes);
+  CSRF(Sec-Fetch-Site+Origin+SameSite);
+  authn(passkeys/MFA,RFC9700_OAuth2+PKCE,NIST_800-63B-4+Argon2id);
+  cookies(__Host-+httpOnly+Secure+SameSite)∧JWT(jose+alg_pin+rot/revoke);
+  authz(∀obj_BOLA∧∀fn_BFLA∧BOPLA_allowlist)∧RLS(USING+WITH_CHECK);
+  SSRF_guard(URL_allowlist+priv_IP_block+IMDSv2);
+  rate_limit(IP+user+IETF_RateLimit_hdrs)∧HTTPS_prod∧sec_hdrs∧CORS(trusted);
+  fail_closed_exceptions(OWASP25_A10)∧gen_err∧¬sens_logs∧sec_alerting;
+  supply_chain(OWASP25_A03:lockfile+SHA_pinned_CI+OSV-Scanner/Trivy+SBOM);
+  val_uploads(magic_bytes+reencode+obj_store);wallet_sig(chain)
+}
+§OWASP25{A01:Broken_Access_Control(incl_SSRF);A02:Security_Misconfiguration;A03:Software_Supply_Chain_Failures;A04:Cryptographic_Failures;A05:Injection;A06:Insecure_Design;A07:Authentication_Failures;A08:Software_Data_Integrity_Failures;A09:Security_Logging_Alerting_Failures;A10:Mishandling_Exceptional_Conditions}
+§ASVS5{ver:5.0.0;url:https://asvs.dev/;scope:17_chapters(~350_reqs);levels:{L1:baseline_all_apps,L2:sensitive_data_B2B,L3:high_assurance_crit}}
+§API10{ver:2023;1:BOLA;2:Auth;3:BOPLA;4:ResConsume;5:BFLA;6:BizFlow;7:SSRF;8:Misconfig;9:Inventory;10:UnsafeAPI}
+§SRC{
+  OWASP25:https://owasp.org/www-project-top-ten/;
+  ASVS5:https://asvs.dev/;
+  API10:https://owasp.org/www-project-api-security/;
+  OWASP_PW:https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html;
+  RFC8725:https://datatracker.ietf.org/doc/html/rfc8725;
+  RFC9700:https://datatracker.ietf.org/doc/html/rfc9700;
+  Next:https://nextjs.org/docs/app/guides/content-security-policy;
+  Supa:https://supabase.com/docs/guides/auth;
+  PortSwigger:https://portswigger.net/web-security
+}

@@ -1,38 +1,50 @@
 ---
 name: conversion-optimization
-description: "AUTO_INVOKE(silent)⇔prompt∈{CRO,conversion_rate,A/B_test,multivariate_test,landing_page,pricing_page,marketing_page,form_opt,multi_step_form,popup,exit_intent,modal,signup_flow,onboarding,paywall,upgrade_prompt,funnel,checkout,progressive_profiling,trust_signals,above_fold,CTA,drop_off,tap_target≥44px,inline_validation}|SUB:{ab-testing}"
+description: "AUTO_INVOKE(silent)⇔prompt∈{CRO,conversion_rate,A/B_test,multivariate_test,CUPED,SRM,sequential_testing,warehouse_native,edge_experimentation,GrowthBook,Statsig,PostHog,Eppo,landing_page,pricing_page,usage_based_pricing,marketing_page,form_opt,multi_step_form,checkout,guest_checkout,express_checkout,passkeys,popup,exit_intent,modal,signup_flow,onboarding,reverse_trial,paywall,upgrade_prompt,click_to_cancel,dark_patterns,funnel,progressive_profiling,trust_signals,above_fold,CTA,drop_off,inline_validation,WCAG_2.2,Consent_Mode_v2}|SUB:{ab-testing,asset-frameworks}"
 ---
 @SKL:conversion-optimization
 §R{
-  pre_audit⇒rec{asset_type,primary_conv_goal,traffic_ctx(source,device_mix,new_vs_ret),cur_metrics(rate,drop_off,time,errs),constraints(req_data,compliance,tech_limits,brand_tone)};
+  pre_audit⇒rec{asset_type,primary_conv_goal,traffic_ctx(source,device_mix,new_vs_ret),cur_metrics(rate,drop_off,time,errs,CWV),constraints(req_data,compliance,tech_limits,brand_tone)};
   show(value)≺ask(CTA∨form∨upgrade);
   rm(¬essential_now(field∨step))∧defer→progressive_profiling;
-  ↓cog_load⇒{1_Q/field,clear_labels,logical_groups,smart_defaults,inline_val};
-  respect_user⇒{easy_dismiss,clear_escape_hatch,freq_caps,¬dark_patterns,a11y};
-  above_fold⇒{headline,value,1_primary_CTA};
-  near(CTA)⇒trust_signals{logos,testimonials,sec_badges,privacy_note};
-  handle_objections⇒{FAQ,guarantees,risk_reversal,clear_pricing};
-  show(progress∧next_steps)⇒{checklists,progress_bars,celebration};
-  trigger(popup∨paywall∨upgrade)⇒after(aha_moment)∨at(friction_pt)∧¬on_arrival;
-  mobile_first⇒{tap_target≥44px,correct_kbd,1_col,fast_load};
-  ∀rec⇒def(metric)≺propose(AB_test);
-  out_fmt⇒[1:quick_wins(ship_today),2:high_impact(redesigns∨new_flows),3:test_ideas(2-3_AB_hypotheses+expected_lift+metric),4:copy_alts(2-3_variants(headline,CTA,val_prop)+short_rationale)];
+  ↓cog_load⇒{1_Q/field,clear_labels,logical_groups,smart_defaults,autocomplete/inputmode,on_blur_inline_val};
+  respect_user∧comply(EAA/WCAG_2.2_AA,EU_DSA/DFA,FTC_Sec5)⇒{cancel_parity,easy_dismiss,freq_caps,¬dark_patterns(¬fake_scarcity,¬roach_motel,¬confirm_shame),target≥24px_min(≥44px_touch),focus_not_obscured};
+  above_fold⇒{outcome_headline(≤5s),value,1_primary_CTA}∧near(CTA)⇒trust_signals{logos,testimonials,sec_badges,privacy_note};
+  handle_objections⇒{FAQ,guarantees,risk_reversal,transparent_pricing(3_tiers,abs_annual_savings,usage_calc)};
+  checkout_std⇒{guest_default,6-8_fields,express_wallets(Apple/Google/Shop_Pay)_early,collapse_coupon,explain_phone_req};
+  auth_std⇒{passkeys/WebAuthn∨SSO_first→email_pwd_second,¬forced_account_wall@checkout};
+  show(progress∧next_steps)⇒{Day1_micro_survey(2-3_Qs)→tailored_checklist,progress_bars,celebration};
+  trigger(popup∨paywall∨upgrade)⇒after(aha_moment)∨at(value_metric_limit)∧¬on_arrival;
+  CWV_guardrail(p75)⇒{LCP≤2.5s,INP≤200ms,CLS≤0.1}∧exp_delivery⇒Edge/SSR≻client_JS(¬body_anti_flicker);
+  exp_rigor⇒{SRM_gate(χ²_p<0.001)≺read_results,CUPED_var_reduction,mSPRT_sequential∨fixed_N(¬peek),Benjamini-Hochberg_FDR,backend_reconcile(Consent_Mode_v2)};
+  mobile_first⇒{tap_target≥44px,right_kbd/inputmode,1_col,stacked_pricing_cards,sticky_CTA};
+  ∀rec⇒def(metric∧guardrails)≺propose(AB_test);
+  out_fmt⇒[1:quick_wins(ship_today),2:high_impact(redesigns∨new_flows),3:test_ideas(2-3_AB_hypotheses+MDE/lift+primary+guardrails),4:copy_alts(2-3_variants(headline,CTA,val_prop)+rationale)]
 }
 §D{
   form_fields≤3⇒1_step¬split_steps;
   form_fields>3(signup)∨>5(lead)∨logical_sections⇒multi_step+progress_bar+easy_Qs_first+save_progress¬1_long_page;
+  checkout_flow⇒guest_default+express_wallets(top)+collapsed_coupon¬forced_signup_wall∨prominent_promo_box;
+  val_err⇒on_blur_inline+specific+positive_valid_state+focus(first_err)+keep_data¬premature_mid_keystroke_err∨clear_form;
   popup_timing⇒scroll∈[25%,50%]∨exit_intent∨delay∈[30s,60s]∨behavior_trigger¬delay<10s∨on_load_modals;
-  popup_repeat⇒1/session∧honor_dismiss∈[7d,30d]¬every_page_view;
-  paywall⇒after_value∨at_limit∧cap∈[1,2]/session∧link(Continue_with_Free)¬price_first_headline∨guilt_trip_copy;
-  signup_auth⇒social_auth_first→email_pwd_second¬req(company∨role∨phone)@signup;
-  val_err⇒inline∧specific∧focus(first_err)∧keep_data¬clear_form∨generic(invalid_input);
+  popup_ui⇒native(<dialog>,[popover],inert)+vis_X(≥24px)+1/session+dismiss∈[7d,30d]¬custom_div_trap∨hidden_close∨every_view;
+  paywall⇒post_aha∨at_usage_limit+cap∈[1,2]/session+clear_escape(Continue_with_Free)¬price_first_headline∨guilt_copy;
+  cancel_flow⇒same_effort_as_signup(click_to_cancel_parity)¬phone_wall∨retention_maze;
+  complex_or_long_TTV_SaaS⇒reverse_trial(full_Pro→graceful_Free_downgrade)¬hard_lockout_before_value;
+  usage_or_AI_pricing⇒hybrid(base+consumption)+interactive_calculator+80%_usage_alerts¬opaque_variable_bill;
+  signup_auth⇒passkeys∨social_SSO_first→email_pwd_second¬req(company∨role∨phone)@signup;
+  AB_delivery⇒Edge_Worker∨SSR_feature_flag¬sync_client_JS+body_opacity0_anti_flicker;
+  AB_monitoring⇒mSPRT_sequential∨predefined_Bayesian_rule¬unadjusted_daily_peeking_on_fixed_N;
+  AB_SRM_fail(χ²_p<0.001)⇒halt+debug(hashing,bots,consent,logging)¬ship_or_interpret_results;
+  low_EU_consent_rate⇒Advanced_Consent_Mode_v2+SGTM(1p_subdomain)+reconcile_vs_backend_orders¬trust_raw_client_GA4_alone
 }
 §REF{
-  per_asset_checks,field_cost_rule,triggers,metrics(page,form,popup,signup,onboarding,paywall)→references/asset-frameworks.md;
-  AB+multivariate_test_design(hypothesis,sample_size,power,alloc,significance)→references/ab-testing.md;
+  per_asset_checks,pricing,checkout,forms,popups,signup,onboarding,reverse_trial,paywall,compliance→references/asset-frameworks.md;
+  AB/MVT_design,SRM,CUPED,mSPRT,Benjamini-Hochberg,Edge/SSR_delivery,warehouse_native,Consent_Mode_v2→references/ab-testing.md
 }
 §REL{
   ../content-writing/references/copywriting.md:headlines,CTAs,page_copy;
   ../ux-research/SKILL.md:personas,journeys,usability_tests;
-  ../web-quality-audit/references/web-accessibility.md:a11y_forms,modals;
+  ../web-quality-audit/references/web-accessibility.md:WCAG_2.2_AA,EAA,native_dialog,forms;
+  ../web-quality-audit/references/web-performance.md:CWV(LCP,INP,CLS),edge_perf
 }

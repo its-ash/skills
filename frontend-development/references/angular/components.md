@@ -2,6 +2,8 @@
 §R{
   comp≡TS_class+HTML_tpl+CSS_sel∧@Component({...});
   standalone:true≡default(Angular≥19);v<19⇒explicit(standalone:true)∨NgModule;
+  change_detection:v22+⇒`ChangeDetectionStrategy.OnPush`_default(¬need_explicit);legacy_check-always_renamed_`ChangeDetectionStrategy.Eager`(`Default`_deprecated,`ng update`_auto-stamps_legacy_comps);
+  templates(v22+):support_`//`∧`/* */`_comments,arrow_fns,spread_syntax;
   naming:¬suffix("Component")UNLESS_proj_cfg(e.g.Profile¬ProfileComponent);
   tree:ComponentTree(parent_hosts_children);
   host_el:DOM_matching_selector;view:DOM_rendered_by_tpl_inside_host;

@@ -1,6 +1,6 @@
 @REF:competitive-report-structure
 §D{
-  pipeline:step3(post_profile_cards→decision_grade_report);
+  pipeline:step3/3(post_profile_cards→decision_grade_report);
   must_answer:{1:who_compete_with,2:how_compete,3:where_defensible_white_space};cut_else;
   use⇔cards_complete∧(exec/board_pres∨decision_driving∨auditable_deliverable);
 }
@@ -12,28 +12,30 @@
 }
 §PAT{
   sections(8_ordered):
-    1:Exec_summary(3-5_decision_takeaways;strong,exposed,white_space_occupant,top_2-3_moves;standalone_for_founder/PM;¬methodology);
-    2:Market_landscape&category(define+multi-axis_map≥2×2,e.g.brand-led↔cap-led×boutique↔enterprise;headline=client_tension_plot;plot_all_profiled+client;show_crowding);
+    1:Exec_summary(3-5_decision_takeaways;strong,exposed,white_space_occupant,AI_shortlist_gap,top_2-3_moves;standalone_for_founder/PM;¬methodology);
+    2:Market_landscape&category(define+multi-axis_map≥2×2,e.g.brand-led↔cap-led×boutique↔enterprise;headline=client_tension_plot;plot_all_profiled+client;show_crowding+AI_search_shortlist_overlay);
     3:Competitor_tiers(Direct/Adjacent/Aspirational_from_[competitive-platform-analysis.md](competitive-platform-analysis.md);1_short_para/tier:who+why);
     4:Benchmarking_matrix(rows=competitors_by_tier+client_honest_self_row;cols=9_dims;dim9_tension=2_separate_pole_subcols(¬avg);heatmap_style;¬blended_total;callout_lead/trail_cols);
     5:Deep_dives(3-5_instructive_cards,¬ranked:{best_tension_exemplar(high_both),cautionary_1pole,competent_forgettable,direct_threat};each:{what_they_do,learn,avoid});
-    6:White_space&threats(white_space:argued_from_maps+matrix,confirm_target_quadrant_open;threats:closing_rivals,substitutes{no-code/AI,in-house,freelancers},cat_shifts,client_self_risks);
-    7:Strategic_recs(who_compete,how_diff,where_invest{packaging,case_studies,thought_leadership,brand_sharpen};tie_to_brand_balance+flag_shifts;seq=impact×effort);
-    8:Appendix(dims,weights,rubrics,scoped_set+tiers,src_links/comp,verify_notes{asserted_vs_proven});
+    6:White_space&threats(white_space:argued_from_maps+matrix,confirm_target_quadrant_open;threats:closing_rivals,AI_shortlist/GEO_consensus_gaps,pricing_disruption(seat→hybrid/outcome),substitutes{frontier_LLMs/DIY_agents,no-code,in-house,freelancers},cat_shifts,client_self_risks);
+    7:Strategic_recs(who_compete,how_diff,where_invest{packaging/pricing,case_studies/proof,thought_leadership+GEO_consensus,brand_sharpen};tie_to_brand_balance+flag_shifts;seq=impact×effort);
+    8:Appendix(dims,weights,rubrics,scoped_set+tiers,AI_mirror_prompts,src_links/comp,verify_notes{asserted_vs_proven});
   presentation:{lead_w_2×2_maps,heatmap_matrix_sec4,profile_cards→sec5,explicit_quadrant_callouts(esp_target),raw_evid→appendix};
 }
 §CHK{
   decision_framework:{
-    who_compete_with⇒name_Direct_tier;
+    who_compete_with⇒name_Direct_tier+AI_shortlist_rivals;
     how_compete⇒1_sent_diff_grounded_in_owned_matrix_dims;
     where_defensible⇒non-copyable_moat_dims/quadrant_vs_table_stakes;
-  }
+  };
   alignment_Qs:[
     "target_quadrant_truly_open_or_rival_entering?",
     "sharpest_12mo_Direct_threat+counter?",
     "brand_balance_holds_or_shift?",
     "trailing_dim:close_vs_concede?",
-    "1_move_widening_distinctiveness¬costing_hireability/credibility?"
+    "1_move_widening_distinctiveness¬costing_credibility?",
+    "does_positioning_survive_AI_shortlist_compression(ChatGPT/Claude/Perplexity_check)?",
+    "pricing/packaging_resilient_vs_AI_seat_compression?"
   ];
 }
 §ANTI{
@@ -42,9 +44,12 @@
   omit_3Q_decision_framework;
   start_before_all_cards_complete;
   add_blended_total_column;
+  ignore_AI_search_visibility_or_pricing_model_shifts;
 }
 §REL{
   [benchmark-methodology.md](benchmark-methodology.md):prereq_scored_cards;
   [competitive-platform-analysis.md](competitive-platform-analysis.md):tier_struct_sec3;
   [brand-discovery.md](brand-discovery.md):client_pos_brief;
+  [seo](../../seo/SKILL.md):GEO_citation_remediation;
+  [conversion-optimization](../../conversion-optimization/SKILL.md):pricing_landing_execution;
 }

@@ -1,27 +1,54 @@
 @REF:context-and-decisions
-§R{goal:1 scoped glossary(biz meanings)≠decisions(ADRs);¬empty shell if ∅ stable content;use∈{repeated term explanations,lang ambiguity→drift|boundary bugs,overloaded term(>1 meaning),domain entry∧¬exists,durable decision→ADR};¬use:settled vocab in routine fix⇒∅ modeling|new doc}
+§R{
+  goal:1_scoped_glossary(biz_meanings)≠decisions(ADRs);
+  ¬empty_shell_if_∅_stable_content;
+  use∈{repeated_term_explanations,lang_ambiguity→drift|boundary_bugs,overloaded_term(>1_meaning),domain_entry∧¬exists,durable_decision→ADR};
+  ¬use:settled_vocab_in_routine_fix⇒∅_modeling|new_doc;
+  progressive_disclosure:link_`CONTEXT.md`/ADRs_from_`AGENTS.md`_only_when_ambiguity_causes_drift¬paste_bodies_into_root_harness
+}
 §D{
   artifact:{
-    1_reuse:existing glossary|domain-model|map context([documentation](../SKILL.md));map lists separate contexts⇒follow links;unclear owner⇒ask;
-    2_scope:context-bound(diff contexts⇒diff meanings);¬glossary/dir;¬1 glossary∀contexts;
-    3_gate:propose `CONTEXT.md` iff ¬exists∧term resolved;explicit user approval BEFORE write(`update docs`≠new-artifact approval;edit mapped glossary⇒∅ new approval);
-    keep:{terms+defs,concept rels,confirmed ambiguities+meaning,unresolved(pending owner)};drop:{impl,status,schedules,full reqs,rationale,history,generic dev words(timeouts,utilities)};
-    evidence:∀term→code|contracts|biz evidence;unconfirmed⇒`needs confirmation`,¬guess
+    1_reuse:existing_glossary|domain-model|map_context([documentation](../SKILL.md));map_lists_separate_contexts⇒follow_links;unclear_owner⇒ask;
+    2_scope:context-bound(diff_contexts⇒diff_meanings);¬glossary/dir;¬1_glossary_∀contexts;
+    3_gate:propose_`CONTEXT.md`_iff_¬exists∧term_resolved;explicit_user_approval_BEFORE_write(`update docs`≠new-artifact_approval;edit_mapped_glossary⇒∅_new_approval);
+    keep:{terms+defs,concept_rels,confirmed_ambiguities+meaning,unresolved(pending_owner)};
+    drop:{impl,status,schedules,full_reqs,rationale,history,generic_dev_words(timeouts,utilities)};
+    evidence:∀term→code|contracts|biz_evidence;unconfirmed⇒`needs confirmation`,¬guess
   };
   refine(active,¬rewrite-on-read):{
-    contradictions:whole-order vs line cancel⇒explain Δ∧ask;¬silent redefine;
-    overloaded:"account"(org|login|billing)⇒distinct terms;record rejected syns iff same concept;
-    scenarios:ask concrete cases(1 customer>1 login?,partial cancel→invoice?) as Qs,¬invented rules;
-    evidence_chk:inspect code/tests/contracts/records;code=behavior,¬owner intent⇒flag mismatch,¬decide;
-    capture:authorized edit⇒update glossary(1-2 sent/def+src+avoided syns);¬alter code/contracts/decisions solely for term;read-only⇒show wording,¬write
+    contradictions:whole-order_vs_line_cancel⇒explain_Δ∧ask;¬silent_redefine;
+    overloaded:"account"(org|login|billing)⇒distinct_terms;record_rejected_syns_iff_same_concept;
+    scenarios:ask_concrete_cases(1_customer>1_login?,partial_cancel→invoice?)_as_Qs,¬invented_rules;
+    evidence_chk:inspect_code/tests/contracts/records;code=behavior,¬owner_intent⇒flag_mismatch,¬decide;
+    capture:authorized_edit⇒update_glossary(1-2_sent/def+src+avoided_syns);¬alter_code/contracts/decisions_solely_for_term;read-only⇒show_wording,¬write
   };
   adr_handoff:{
-    ¬2nd ADR dir|numbering|lifecycle|tpl;trigger:hard-to-reverse∧confusing w/o context∧real tradeoff(routine|reversible|short exp⇒∅);
-    target:[software-architecture/references/architecture-decision-records.md](../../software-architecture/references/architecture-decision-records.md);keep repo ADR path/fmt/gates(∅⇒ADR wf picks min path);
-    link from `CONTEXT.md`|map|spec|issue(¬copy body);ADR accepted|superseded|deprecated⇒log history(living-docs)
+    ¬2nd_ADR_dir|numbering|lifecycle|tpl;
+    trigger:hard-to-reverse∧confusing_w/o_context∧real_tradeoff(routine|reversible|short_exp⇒∅);
+    target:[architecture-decision-records.md](../../software-architecture/references/architecture-decision-records.md);
+    madr4:if_repo_lacks_ADR_tpl⇒prefer_MADR_4.0_bare/minimal(`adr-template-bare-minimal.md`:strips_instructional_HTML_comments_for_clean_agent_parsing);
+    link:reference_from_`CONTEXT.md`|map|spec|issue(¬copy_body);ADR_accepted|superseded|deprecated⇒log_history([living-docs-governance.md](living-docs-governance.md))
   };
-  sched:tasks|status|blockers|schedules⇒tracker(GitHub Issues|Linear);`.scratch/` iff ∅ tracker∧adopted;NEVER in `CONTEXT.md`|ADRs|status|history
+  sched:tasks|status|blockers|schedules⇒tracker(GitHub_Issues|Linear);`.scratch/`_iff_∅_tracker∧adopted;NEVER_in_`CONTEXT.md`|ADRs|status|history
 }
-§CFG{tpl(`CONTEXT.md`,omit empty):`# CONTEXT.md — Domain Language`|`{1-2 sent scope}`|`## Core Terms`:`Term|Def(1-2 sent)|Avoid(syns)|Evidence`|`## Concept Relationships`:`A&B:1:N|transition|containment|constraint`|`## Resolved Ambiguities`:`old→adopted;deprecate old`|`## Needs Confirmation`:`item:wait owner;¬impl Δ`}
-§ANTI{tasks/schedules/reqs/impl in `CONTEXT.md`;empty shell∨2nd ADR sys;unconfirmed=fact∨copy ADR body;distinct concepts=syns∨1 glossary∀contexts;glossary edit=code Δ auth∨code=biz rule proof}
-§REL{Matt Pocock(MIT):https://github.com/mattpocock/skills/tree/c55ee46073ed923f86ce59a5eb3b6d895095d1b7/skills/engineering/domain-modeling}
+§CFG{
+  tpl(`CONTEXT.md`,omit_empty):`# CONTEXT.md — Domain Language`|`{1-2 sent scope}`|`## Core Terms`:`Term|Def(1-2 sent)|Avoid(syns)|Evidence`|`## Concept Relationships`:`A&B:1:N|transition|containment|constraint`|`## Resolved Ambiguities`:`old→adopted;deprecate old`|`## Needs Confirmation`:`item:wait owner;¬impl Δ`
+}
+§CHK{
+  every_term_backed_by_code/contract/owner_evidence;
+  unresolved_terms_marked_`needs confirmation`;
+  0_tasks/schedules/impl_details_in_`CONTEXT.md`;
+  ADRs_use_repo_path_or_MADR_4_bare_without_creating_parallel_ADR_system
+}
+§ANTI{
+  tasks/schedules/reqs/impl_in_`CONTEXT.md`;
+  empty_shell∨2nd_ADR_sys;
+  unconfirmed=fact∨copy_ADR_body_into_`AGENTS.md`/`CONTEXT.md`;
+  distinct_concepts=syns∨1_glossary_∀contexts;
+  glossary_edit=code_Δ_auth∨code=biz_rule_proof
+}
+§REL{
+  [architecture-decision-records.md](../../software-architecture/references/architecture-decision-records.md):ADR_workflow;
+  [living-docs-governance.md](living-docs-governance.md):4_roles_and_history_logging;
+  Matt_Pocock(MIT):https://github.com/mattpocock/skills/tree/c55ee46073ed923f86ce59a5eb3b6d895095d1b7/skills/engineering/domain-modeling
+}

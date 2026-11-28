@@ -1,18 +1,40 @@
 @REF:carrier-relationship-management
-§ROLE{sr_trans_mgr;scope:{TL,LTL,intermodal,brokerage};portfolio:40-200+_carriers;sys:{TMS,rate_mgmt,onboarding_portal,DAT_RateView,Greenscreens,Chainalytics,FMCSA_SAFER,Carrier411,CarrierOK}}
-§USE{onboarding(safety,ins,auth);RFP(annual|lane);scorecard_mgmt;capacity_reallocation;rate_FSC_accessorial_neg}
-§FLOW{1:source+vet(SAFER,ins,refs)→2:RFP(lane_data,vol,scoring)→3:neg(linehaul,FSC,accessorials,mins,cap)→4:TMS_guide(pri/bak,auto_tender)→5:scorecard(5_KPIs)→6:QBR→alloc_Δ}
-
-§RATE{
-  rule:decompose_all_components(¬bundle);
-  linehaul:{TL:$/mi∨flat vs DAT/Greenscreens;LTL:tariff_disc(70-85%_mid_vol);always_lane_by_lane};
-  FSC:{index:DOE_nat_avg_diesel;neg_table:{0%_trigger,increment(e.g.$0.01/mi per +$0.05_diesel),lag(wkly|mo)};model_total_cost@diesel($3.50,$4.00,$4.50/gal)⇒expose_low_base+steep_FSC};
-  accessorials:{detention:$50-100/hr after 2h_free(#1_dispute⇒neg_free_time);liftgate:$75-150;residential:$75-125;inside:$100+;limited_access:$50-100;appt:$0-50;LTL:{reweigh/reclass:$25-75/occ,cubic_cap_surcharge}};
-  minimums:{TL:min_mi/charge(e.g.$800@<200mi);LTL:$75-150/shpmt(any_wt/class);neg_short_haul_separately};
-  contract_vs_spot:{contract:6-12mo;spot:(+10-30%_tight ∨ -5-20%_soft);target_mix:75-85%_contract/15-25%_spot;spot>30%⇒guide_failing}
+§CFG{CTX_AND_SYSTEMS
+  role:sr_trans_mgr;scope:{TL,LTL,intermodal,brokerage};portfolio:40-200+_carriers;
+  sys:{TMS,rate_mgmt,onboarding_portal,DAT_RateView,Greenscreens,Chainalytics,FMCSA_SAFER,FMCSA_Motus,Carrier411,CarrierOK};
+  use:{onboarding(safety,ins,auth),RFP(annual|lane),scorecard_mgmt,capacity_reallocation,rate_FSC_accessorial_neg};
+  flow:1:source+vet(SAFER,Motus,ins,refs)→2:RFP(lane_data,vol,dims/density,scoring)→3:neg(linehaul,FSC,accessorials,mins,cap)→4:TMS_guide(pri/bak,auto_tender)→5:scorecard(5_KPIs)→6:QBR→alloc_Δ
 }
-
-§SCORECARD{
+§PAT{RATE_STRUCTURE_AND_NMFC
+  decompose_all:always_unbundle(linehaul,FSC,accessorials,minimums)∧¬accept_bundled_quotes;
+  linehaul:{TL:$/mi∨flat_vs_DAT/Greenscreens;LTL:tariff_disc(70-85%_mid_vol);always_lane_by_lane};
+  NMFC_2025(Docket_2025-1,eff_2025-07-19):LTL_overhaul_retired_legacy_commodity_rules→13_tier_density_scale(replaced_11_tier)⇒capture_exact_pallet_dims+density(lbs/ft³)_in_RFP_&_TMS_tenders;
+  FSC:{index:DOE_nat_avg_diesel;neg_table:{0%_trigger,increment(e.g.$0.01/mi_per_+$0.05_diesel),lag(wkly|mo)};model_total_cost@diesel($3.50,$4.00,$4.50/gal)⇒expose_low_base+steep_FSC};
+  accessorials:{detention:$50-100/hr_after_2h_free(#1_dispute⇒neg_free_time);liftgate:$75-150;residential:$75-125;inside:$100+;limited_access:$50-100;appt:$0-50;LTL:{reweigh/reclass:$25-75/occ,cubic_cap_surcharge}};
+  minimums:{TL:min_mi/charge(e.g.$800@<200mi);LTL:$75-150/shpmt(any_wt/class);neg_short_haul_separately};
+  contract_vs_spot:{contract:6-12mo;spot:(+10-30%_tight∨-5-20%_soft);target_mix:75-85%_contract/15-25%_spot;spot>30%⇒guide_failing}
+}
+§PAT{PORTFOLIO_RFP_AND_MARKET
+  mix:{asset:60-70%(cap_certainty,acct,rigid_price/cov);broker:20-30%(price/cov_flex;risk:double_broker,var,pay_chain);niche/spec:5-15%(reefer,hazmat,OS)};
+  routing_guide:{>2_loads/wk⇒3_deep(pri≥80%_acc,sec≥70%_overflow,tert=price_ceiling/DNE_broker);<2_loads/wk⇒2_deep∨reg_broker};
+  concentration:{award_meaningful_vol/lane(2/wk>2/mo_priority);max≤40%_single_carrier/lane;top_20_lanes≥3_active_carriers};
+  small_carriers(10-50_trucks):{+svc,+price_flex,+rel;−tech,−ins_depth,−peak_cap⇒use_consistent_mid_vol_lanes};
+  RFP_cycle:8-12wks;pre_RFP:{12mo_data(vol,spend,svc,LTL_dims/density);flag(underperf∨>DAT/Greenscreens/Chainalytics);targets(cost%,min_svc,diversity)};
+  RFP_design:{lane_spec(orig/dest_zip,vol_rng,equip,dims/density,handling),transit,accessorials,pay_terms,ins_mins,eval_weights;require_lane_bids(¬portfolio_%_off_cross_sub)};
+  RFP_weights:{cost:40-50%,svc_hist:25-30%,cap_commit:15-20%,ops_fit:10-15%;e.g.+3%_cost@97%OTD+95%acc>min_bid@85%OTD+70%acc};
+  RFP_impl:{wave_award(pri→sec);2-3wk_ramp_pre_tender;30d_parallel_overlap→cutover};
+  market_tools:{DAT_RateView:lane_spot/contract_benchmarks(direction);Greenscreens:carrier_pricing+predictive(leverage)};
+  market_cycle:18-36mo_peak_to_peak;tight_signals:{DAT_load_to_truck>6:1;OTRI>10%;Class8_orders=6-12mo_leading_cap_ind};
+  seasons:{produce(Apr-Jul)⇒SE/W_reefer_tight;retail_peak(Oct-Jan)⇒natl_dry_van_tight;mo/qtr_end_wk_spikes;award_RFPs_in_transitions(¬peak/trough)}
+}
+§R{CARRIER_VETTING_2026
+  cadence:pre_first_load∧quarterly;
+  auth:{FMCSA_SAFER+Motus_portal:verify_USDOT+MC/MX/FF_active(MC_dockets_NOT_retired_pending_formal_NPRM);authorized_stale≥12mo⇒inactive_risk;check_authorized_for(property≠HHG)};
+  ins:{FMCSA_§387.9(gen:$750K,hazmat:$1M,HHG:$5M)⇒require≥$1M_all;verify_FMCSA_Ins_tab(¬COI_only)};
+  safety:{Unsatisfactory⇒NEVER;Conditional⇒case_by_case;Unrated⇒CSA_BASICs(Unsafe_Driving,HOS,Veh_Maint;top25%_worst_Unsafe_Driving=liability_risk)};
+  broker_2026_rule:{FMCSA_financial_resp_active_enforcement:BMC-84_surety_bond∨BMC-85_trust≥$75K(BMC-85_strict_7d_liquid_cash_equiv_at_fed_reg_inst);surety_e-notifies_FMCSA≤2bd_of_drawdown/insolvency;¬replenished≤7bd⇒immediate_auth_suspension;require_contingent_cargo_ins}
+}
+§R{SCORECARD_5_KPIS
   rule:track_5_actionable_KPIs(¬20);
   OTD:{tgt:≥95%,red:<90%;split_PU_vs_del(e.g.98%PU∧88%del⇒linehaul/terminal_issue,¬cap)};
   tender_accept:{pri_tgt:≥90%,red:<80%;contract_lane<75%⇒below_mkt_rate→reneg∨realloc};
@@ -20,97 +42,54 @@
   invoice_acc:{tgt:≥97%,red:<93%;<90%⇒CAP};
   tender_to_pickup:{FTL_tgt:≤2h_of_req_PU;late_PU_post_accept="soft_rejecting"(holding_load_while_shopping)}
 }
-
-§PORTFOLIO{
-  mix:{asset:60-70%(cap_certainty,acct,rigid_price/cov);broker:20-30%(price/cov_flex;risk:double_broker,var,pay_chain);niche/spec:5-15%(reefer,hazmat,OS)};
-  routing_guide:{>2_loads/wk⇒3_deep(pri≥80%_acc,sec≥70%_overflow,tert=price_ceiling/DNE_broker);<2_loads/wk⇒2_deep∨reg_broker};
-  concentration:{award_meaningful_vol/lane(2/wk>2/mo_priority);max≤40%_single_carrier/lane;top_20_lanes≥3_active_carriers};
-  small_carriers(10-50_trucks):{+svc,+price_flex,+rel;−tech,−ins_depth,−peak_cap⇒use_consistent_mid_vol_lanes}
+§D{DECISION_RULES
+  new_lane_incumbent_cov⇒neg_first(avoid_$500-1500_onboard+overhead;trade_new_vol_for_existing_concession)¬source_cold;
+  new_lane_no_incumbent⇒source_3-5({>500mi:asset_domicile≤100mi_orig;<300mi:regional/dedicated;<1/wk:reg_broker})→eval(FMCSA+12mo_lane_svc_hist(¬net_avg)+DAT+total_cost)→30d_trial@contract_rates(OTD≥93%,acc≥85%,inv≥95%);
+  consolidate⇔(>3_carriers@<5/wk∨mgmt_stretched∨need_vol_leverage∨loose_mkt);
+  diversify⇔(1_carrier>40%_crit_lane∨rej>15%∨pre_peak∨distress(Carrier411_late_pay,ins_lapse,bond_drawdown,CDL_turnover));
+  contract⇔(spread<10%∧steady_vol∧tight_mkt∧crit_windows);
+  spot⇔(spot>15%_below_contract∨<1/wk∨surge>guide∨chronic_rejections);
+  reneg⇔(|contract−DAT|>15%@≥60d∨acc<75%@30d∨major_vol_Δ);
+  exit_carrier(post_CAP_fail)⇔(OTD<85%@60d∨acc<70%@30d_no_comm∨claims>2%@90d∨auth_revoked|ins_lapsed|Unsatisfactory∨inv_acc<88%@90d_post_notice∨double_broker∨distress(bond_drawdown_7bd_suspend,CarrierOK/Carrier411,collapse))
 }
-
-§RFP{
-  cycle:8-12wks;
-  pre_RFP:{12mo_data(vol,spend,svc);flag(underperf ∨ >DAT/Greenscreens/Chainalytics);targets(cost%,min_svc,diversity)};
-  design:{lane_spec(orig/dest_zip,vol_rng,equip,handling),transit,accessorials,pay_terms,ins_mins,eval_weights;require_lane_bids(¬portfolio_%_off_cross_sub)};
-  eval_weights:{cost:40-50%,svc_hist:25-30%,cap_commit:15-20%,ops_fit:10-15%;e.g.+3%_cost@97%OTD+95%acc beats min_bid@85%OTD+70%acc};
-  impl:{wave_award(pri→sec);2-3wk_ramp_pre_tender;30d_parallel_overlap→cutover}
-}
-
-§MKT{
-  tools:{DAT_RateView:lane_spot/contract_benchmarks(direction);Greenscreens:carrier_pricing+predictive(leverage)};
-  cycle:18-36mo_peak_to_peak;
-  tight_signals:{DAT_load_to_truck>6:1;OTRI>10%;Class8_orders=6-12mo_leading_cap_ind};
-  seasons:{produce(Apr-Jul)⇒SE/W_reefer_tight;retail_peak(Oct-Jan)⇒natl_dry_van_tight;mo/qtr_end_wk_spikes;award_RFPs_in_transitions(¬peak/trough)}
-}
-
-§VET{
-  cadence:pre_first_load ∧ quarterly;
-  auth:{SAFER_MC/FF_active;authorized_stale≥12mo⇒inactive_risk;check_authorized_for(property≠HHG)};
-  ins:{FMCSA_§387.9(gen:$750K,hazmat:$1M,HHG:$5M)⇒require≥$1M_all;verify_FMCSA_Ins_tab(¬COI_only)};
-  safety:{Unsatisfactory⇒NEVER;Conditional⇒case_by_case;Unrated⇒CSA_BASICs(Unsafe_Driving,HOS,Veh_Maint;top25%_worst_Unsafe_Driving=liability_risk)};
-  broker:{FMCSA_Bond/Trust_active_$75K(revoked/reduced=distress)+contingent_cargo_ins}
-}
-
-§DEC{
-  new_lane:{
-    1:incumbent_covers?⇒neg_first(avoid_$500-1500_onboard+overhead;trade_new_vol_for_existing_concession);
-    2:else⇒source_3-5({>500mi:asset_domicile≤100mi_orig;<300mi:regional/dedicated;<1/wk:reg_broker});
-    3:eval(FMCSA+12mo_lane_svc_hist(¬net_avg)+DAT+total_cost(LH+FSC+acc));
-    4:30d_trial@contract_rates(OTD≥93%,acc≥85%,inv≥95%)⇒validate_pre_12mo_lock
-  };
-  consolidate_vs_div:{
-    consolidate⇔(>3_carriers@<5/wk ∨ mgmt_stretched ∨ need_vol_leverage ∨ loose_mkt);
-    diversify⇔(1_carrier>40%_crit_lane ∨ rej>15% ∨ pre_peak ∨ distress(Carrier411_late_pay,ins_lapse,CDL_turnover))
-  };
-  spot_vs_contract:{
-    contract⇔(spread<10% ∧ steady_vol ∧ tight_mkt ∧ crit_windows);
-    spot⇔(spot>15%_below_contract ∨ <1/wk ∨ surge>guide ∨ chronic_rejections);
-    reneg⇔(|contract−DAT|>15%@≥60d ∨ acc<75%@30d ∨ major_vol_Δ)
-  };
-  exit_criteria(post_CAP_fail):{OTD<85%@60d ∨ acc<70%@30d_no_comm ∨ claims>2%@90d ∨ auth_revoked|ins_lapsed|Unsatisfactory ∨ inv_acc<88%@90d_post_notice ∨ double_broker ∨ distress(bond_revoked,CarrierOK/Carrier411,collapse)}
-}
-
-§EDGE{
+§ANTI{EDGE_CASES_AND_TRAPS
   hurricane_squeeze:{Gulf_evac,spot_3x⇒pre_positioned_regionals+reroute_clear_corridors+multi_load_spot_ceiling};
   double_broker:{truck≠BOL_carrier⇒reject_if_unshipped;if_in_transit⇒document_all+written_expl≤24h};
   vol_loss_40%:{proactive_reneg_pre_invoice(¬let_carrier_discover)};
-  distress_early:{late_driver_settle,frequent_underwriter_Δ,bond_drop,Carrier411_spike⇒trim_exposure_incrementally};
+  distress_early:{late_driver_settle,frequent_underwriter_Δ,BMC-84/85_drawdown,Carrier411_spike⇒trim_exposure_incrementally};
   mega_acq_niche:{expect_disruption/re-rate/AM_loss⇒secure_backup_pre_cutover};
   fsc_manip:{low_base+steep_FSC⇒model@$3.50/$4.00/$4.50/gal};
+  LTL_missing_dims:{post_NMFC_2025_13tier_density⇒unmeasured_pallets_trigger_reclass/reweigh_surcharges⇒enforce_dimensioner_capture};
   detention>5%_billing:{shipper_dock_ops_root_cause⇒fix_ops_pre_dispute}
 }
-
-§COMM{
-  rate_open:data_led(e.g."DAT_90d_$2.15 vs $2.45→align";¬"too_high";frame_mkt_shift+mutual_comp);
+§CMD{COMMS_AND_NEGOTIATION
+  rate_open:data_led(e.g."DAT_90d_$2.15_vs_$2.45→align";¬"too_high";frame_mkt_shift+mutual_comp);
   counter:ack_driver_pay→meet_mid_base,firm_accessorials+FSC_table;
   annual:partnership+vol/lane_forecast+ask_shipper_ops_improvements(dock_speed,sched,drop_trailer);
   pos_review:quantify_value+reward(e.g."97%OTD_saved_$45K→60%→75%_share");
   cap_review:scorecard+sub_KPIs+30/60/90d_CAP+consequence(e.g."OTD<92%@60d→shift_50%_vol")
 }
-
-§ESC{
+§R{ESCALATION
   triggers:{
     acc<70%_2wk⇒procure+carrier_call≤48h;
     spot>30%_lane_budget⇒guide_review+source≤1wk;
-    auth/ins_lapse⇒suspend_tender+ops≤1h;
+    auth/ins_lapse∨bond_drawdown⇒suspend_tender+ops≤1h;
     1_carrier>50%_crit_lane⇒qualify_sec≤2wk;
     claims>1.5%@≥60d⇒formal_review≤1wk;
     |rate−DAT|>20%_≥5_lanes⇒reneg/mini_bid≤2wk;
     driver_shortage/disruption⇒backups+monitor≤4h;
     double_broker_confirmed⇒suspend+compliance≤2h
   };
-  chain:Analyst→Trans_Mgr(48h)→Dir_Trans(1wk)→VP_SC(persistent ∨ >$100K_exp)
+  chain:Analyst→Trans_Mgr(48h)→Dir_Trans(1wk)→VP_SC(persistent∨>$100K_exp)
 }
-
-§KPI{
-  cadence:track_wkly,team_mo,carrier_qtr;
-  contract_vs_DAT:{tgt:±8%,red:>15%};
-  guide_compliance:{tgt:≥85%,red:<70%};
-  pri_tender_acc:{tgt:≥90%,red:<80%};
-  portfolio_OTD:{tgt:≥95%,red:<90%};
-  portfolio_claims:{tgt:<0.5%,red:>1.0%};
-  avg_inv_acc:{tgt:≥97%,red:<93%};
-  spot_pct:{tgt:<20%,red:>30%};
-  RFP_cycle:{tgt:≤12wks,red:>16wks};
+§CHK{KPIS // track weekly, team monthly, carrier quarterly
+  contract_vs_DAT:tgt_±8%|red_>15%;
+  guide_compliance:tgt_≥85%|red_<70%;
+  pri_tender_acc:tgt_≥90%|red_<80%;
+  portfolio_OTD:tgt_≥95%|red_<90%;
+  portfolio_claims:tgt_<0.5%|red_>1.0%;
+  avg_inv_acc:tgt_≥97%|red_<93%;
+  spot_pct:tgt_<20%|red_>30%;
+  RFP_cycle:tgt_≤12wks|red_>16wks;
   gov:review_scorecards+exceptions+guide_together;persist_org_guardrails_alongside
 }

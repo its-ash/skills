@@ -1,10 +1,71 @@
 @REF:product-capability
-§D{intent(PRD|roadmap|discussion|founder_note)→impl_ready_plan("what must be true before impl?");use⇔implicit_constraints∨multi_{svc|repo|team}∨unclear_{arch|data|lifecycle|policy}∨repeated_hidden_assumptions∨durable_artifact_req∨[product-strategy](../SKILL.md)=="build this"}
-§CFG{artifact:if_exists(`PRODUCT.md`|`docs/product/`|program_spec_dir)⇒upd_there;else⇒ask_user(def:`docs/product/<capability>.md`);goal:durable_constraints(¬extra_stack)}
-§R{¬invent_truth⇒mark_open_Qs;split(user_promises,impl_details);tag∈{fixed_policy,arch_preference,open};repo_conflict⇒state_explicitly(¬smooth_over);1_artifact>notes}
-§PAT{
-  inputs(min):{1:intent(issue,disc,PRD,roadmap,founder),2:curr_arch(docs,contracts,schemas,routes,wf),3:ctx(`PRODUCT.md`,design_docs,RFCs,migrations,op_model),4:delivery(auth,billing,compliance,rollout,backcompat,perf,review)};
-  wf:1:restate(1stmt:{user/op,new_cap,changed_outcome};weak⇒drift);2:resolve_constraints({biz_rules,scope_bounds,invariants,trust_bounds,data_owner,lifecycle_trans,rollout/mig,fail/recovery});3:SRS_contract:{summary,non_goals,actors&surfaces,states&trans,I/O_ifaces,data_effects,sec/billing/policy,obs&op_reqs,blocking_Qs};4:handoff∈{ready_direct_impl|needs_arch([software-architecture](../../software-architecture/SKILL.md))|needs_prod_clarif};refs:{AC→[software-architecture/references/intent-driven-development.md](../../software-architecture/references/intent-driven-development.md),contracts→[backend-development/references/contract-first.md](../../backend-development/references/contract-first.md),TDD→[unit-testing-patterns](../../unit-testing-patterns/SKILL.md)};
+§D{
+  intent(PRD|roadmap|discussion|founder_note)→SDD_impl_ready_capability_plan("what must be true before impl?");
+  dual_consumer:human_engineers∧AI_coding_agents(executable_spec_kills_vibe_coding_drift);
+  use⇔implicit_constraints∨multi_{svc|repo|team}∨unclear_{arch|data|lifecycle|policy}∨probabilistic_AI_feature∨durable_artifact_req∨[product-strategy](../SKILL.md)=="build this";
 }
-§OUT{sections:[CAPABILITY(1para),CONSTRAINTS(rules,invariants,bounds),IMPLEMENTATION CONTRACT(actors,surfaces,states&trans,iface/data),NON-GOALS(excluded),OPEN QUESTIONS(blockers),HANDOFF(next_step&wf)]}
-§CHK{prevents_mid_PR_surprises;durable(¬chat);cross_agent_reusable}
+§CFG{
+  artifact:if_exists(`PRODUCT.md`|`docs/product/`|program_spec_dir)⇒upd_there;else⇒ask_user(def:`docs/product/<capability>.md`);
+  goal:durable_constraints_in_repo(¬ephemeral_chat_notes∧¬extra_doc_stack);
+}
+§R{
+  ¬invent_truth⇒mark_explicit_open_Qs;
+  split(user_promises,impl_details);
+  tag_∀constraint∈{fixed_policy,arch_preference,open};
+  repo_conflict⇒state_explicitly(¬smooth_over);
+  1_canonical_artifact>scattered_notes;
+  appetite_bound:specify_fixed_time_or_scope_cap+explicit_non_goals;
+  if_probabilistic_AI⇒evals_are_mandatory_PRD_gate(¬"looks_good"_vibe_check);
+}
+§PAT{
+  inputs(min):{
+    1:intent(issue,disc,PRD,roadmap,founder_brief),
+    2:curr_arch(docs,contracts,schemas,routes,workflows),
+    3:ctx(`PRODUCT.md`,design_docs,RFCs,migrations,op_model),
+    4:delivery(auth,billing/metering,compliance,rollout,backcompat,perf,review)
+  };
+  wf:{
+    1:restate(1stmt:{actor/op,new_cap,changed_outcome};weak⇒spec_drift);
+    2:resolve_constraints({biz_rules,scope_bounds,invariants,trust_bounds,data_owner,lifecycle_states/trans,rollout/mig,fail/recovery,billing/entitlement_meter(seat|credit|usage|outcome+overage_guardrail)});
+    3:SRS_contract:{summary,non_goals,actors&surfaces,states&trans,I/O_ifaces,data_effects,sec/billing/policy,telemetry(NSM+input+guardrail_events),obs&op_reqs,blocking_Qs};
+    4:AI_probabilistic_ext(when_LLM/agent/ML):{
+      evals_as_PRD:{golden_dataset(core+edge+adversarial),automated_scorers(accuracy,grounding,tone,format,latency,token_cost),pass_threshold+regression_gate(drop=P1_bug)};
+      safety_bounds:{confidence_threshold,fallback/degrade_mode,HITL_approval_gates,tool_blast_radius/permissions,max_cost_per_req_COGS_cap};
+      eval_cadence:weekly_eval_trend_review_alongside_feature_demos
+    };
+    5:handoff∈{ready_direct_impl|needs_arch([software-architecture](../../software-architecture/SKILL.md))|needs_eval_harness([eval-harness.md](../../ai-agent-engineering/references/eval-harness.md))|needs_prod_clarif}
+  };
+}
+§OUT{
+  sections:[
+    1:CAPABILITY(1para+1stmt_outcome),
+    2:CONSTRAINTS(tagged:{fixed_policy|arch_preference|open},rules,invariants,bounds,billing_meter),
+    3:IMPLEMENTATION_CONTRACT(actors,surfaces,states&trans,I/O_ifaces,data_effects,telemetry),
+    4:AI_EVAL_CONTRACT(conditional:golden_set,scorers,thresholds,COGS_cap,fallback/HITL),
+    5:NON-GOALS(explicitly_excluded+appetite_cap),
+    6:OPEN_QUESTIONS(blocking_decisions_only),
+    7:HANDOFF(next_step+owner_workflow)
+  ]
+}
+§CHK{
+  prevents_mid_PR_surprises;
+  durable_in_repo(¬chat);
+  unambiguous_for_humans∧AI_agents;
+  AI_features_have_evals+COGS_cap+fallback;
+  every_conflict_with_existing_code_surfaced;
+}
+§ANTI{
+  deterministic_PRD_for_probabilistic_AI_feature;
+  ship_LLM_feature_on_vibe_check_wo_eval_suite;
+  conflate_policy_invariants_with_arch_preferences;
+  hide_repo_contradictions;
+  omit_billing_meter_or_telemetry_contract;
+}
+§REL{
+  upstream:[product-diagnostics.md](product-diagnostics.md);
+  arch:[software-architecture](../../software-architecture/SKILL.md);
+  AC:[intent-driven-development.md](../../software-architecture/references/intent-driven-development.md);
+  contracts:[contract-first.md](../../backend-development/references/contract-first.md);
+  AI_evals:[eval-harness.md](../../ai-agent-engineering/references/eval-harness.md);
+  TDD:[unit-testing-patterns](../../unit-testing-patterns/SKILL.md);
+}

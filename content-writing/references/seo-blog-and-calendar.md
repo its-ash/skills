@@ -1,39 +1,45 @@
 @REF:seo-blog-and-calendar
-§REL{../SKILL.md:parent;brand-voice.md:voice;social-content.md:social_plat}
+§R{
+  human_first∧machine_extractable(SEO+GEO);
+  E-E-A-T+info_gain⇒first_hand_exp|orig_data|named_author|methodology¬AI_consensus_rehash;
+  semantic_coverage⇒cover_entities+subtopics+fanout_subQs¬kw_density_quota¬LSI_myth;
+  proofread(facts,cites,links,grammar)≺publish
+}
 §PAT{
   quick_voice(if_no_full_prof):1:collect_copy→2:note(formality,persp,adj)→3:3-5_tone_desc→4:guide({Tone,Persp,Formal,Vocab,Avoid,Good,Bad})→5:3_samples+refine;
-  seo_blog:{
-    kw:{pri:1(500-5000/mo),sec:3-5,LSI:10-15,intent(info|trans|...)};
-    Title:pri_kw∧<60c;URL:pri_kw;Meta:150-160c∧pri_kw∧CTA;
-    Intro:pri_kw∈first_100w;H:H1→H2→H3∧kw∈≥2_H2;
-    Body:1500-2500w∧kw_dens∈[1%,3%];
-    Links:int∈[2,3]∧ext≥2(.gov|.edu|leaders);
-    Img:alt+kw;Read:aud_fit(e.g.FK_8-10);Close:sum+CTA;
+  seo_geo_blog:{
+    kw:{pri:1(intent_aligned),sec:3-5,entities_subtopics(semantic_map¬LSI_list),intent(info|comm|trans|nav),fanout_subQs(next_user_Qs)};
+    Title:pri_kw∧<60c;URL:short+pri_kw;Meta:150-160c∧pri_kw∧CTA;
+    Intro:pri_kw∈first_100w+concrete_hook_or_direct_ans;H:H1→H2→H3(query_aligned_H2s);
+    GEO_AIO:{inverted_pyramid(concise_direct_ans_post_H2),cited_stats+exact_nums+expert_quotes,clean_HTML(lists,cmp_tables)_for_RAG};
+    Body:depth_matches_intent(guides≈1500-2500w)∧natural_terms(¬density_%_target)∧E-E-A-T(first_hand_test,orig_data,author_creds,editorial_transparency);
+    Links:int≥2∧ext≥2(primary_src|.gov|.edu|leaders);
+    Img:descriptive_alt+real_screenshots/charts(¬stock_filler);Read:scannable+aud_fit;Close:actionable_next+CTA;
   };
   plat_limits:{
-    X:{≤280c,hook+link,1-3_#};
-    LI:{≤1300c,prof+val,3-5_ind_#};
-    IG:{≤2200c,vis+emoji,5-10_niche_#};
+    X:{≤280c(std)|≤25000c(Premium)|Articles,0-1_#,¬body_links};
+    LI:{≤3000c(fold~140-210c,opt_body~1200-1500c),PDF_car≤300pp,0-3_#};
+    IG:{≤2200c(fold~125c),car≤20_sl(4:5_1080x1350px),≤3-5_targeted_#};
+    TT:{≤2200c(vid)|≤4000c(photo_desc,fold~150c),photo_car≤35_sl,SEO_kws};
+    Threads:{≤500c,1_topic_tag(¬multi_#),≤20_media};
+    Bluesky:{≤300_graphemes,≤10_img|1_vid(≤10m),¬#,custom_feeds};
     FB:{≤63206c,conv+story,1-2_#};
-    adapt:core(long)→tone+len→sized_vis→#→sched;
+    adapt:core(long)→tone+len+fold→sized_vis→tags→sched;
   };
   cal:{
-    steps:1:mo_KPIs(e.g.+10%_org_traf,5_shares/post)→2:split(40%_edu,25%_promo,25%_comm,10%_evergreen)→3:map(launch,event,season)→4:batch_1w/sess→5:link_assets→6:mo_rev→Δ;
+    steps:1:mo_KPIs(org_traf,GEO_cit,saves/sends,conv)→2:split(40%_edu,25%_promo,25%_comm,10%_evergreen)→3:map(launch,event,season)→4:batch_1w/sess→5:link_assets→6:mo_rev→Δ;
     cols:{Date,Platform,Type,Topic,Owner,Status};
   };
   cowrite:{
-    outline:{Hook(line/stat,why),Intro(ctx,prob,scope),Sec_N(pt,evid/cite?),Concl(sum,CTA),Research_ToDo};
-    res:ask_cite(inline|num|foot)→cred_src(report,paper,news)→extract(fact,fig,quote+cite);
+    outline:{Hook(line/stat,why),Intro(ctx,prob,scope),Sec_N(pt,evid/cite?,fanout_Q?),Concl(action,CTA),Research_ToDo};
+    res:ask_cite(inline|num|foot)→cred_src(primary_study,report,paper,docs)→extract(fact,fig,quote+cite);
     hook:analyze+3_alts+why;
     sec_fb:{strengths,fixes(clarity,flow,evid,style),line_edits,next_Qs};
     voice_pres:learn(diction,sent_len,tone←samples)→suggest¬overwrite→ask("Does this sound like you?");
-    final:{struct,arg+evid,gram,read,cites,CTA}+prepub_chk;
+    final:{struct,arg+evid,info_gain,gram,read,cites,CTA}+prepub_chk;
   };
-  metrics_mo:{org_traf:SEO,time_on_pg:rel+read,bounce:expect_match,shares/likes:reson,backlinks:auth,conv:biz,email_CTR(rep):xch};
+  metrics_mo:{org_traf:SEO,GEO_cit/AIO_SoM:AI_search,engaged_time/scroll:rel+read,saves+sends:social_reson,backlinks:auth,conv:biz,email_CTR(rep):xch};
 }
-§CHK{voice;pri_kw∈{title,URL,p1,≥2_H2};meta<160c+kw;dens∈[1%,3%];H_hier;≥2_int+≥2_ext;alt(∀img);read;cites;CTA;sched;proofread}
-§ANTI{forced_kw(skip_res)|stuff;ignore(len|img);voice_drift;∅{proofread,cite,CTA};∅perf_rev→next}
-§CMD{
-  python -m brand_voice_analyzer content.txt
-  python -m seo_optimizer article.md "primary keyword" "secondary,keywords"
-}
+§CHK{voice;E-E-A-T+info_gain;pri_kw∈{title,URL,p1,H2};meta∈[150,160]c+kw;GEO_direct_ans+cites+struct;H_hier;≥2_int+≥2_ext;alt(∀img);read;cites;CTA;sched;proofread}
+§ANTI{kw_density_quota|LSI_myth|stuffing;AI_consensus_rehash|scaled_thin_content;ignore(fold|len|img);voice_drift;∅{proofread,cite,CTA};∅perf_rev→next}
+§REL{../SKILL.md:parent;brand-voice.md:voice;article-writing.md:proof_first;social-content.md:social_plat;../../seo/SKILL.md:tech_SEO+GEO+schema}

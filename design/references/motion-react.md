@@ -5,7 +5,7 @@
   ¬covered:{CSS:../SKILL.md§5.E+references/css/animation-motion.md,GSAP_Three:immersive-web.md,video:motion-canvas.md}
 }
 §R{
-  1:import_only("motion/react")∧¬"framer-motion"∧¬mix;
+  1:import_only("motion/react",v14+)∧¬"framer-motion"∧¬mix;
   2:"use client"@top(∀importer("motion/react"))∧client_leaves(../SKILL.md§3);
   3:SSR_match(initial≡server_output);
   4:useReducedMotion()⇒strip_transforms∧opacity_crossfade(≤0.2s)∧¬zero_motion(../SKILL.md§9);
@@ -36,7 +36,7 @@
   }as const
   ```
   dur:{instant:tooltip|focus|badge,fast:press|icon|chip,normal:dropdown|expand|enter,slow:modal|drawer|page,story:hero_rare(../SKILL.md§5.A)};
-  spring:{ui:btns|chips|nav,move:cards|modals|panels,instant:tooltips|popovers|dropdowns,drawer:sheets|drawers,release:drag_release|flick(¬state_Δ)};
+  spring:{ui:btns|chips|nav,move:cards|modals|panels,instant:tooltips|popovers|dropdowns,drawer:sheets|drawers,release:drag_release|flick(¬state_Δ)};v14_springs:{mass:"auto"(size-relative),visualDuration+bounce,preserved_layer_velocity};
   // lib/motion-config.ts
   ```ts
   export const motionConfig={
@@ -78,7 +78,7 @@
   UI:{show_hide⇒AnimatePresence;seq_list⇒stagger;route_Δ⇒PageTransition|ViewTransitions(../SKILL.md§15);in_place_resize⇒layout;cross_ctx⇒layoutId;scroll_enter⇒whileInView+viewport({once:true});scroll_linked⇒useScroll+useTransform};
   AnimatePresence_mode:{wait⇒page|swap(1_at_a_time);sync⇒stacked_notifs;popLayout⇒list_removal_reflow};
   layout_rules:layout("position")_text_in_expanding_box;¬layout_subtree(>5_children|deep_DOM)⇒x/y;¬layout_static(../SKILL.md§12);
-  adv:{drag_physics⇒drag+dragTransition|springs.release;reorder⇒Reorder.Group/Item(complex→dnd_kit)+up/down_kbd_alt;dismiss⇒drag="y"+onDragEnd(offset∧velocity);swipe⇒drag="x"+onDragEnd(offset∧velocity);long_press⇒useLongPress;smooth⇒useSpring;derived⇒useTransform;seq⇒useAnimate(async/await);one_shot⇒animate()("motion");word⇒stagger_inline_block;svg_draw⇒pathLength(0→1);svg_morph⇒d_tween(equal_cmd_counts);ring⇒strokeDashoffset};
+  adv:{drag_physics⇒drag+dragTransition|springs.release;reorder⇒Reorder.Group/Item(complex→dnd_kit)+up/down_kbd_alt;dismiss⇒drag="y"+onDragEnd(offset∧velocity);swipe⇒drag="x"+onDragEnd(offset∧velocity);press_v14(count,hold,repeat)⇒dbl/multi-press|long_press(fallback:useLongPress);multitouch_v14⇒pinch|rotate+vel_snap;smooth⇒useSpring;derived⇒useTransform;seq⇒useAnimate(async/await);one_shot⇒animate()("motion");word⇒stagger_inline_block;svg_draw⇒pathLength(0→1);svg_morph⇒d_tween(equal_cmd_counts);ring⇒strokeDashoffset};
   useSpring_vs_springs:{useSpring:pointer_continuous,per_frame,preserves_velocity;springs.*:discrete_state_Δ,on_change,from_curr_val}
 }
 §ADV{

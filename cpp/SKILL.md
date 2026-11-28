@@ -1,41 +1,47 @@
 ---
 name: cpp
-description: "AUTO_INVOKE(silent)⇔prompt∈{C++,C++17,C++20,C++23,Core_Guidelines,.cpp,.h,.hpp,CMakeLists.txt,CMake,CTest,GoogleTest,GoogleMock,RAII,unique_ptr,shared_ptr,make_unique,make_shared,Rule_of_Zero,Rule_of_Five,move_semantics,const,constexpr,concepts,std::string_view,enum_class,lock_guard,scoped_lock,condition_variable,ASan,UBSan,TSan,libFuzzer,mem_leak,dangling_ptr,data_race}|SUB:{cpp-testing}"
+description: "AUTO_INVOKE(silent)⇔prompt∈{C++,C++17,C++20,C++23,C++26,Core_Guidelines,.cpp,.h,.hpp,.ixx,CMakeLists.txt,CMakePresets.json,CMake,Ninja,CTest,vcpkg,Conan,clang-tidy,clangd,GoogleTest,GoogleMock,Catch2,FuzzTest,RAII,unique_ptr,shared_ptr,make_unique,make_shared,Rule_of_Zero,Rule_of_Five,move_semantics,const,constexpr,concepts,std::span,std::expected,std::jthread,std::print,std::string_view,import_std,modules,contracts,std::meta,enum_class,lock_guard,scoped_lock,condition_variable,hardening,ASan,UBSan,TSan,libFuzzer,mem_leak,dangling_ptr,data_race}|SUB:{cpp-testing,modern-cpp-tooling}"
 ---
 @SKL:cpp
 §R{
-  ref:CppCoreGuidelines(isocpp.github.io)∧adapt_selectively⇔(embedded∨bare_metal∨legacy_C);
+  std:default⇒C++23(floor:C++20;exp:C++26)∧ref:CppCoreGuidelines(isocpp.github.io)∧adapt⇔(embedded∨bare_metal∨legacy_C);
   ¬naked(new∨delete∨malloc∨free)⇒RAII,make_unique,make_shared(R.10,R.11);
-  raw(T*∨T&)⇒¬own(R.3,I.11);
-  ∀obj⇒init@decl∧prefer{}(ES.20,ES.23);
-  default⇒const∨constexpr(vars∧member_fns)(Con.1-5,ES.25);
-  enum_class¬plain_enum;constexpr¬macros(Enum.1,Enum.3);
+  raw(T*∨T&)⇒¬own(R.3,I.11);contiguous_buf⇒std::span<T>¬(T*,size_t)(I.13);
+  ∀obj⇒init@decl∧prefer{}(ES.20,ES.23);default⇒const∨constexpr(vars∧member_fns)(Con.1-5,ES.25);
+  enum_class¬plain_enum;constexpr¬macros(Enum.1,Enum.3);named_consts¬magic_nums(ES.45);
   nullptr¬(0∨NULL);¬C_casts;¬narrowing;¬cast_away_const(ES.46-50);
-  1_arg_ctor⇒explicit(C.46);
-  Rule_of_Zero⊕Rule_of_Five(C.20,C.21);
+  1_arg_ctor⇒explicit(C.46);Rule_of_Zero⊕Rule_of_Five(C.20,C.21);
   base_dtor⇒(public_virtual⊕protected_non_virtual);use_exact_1∈{virtual,override,final}(C.35,C.128);
   ∀template⇒constrain(concepts)(T.10);
-  headers⇒include_guards∧self_contained∧¬global_using_namespace(SF.7,SF.8,SF.11);
-  locks⇒RAII_only(scoped_lock,named_lock_guard);wait⇒w/_condition_only(CP.20,CP.42,CP.44);
-  exceptions⇒custom_types∧throw_by_val∧catch_by_const&(E.14,E.15);
-  '\n'¬std::endl(SL.io.50);named_constants¬magic_nums(ES.45);
+  headers⇒include_guards∧self_contained∧¬global_using_namespace(SF.7,SF.8,SF.11);modules(C++23+CMake4.5+)⇒import_std∧¬mix_headers_in_TU;
+  threads⇒std::jthread+std::stop_token¬raw_std::thread∨detach(CP.26);
+  locks⇒RAII_only(scoped_lock,named_lock_guard);wait⇒w/_pred_only(CP.20,CP.42,CP.44);
+  errors⇒(recoverable/no_exc⇒std::expected<T,E>;exceptional⇒custom_exc,throw_val,catch_const&)(E.14,E.15);
+  output⇒std::print/println(C++23)∨'\n'¬(printf∨std::endl)(SL.io.50);
+  prod_hardening⇒STL_bounds_checks(_LIBCPP_HARDENING_MODE_FAST|_GLIBCXX_ASSERTIONS|_MSVC_STL_HARDENING=1);
+  tooling⇒CMakePresets.json+Ninja+CMAKE_EXPORT_COMPILE_COMMANDS=ON+clangd+clang-tidy+(vcpkg_manifest|Conan2);
+  CI⇒ASan+UBSan+TSan+STL_hardening(EXTENSIVE/DEBUG)+strict_warnings(-Wall_-Wextra_-Wpedantic|/W4);
 }
 §D{
   ownership⇒unique_ptr;(shared_ptr⇔shared_ownership)(R.21)¬shared_ptr_default;
-  pass_in_param⇒(cheap_types⇒val;others⇒const&;sinks⇒val+move)(F.16)¬const_T_returns(F.49);
+  pass_in_param⇒(cheap/views(span,string_view)⇒val;others⇒const&;sinks⇒val+move)(F.16)¬const_T_returns(F.49);
   return_multi_vals⇒return_struct(F.20,F.21)¬out_params;
   text_param⇒(observe⇒std::string_view;own⇒std::string)¬const_char*;
-  container⇒(default⇒std::vector;fixed_sz⇒std::array)¬C_arrays;
-  multi_mutexes⇒std::scoped_lock_lock(a,b)(CP.21)¬nested_lock_guards;
-  sync_primitive⇒std::mutex+condition_variable¬volatile(CP.8)∨lock_free(CP.100)∨detached_threads(CP.26);
-  compile_time_val⇒constexpr_fn∨IIFE_lambda(F.4,Per.11)¬TMP(T.120);
-  specialize_per_type⇒overload(T.144)¬fn_template_specialization;
+  contiguous_view⇒std::span<const T>(by_val)¬(const T*,size_t);
+  container⇒(default⇒std::vector;fixed_sz⇒std::array;inline_bounded_C++26⇒std::inplace_vector)¬C_arrays;
+  multi_mutexes⇒std::scoped_lock lk(a,b)(CP.21)¬nested_lock_guards;
+  sync_primitive⇒std::mutex+condition_variable|std::latch|std::barrier¬volatile(CP.8)∨lock_free(CP.100)∨detached_threads(CP.26);
+  fail_vs_bug⇒(recoverable⇒std::expected+and_then/transform;contract_bug⇒assert/hardening/C++26_pre_post)¬errno(E.28)∨empty_catch;
+  compile_time_val⇒constexpr/consteval_fn∨IIFE_lambda(F.4,Per.11)¬TMP(T.120);
+  specialize_per_type⇒overload∨concepts(T.144)¬fn_template_specialization;
   perf_change⇒measure_first(Per.1,Per.6)∧contiguous_data(Per.19)¬ptr_chasing_containers;
+  deps⇒vcpkg_manifest(vcpkg.json)∨Conan2(conanfile.py)¬manual_sys_libs|ad_hoc_submodules;
   unhandled_err_here⇒propagate(E.17)¬empty_catch∨errno(E.28);
 }
 §REF{
-  rule_tbls(P,I,F,C,R,ES,E,Con,CP,T,SL,Enum,SF,NL,Per),anti_patterns,1_ex/area→references/core-guidelines.md;
-  GoogleTest,GoogleMock,CMake,CTest,flaky_tests,gcov,llvm-cov,ASan,UBSan,TSan,libFuzzer→references/cpp-testing.md;
+  rule_tbls(P,I,F,C,R,ES,E,Con,CP,T,SL,Enum,SF,NL,Per),anti_patterns,modern_idioms,1_ex/area→references/core-guidelines.md;
+  GoogleTest(v1.18),GoogleMock,Catch2(v3.16),FuzzTest,libFuzzer,CMake,CTest,flaky_tests,gcov,llvm-cov,ASan,UBSan,TSan→references/cpp-testing.md;
+  CMake4.5,CMakePresets.json,import_std,modules,vcpkg,Conan2,clang-tidy,clangd,STL_hardening,C++23/26(expected,span,print,jthread,contracts,reflection)→references/modern-cpp-tooling.md;
 }
 §REL{
   ../systematic-debugging/SKILL.md:root_cause(crashes,segfaults,mem_bugs);

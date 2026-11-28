@@ -11,12 +11,12 @@
   GetPluginDetailsTool(package:str[req,e.g."spatie/laravel-permission"], include_versions?:bool)→{health_score,last_activity,laravel_support_matrix,php_support,vendor_risk_score,version_history,readme_brief};
   enums:{
     HealthBand∈{"Healthy"(active/recent,rec_prod),"Medium"(occasional),"Unhealthy"(abandoned/infrequent),"Unrated"(unassessed)};
-    LaravelVer∈{"5"-"9"(deprecated),"10"(legacy/common),"11"(widely_used),"12"(current_stable),"13"(latest)};
+    LaravelVer∈{"5"-"10"(deprecated/EOL),"11"(legacy),"12"(security_maintenance),"13"(current_stable)};
     PhpVer∈{"7.4","8.0","8.1","8.2","8.3","8.4","8.5"}
   }
 }
 §PAT{
-  discover_feature:SearchPluginTool({text_search:"authentication",health_score:"Healthy",laravel_compatibility:"12"});
+  discover_feature:SearchPluginTool({text_search:"authentication",health_score:"Healthy",laravel_compatibility:"13"});
   eval_pkg:GetPluginDetailsTool({package:"spatie/laravel-permission",include_versions:true});
   by_vendor:SearchPluginTool({vendor_filter:"spatie",health_score:"Healthy"});
   compat_check:SearchPluginTool(laravel_compatibility)∨GetPluginDetailsTool
@@ -28,8 +28,4 @@
   always_verify_via `GetPluginDetailsTool` before_recommending;
   ¬API_key_required
 }
-§REL{
-  `backend-development/references/php-laravel.md`;
-  `backend-development/references/laravel-testing.md`;
-  `backend-development/references/laravel-security.md`
-}
+§REL{php-laravel.md,laravel-testing.md,laravel-security.md}

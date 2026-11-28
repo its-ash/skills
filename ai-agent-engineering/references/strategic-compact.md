@@ -1,8 +1,11 @@
 @REF:strategic-compact
-§CORE{manual_compact@logical_boundaries≠arbitrary_auto_compact(mid_task_loss,¬boundary_aware,interrupts_multi_step)}
-§WHEN{near_limit(200K+),multi_phase(research→plan→impl→test),task_switch,post_milestone,ctx_pressure(slow/incoherent)}
+§CORE{
+  attention_budget:frontier_models_suffer_context_rot+lost_in_middle_WELL_BEFORE_token_ceiling(200K-1M+);
+  manual_compact@logical_boundaries∨API_Context_Editing+Compaction≠blind_late_auto_compact(mid_task_loss,¬boundary_aware)
+}
+§WHEN{context_rot(slow|incoherent|repeating),multi_phase(research→plan→impl→test),task_switch,post_milestone,approaching_active_budget(¬wait_for_95%_limit)}
 §SIG{
-  ctx_size(primary):sum(input_tokens+cache_read_input_tokens+cache_creation_input_tokens)[last_turn];compact@~80%(e.g.160k/200k),then_+60k;
+  ctx_size(primary):sum(input_tokens+cache_read_input_tokens+cache_creation_input_tokens)[last_turn];compact@~60-80%_effective_budget(or_earlier_on_rot),then_re_evaluate_every_+60k;
   tool_calls(secondary):50+_hint[weak_proxy:few_huge_reads_fill≠many_small_empty]
 }
 §DEC{
@@ -13,14 +16,21 @@
   MidImpl:NO(loses_vars,paths,state);
   PostFail:YES(clear_dead_end)
 }
+§MECH{
+  manual_CLI:`/compact Focus on implementing auth middleware next`(write_plan_to_file_PRE_compact);
+  API_Context_Editing:programmatically_prune/rewrite_stale_tool_outputs∧historical_chains_mid_conversation;
+  API_Compaction:trigger_based_or_auto_summarization_preserving_core_instructions(Claude_API/Agent_SDK,OpenAI_Agents_SDK);
+  subagent_iso:delegate_heavy_search/review_to_subagents/Handoffs⇒keep_parent_window_clean
+}
 §PERSIST{
   kept:{CLAUDE.md,disk_files,memory_files,git_state(commits,branches),task_list(ONLY_if_todo_enabled)};
   lost:{reasoning,prev_read_contents,multi_step_ctx,tool_history/counts,verbal_prefs};
   rule:¬rely_task_list(often_disabled_by_default)⇒write_plan_to_file_PRE_compact
 }
-§R{compact_post_plan(in_file);compact_post_debug;¬compact_mid_impl;write_file/mem_pre_compact;cmd:`/compact Focus on implementing auth middleware next`}
+§R{compact_post_plan(in_file);compact_post_debug;¬compact_mid_impl;write_file/mem_pre_compact;prune_tool_noise_early}
 §TOK_OPT{
-  lazy_trigger_tbl:kw→skill_path("test/tdd/coverage"→testing,"security/auth/xss"→security,"deploy/ci/cd"→deployment)⇒≥50%_baseline_cut;
-  parts:{CLAUDE.md(always→lean),skills(1-5K_ea),history,tool_results(reads/search)};
+  tool_search:many_MCP_tools⇒dynamic_tool_search+programmatic_tool_call(¬stuff_all_schemas_in_sys_prompt);
+  lazy_skills:modular_`.claude/skills/`+kw→skill_path⇒≥50%_baseline_cut;
+  parts:{CLAUDE.md(always→lean),skills(1-5K_ea),tool_schemas,history,tool_results};
   dups:{user_vs_proj_rules,skills_vs_CLAUDE.md,overlapping_skills}
 }

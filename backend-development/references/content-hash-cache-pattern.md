@@ -7,13 +7,10 @@
 import hashlib, json
 from dataclasses import dataclass
 from pathlib import Path
-_HASH_CHUNK_SIZE = 65536  # 64KB
 def compute_file_hash(path: Path) -> str:
     if not path.is_file(): raise FileNotFoundError(f"File not found: {path}")
-    h = hashlib.sha256()
-    with open(path, "rb") as f:
-        while (c := f.read(_HASH_CHUNK_SIZE)): h.update(c)
-    return h.hexdigest()
+    with path.open("rb") as f:
+        return hashlib.file_digest(f, "sha256").hexdigest()  # Python 3.11+ C-accelerated streaming
 @dataclass(frozen=True, slots=True)
 class CacheEntry:
     file_hash: str; source_path: str; document: ExtractedDocument
@@ -36,5 +33,6 @@ def extract_with_cache(file_path: Path, *, cache_enabled: bool = True, cache_dir
     return doc
 ```
 }
-§R{SHA256_content(¬path);64KB_chunks;`{hash}.json`(O(1),no_index);SRP_wrapper(pure_extract);manual_JSON_ser(frozen_dataclass);corrupt⇒None(miss);lazy_mkdir;log_hit/miss(`[:12]`)}
+§R{SHA256_content(¬path);`hashlib.file_digest`(Py_3.11+,streaming_C_loop);`{hash}.json`(O(1),no_index);SRP_wrapper(pure_extract);manual_JSON_ser(frozen_dataclass);corrupt⇒None(miss);lazy_mkdir;log_hit/miss(`[:12]`)}
 §ANTI{path_key(`{"/path/to/file.pdf":res}`);cache_in_`extract_text`(SRP_viol);`dataclasses.asdict(entry)`_on_nested_frozen_dataclasses}
+§REL{../SKILL.md,../../python/SKILL.md}

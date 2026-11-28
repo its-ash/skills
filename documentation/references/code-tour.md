@@ -1,72 +1,70 @@
 @REF:code-tour
-
 §R{
-  out:.tours/<persona>-<focus>.tour(CodeTour JSON only;¬modify source);
-  purpose:persona-targeted narrative walkthrough(what looking at→why matters→next path);
-  use∈{code/onboarding/arch/PR/RCA/security tour,"explain X"+reusable artifact,engineer/reviewer ramp-up,guided sequence>summary};
-  ¬use:{one-off chat⇒answer directly;prose docs⇒edit repo docs([documentation](../SKILL.md));impl/refactor⇒implement;broad onboarding ¬tour⇒[codebase-onboarding.md](codebase-onboarding.md)}
+  out:`.tours/<persona>-<focus>.tour`(CodeTour_JSON_only;¬modify_source);
+  purpose:persona-targeted_narrative_walkthrough(what_looking_at→why_matters→next_path);
+  use∈{code/onboarding/arch/PR/RCA/security_tour,"explain X"+reusable_artifact,engineer/reviewer_ramp-up,guided_sequence>summary};
+  ¬use:{one-off_chat⇒answer_directly;prose_docs⇒edit_repo_docs([documentation](../SKILL.md));impl/refactor⇒implement;broad_onboarding_¬tour⇒[codebase-onboarding.md](codebase-onboarding.md)};
+  drift_resilience:volatile_files⇒use_`pattern`_anchor(regex/content_match)∨set_VS_Code_`codetour.recordMode:"pattern"`(default=`"lineNumber"`)
 }
-
 §D{
   workflow:[
-    1_discover:{read(README,pkg/app entrypoints,dir tree,configs,PR changed files);¬write steps before understanding code shape},
+    1_discover:{read(README,pkg/app_entrypoints,dir_tree,configs,PR_changed_files);¬write_steps_before_understanding_code_shape},
     2_persona:{
-      "onboarding"|"new joiner"⇒new-joiner(9-13 steps);
-      "quick tour"|"vibe check"⇒vibecoder(5-8 steps);
-      "architecture"⇒architect(14-18 steps);
-      "tour this PR"⇒pr-reviewer(7-11 steps);
-      "why did this break"⇒rca-investigator(7-11 steps);
-      "security review"⇒security-reviewer(7-11 steps);
-      "explain how this feature works"⇒feature-explainer(7-11 steps);
-      "debug this path"⇒bug-fixer(7-11 steps)
+      "onboarding"|"new joiner"⇒new-joiner(9-13_steps);
+      "quick tour"|"vibe check"⇒vibecoder(5-8_steps);
+      "architecture"⇒architect(14-18_steps);
+      "tour this PR"⇒pr-reviewer(7-11_steps);
+      "why did this break"⇒rca-investigator(7-11_steps);
+      "security review"⇒security-reviewer(7-11_steps);
+      "explain how this feature works"⇒feature-explainer(7-11_steps);
+      "debug this path"⇒bug-fixer(7-11_steps)
     },
-    3_verify_anchors:{∀file exists;∀line∈range;exact selection block;volatile file⇒pattern anchor;¬guess lines},
-    4_write:.tours/<persona>-<focus>.tour(deterministic,readable),
-    5_validate:{∀path exists;∀line|selection valid;step[0]∈(file∨dir);ref has ∀referenced file;coherent story(¬file inventory)}
+    3_verify_anchors:{∀file_exists;∀line∈range(1-based);exact_selection(1-based_line∧1-based_character);volatile_file⇒pattern_anchor;¬guess_lines},
+    4_write:`.tours/<persona>-<focus>.tour`(deterministic,readable,schema_valid),
+    5_validate:{∀path_exists;∀line|selection|pattern_valid;step[0]∈(file∨dir);ref_has_∀referenced_file;coherent_story(¬file_inventory)}
   ];
   ref_rule:{
-    semantics:ref≠checked-out branch⇒CodeTour reads from git rev `ref`(¬disk);missing file@`ref`⇒`"The editor could not be opened because the file was not found"`(comments still render);
-    pr_tour⇒PR branch(NEVER base e.g.`develop`;PR adds new files absent on base);
-    onboarding|arch⇒reader branch(often `main`)∨omit `ref`;
-    unsure⇒omit `ref`(reads disk);
-    verify:∀step.file exists@chosen `ref`
+    semantics:ref≠checked-out_branch⇒CodeTour_reads_from_git_rev_`ref`(¬disk)∨warns_on_mismatch;missing_file@`ref`⇒`"The editor could not be opened because the file was not found"`(comments_still_render);
+    pr_tour⇒PR_branch(NEVER_base_e.g.`develop`/`main`;PR_adds_new_files_absent_on_base);
+    onboarding|arch⇒reader_branch(often_`main`)∨omit_`ref`;
+    unsure⇒omit_`ref`(reads_working_tree);
+    verify:∀step.file_exists@chosen_`ref`
   };
-  SMIG:{Situation:what reader sees;Mechanism:how works;Implication:why matters for persona;Gotcha:what smart reader misses};
-  arc:1_orientation→2_module_map→3_core_exec_path→4_edge_case|gotcha→5_closing(what reader can now do,¬recap)
+  SMIG:{Situation:what_reader_sees;Mechanism:how_works;Implication:why_matters_for_persona;Gotcha:what_smart_reader_misses};
+  arc:1_orientation→2_module_map→3_core_exec_path→4_edge_case|gotcha→5_closing(what_reader_can_now_do,¬recap)
 }
-
 §CFG{
-  root:`$schema:"https://aka.ms/codetour-schema"`,title,description,ref?,steps:[];
+  root:`"$schema":"https://aka.ms/codetour-schema"`,title,description,ref?,steps:[];
+  vscode_setting:`"codetour.recordMode":"pattern"`(drift-safe_recording_vs_`"lineNumber"`);
   steps:{
-    content(sparingly,usually closing;NEVER step[0]):`{"title","description"}`;
-    directory(module orient):`{"directory","title","description"}`;
-    file_line(default):`{"file","line","title","description"}`;
-    selection(focus block):`{"file","selection":{"start":{"line":15,"character":0},"end":{"line":34,"character":0}},"title","description"}`;
-    pattern(drift-safe):`{"file","pattern","title"}`;
-    uri(PR|issue|doc):`{"uri","title"}`
+    content(sparingly,usually_closing;NEVER_step[0]):`{"title","description"}`;
+    directory(module_orient):`{"directory","title","description"}`;
+    file_line(1-based_line):`{"file","line","title","description"}`;
+    selection(1-based_line_AND_1-based_character):`{"file","selection":{"start":{"line":15,"character":1},"end":{"line":34,"character":1}},"title","description"}`;
+    pattern(drift-safe_regex_or_line_match):`{"file","pattern","title","description"}`;
+    uri(PR|issue|doc):`{"uri","title","description"}`
   }
 }
-
 §ANTI{
-  flat file list⇒story w/ step dependency;
-  generic desc⇒concrete code path|pattern;
-  guessed anchors⇒verify file+line first;
-  excess steps on quick tour⇒cut aggressively;
-  step[0] content-only⇒anchor to real file|dir;
-  persona mismatch⇒write for actual reader;
-  PR tour w/ base `ref`⇒use PR branch
+  flat_file_list⇒story_w/_step_dependency;
+  generic_desc⇒concrete_code_path|pattern;
+  guessed_anchors∨0-based_`selection.character`⇒verify_1-based_file+line+char_first;
+  hardcoded_line_numbers_in_high-churn_files⇒use_`pattern`_anchor;
+  excess_steps_on_quick_tour⇒cut_aggressively;
+  step[0]_content-only⇒anchor_to_real_file|dir;
+  persona_mismatch⇒write_for_actual_reader;
+  PR_tour_w/_base_`ref`⇒use_PR_branch
 }
-
 §CHK{
   step_count∝(repo_size,persona_depth);
   directory=orientation∧file=substance;
-  PR_tour⇒changed files first;
-  monorepo⇒scope to relevant pkgs;
-  closing=reader capability,¬recap
+  PR_tour⇒changed_files_first;
+  monorepo⇒scope_to_relevant_pkgs;
+  selection_indices_1-based∧pattern_matches_unique_line;
+  closing=reader_capability,¬recap
 }
-
 §REL{
-  [codebase-onboarding.md](codebase-onboarding.md):full onboarding guide;
-  [code-review](../../code-review/SKILL.md):PR review;
+  [codebase-onboarding.md](codebase-onboarding.md):full_onboarding_guide;
+  [code-review](../../code-review/SKILL.md):PR_review;
   https://github.com/microsoft/codetour
 }

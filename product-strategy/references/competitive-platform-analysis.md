@@ -2,55 +2,57 @@
 §D{
   pipeline:1:scope(this)→2:[benchmark-methodology.md](benchmark-methodology.md)→3:[competitive-report-structure.md](competitive-report-structure.md);
   goal:defensible_decision_set(10-18_cands→8-12_profiled,¬census);
+  domain:supports_both(B2B_SaaS/AI_products∧creative/advisory_studios);
   use⇔pre_benchmark_scope∨tier_classify∨prune_landscape∨contest_pos_brief;
 }
 §R{
   gate:establish_client_pos_brief_first(if_∅⇒short_[brand-discovery](brand-discovery.md);¬invent∧¬scope_blind);
-  brief_fields:{id/aesthetic_reg,offer,target_clients,differentiator(moat),scoping_consequence(weight:distinctiveness|cap_overlap|price),strategic_tension(paired_axes,e.g.memorability×hireability)};
+  brief_fields:{id/aesthetic_reg,offer/product,target_ICP,differentiator(moat),scoping_consequence(weight:distinctiveness|cap_overlap|pricing_model),strategic_tension(paired_axes,e.g.memorability×hireability|self_serve_speed×enterprise_trust)};
   ¬brief⇒STOP;
+  AI_mirror_discovery:run_3-5_buyer_prompts_in(ChatGPT,Claude,Gemini,Perplexity:"best <cat> for <ICP>")→capture_AI_shortlisted_competitors(60-80%_B2B_eval_starts_in_dark_AI_funnel);
   verify_claims:sources≥2(self_copy≠verified_outcome;adversarial_verify);
-  output:{cands:10-18→profiled:8-12,tagged:{axis_pos,tier,src_links}}→handoff([benchmark-methodology.md](benchmark-methodology.md));
+  output:{cands:10-18→profiled:8-12,tagged:{axis_pos,tier,AI_shortlist_flag,src_links}}→handoff([benchmark-methodology.md](benchmark-methodology.md));
 }
 §PAT{
   selection_axes(7,decides_inclusion+tier):
-    size/model:{solo,micro(2-8),boutique(<30),mid-size}|match_client_band=head-to-head;
-    niche/spec:offer_overlap(tighter=more_direct);
-    geo/mkt:{EU,US,global-remote,lang,TZ_reach,shared_targets};
-    pricing/eng:{productized_sprints,retainer,project,day-rate;transparent|"contact us"};
-    portfolio_style:{generic,opinionated/editorial,contrarian};
-    craft_maturity:{public_process,open_tooling,doc_systems};
-    brand_strength:{ownable_verbal/visual_id,interchangeable}(weight_per_scoping_consequence);
-  taxonomy_axes(8,generic_creative_svcs;populate_breadth→prune):
-    1:pos_stance(brand-led/editorial{id,voice,POV}↔capability-led{craft,throughput,outcomes});
-    2:specialization(specialist↔generalist);
-    3:size/model(solo/micro↔boutique↔mid-size↔enterprise);
-    4:engagement(productized{sprints,audits,fixed_pkgs}↔bespoke{custom,retainer});
+    size/stage:{solo,micro(2-8),boutique(<30),seed/A,growth_mid,enterprise}|match_client_band=head-to-head;
+    niche/spec:offer_or_workflow_overlap(tighter=more_direct);
+    geo/mkt:{EU,US,global-remote,lang,reg_scope,shared_ICP};
+    pricing/eng:{SaaS(flat_seat,hybrid_base+credits,consumption/tokens,outcome_based,PLG_freemium,enterprise_custom)|svc(productized_sprints,retainer,project,day-rate);transparent|"contact sales"};
+    positioning_style:{generic/category_safe,opinionated/editorial,contrarian/category_creator};
+    craft_or_product_maturity:{public_docs/changelog,open_tooling,case_depth,free_tier/sandbox};
+    brand_and_GEO_strength:{ownable_verbal/visual_id,AI_citation_share,interchangeable}(weight_per_scoping_consequence);
+  taxonomy_axes(8,populate_breadth→prune;adapt_labels_to_SaaS_or_svc):
+    1:pos_stance(brand/narrative-led{id,voice,POV}↔capability/feature-led{craft,specs,outcomes});
+    2:specialization(vertical/workflow_specialist↔horizontal_generalist);
+    3:size/model(solo/micro/seed↔boutique/growth↔mid-size↔enterprise_incumbent);
+    4:delivery_pricing(productized/PLG/hybrid_credits↔bespoke/sales-led/retainer);
     5:distinctiveness(conventional/safe↔contrarian/manifesto);
-    6:credibility_model(outcome-led{metrics,named_clients,case_depth}↔aesthetic-led{portfolio,awards});
-    7:operator_brand(interchangeable↔cult/ownable_id,incl_senior_solo);
+    6:credibility_model(outcome/proof-led{metrics,named_logos,SOC2,G2/Clutch}↔aesthetic/hype-led{portfolio,awards,demos});
+    7:distribution_moat(interchangeable/paid_only↔cult_brand/community/GEO_cited/ecosystem);
     8:mkt/reach(local/regional↔global-remote);
     direct_rule:proximate_on_{pos,spec,size,mkt}simultaneously;
   tiers:
-    Direct:same_band∧overlapping_offer∧same_targets(head-to-head);
-    Adjacent:partial_overlap(1_cap∨diff_client_size)∧edge_pressure;
-    Aspirational:¬competing_now∧sets_brand/commercial_bar;
-    Substitutes(threat_vector,¬profiled_unless_material):{no-code/AI,in-house,generalist_freelancers};
-  sources(match_dim;sub_niche_native):
-    portfolio_platforms(Dribbble,Behance,Vimeo)→craft,range,aesthetic_reg;
-    awards(Awwwards,lists)→craft_ambition,editorial_rec(over_indexes_flashy⇒xchk_comm_cred);
-    own_site→pos,voice,packaging,pricing,named_clients,POV;
-    LinkedIn→team_size/model,founder_narrative,cadence,logos,geo;
-    review_dirs(Clutch.co)→reviews,named_clients,proj_size,eng_model(top_comm_cred+enterprise_sig);
-    open_work→process_repos,pub_samples,craft_transparency;
-    talks/podcasts/newsletters→thought_leadership,POV_ownership;
+    Direct:same_band∧overlapping_offer∧same_ICP(head-to-head_shortlist);
+    Adjacent:partial_overlap(1_cap∨diff_segment)∧edge_expansion_pressure;
+    Aspirational:¬competing_now∧sets_brand/product/commercial_bar;
+    Substitutes(threat_vector,¬profiled_unless_material):{frontier_LLM_chat/DIY_agents,no-code/vibe-coded_internal,in-house,spreadsheets/status_quo,generalist_freelancers};
+  sources(match_domain+sub_niche_native):
+    AI_search_mirror(ChatGPT,Claude,Gemini,Perplexity)→who_AI_recommends,category_frame,citation_sources;
+    own_site+product(homepage,pricing,docs,changelog,status_page)→pos,voice,packaging,value_metric,proof;
+    B2B_review_dirs(SaaS:G2,Capterra,Gartner_Peer_Insights|svc:Clutch.co)→verified_buyers,proj/ACV_band,pros/cons,enterprise_sig;
+    dark_funnel_consensus(Reddit,HN,niche_communities,GitHub_issues)→unfiltered_complaints,switching_triggers,real_reputation;
+    LinkedIn+filings→team_size/hiring,founder_narrative,ICP_logos,geo,GTM_motion;
+    craft_and_awards(Dribbble,Behance,Awwwards,Product_Hunt,open_repos)→craft_ambition(over_indexes_flashy⇒xchk_comm_cred);
+    content_channels(talks,podcasts,newsletters,research_reports)→thought_leadership,owned_POV;
 }
 §CHK{
-  pre_filter(1-5;cols:{Cand,Pos_stance,Spec,Size,Tier,Offer_overlap,Distinctiveness,Comm_cred,Craft_prox,Include?}):
-    keep_if(high(Distinctiveness)∨high(Comm_cred));
+  pre_filter(1-5;cols:{Cand,Pos_stance,Spec,Size,Tier,Offer_overlap,Distinctiveness,Comm_cred,Craft_prox,AI_cited?,Include?}):
+    keep_if(high(Distinctiveness)∨high(Comm_cred)∨high(AI_cited_shortlist));
     high_dist∧high_cred⇒must-profile(proves_tension_achievable);
-    high_dist∧low_cred⇒cautionary_case(memorable,un-hireable);
+    high_dist∧low_cred⇒cautionary_case(memorable,un-hireable/untrusted);
     low_dist∧high_cred⇒competent_forgettable(define_against);
-    low_dist∧low_cred⇒drop(unless_breadth);
+    low_dist∧low_cred⇒drop(unless_AI_shortlist_anomaly_or_breadth);
 }
 §EX{
   client:2p_EU-remote_brand-id_studio,productized_sprints,contrarian/manifesto;tension=memorability×hireability;scoping_consequence=weight_distinctiveness;
@@ -64,6 +66,7 @@
 §ANTI{
   scope_without_pos_brief;
   exhaustive_census(>10-18);
+  ignore_AI_search_shortlisted_rivals_or_DIY_LLM_substitutes;
   blur_Direct/Adjacent/Aspirational;
   single_source_verification;
   conflate_scoping_with_9dim_scoring;
@@ -72,4 +75,5 @@
   [brand-discovery.md](brand-discovery.md):pos_brief+strategic_tension;
   [benchmark-methodology.md](benchmark-methodology.md):next_step_9dim_scoring;
   [market-research.md](market-research.md):source_standards+untrusted_rules;
+  [seo](../../seo/SKILL.md):GEO_AI_search_citation_audit;
 }

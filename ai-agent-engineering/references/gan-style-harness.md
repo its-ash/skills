@@ -1,7 +1,6 @@
 @REF:gan-style-harness
-# GAN-Style Adversarial Harness (Generator–Evaluator loop; Anthropic 2026-03-24)
-
 §PREMISE{
+  origin:Generator–Evaluator_adversarial_loop(Anthropic_2026-03-24);
   self_eval_bias:agents_praise_own_mediocre_output⇒separate_ruthless_Evaluator_beats_self_critique;
   loop:Planner(spec)→[Generator(build)⇄Evaluator(live_test+score)]*N
 }
@@ -48,11 +47,12 @@ exit 1
   principle:each_harness_component_encodes_model_limitation⇒re-test_&_strip_as_models_improve;
   Stage1(Sonnet-class):full_sprint_decomp∧context_resets_between_sprints(¬context_anxiety)∧≥2agents(Initializer+Coding)∧heavy_scaffolding;
   Stage2(Opus_4.5-class):3agents(Planner+Generator+Evaluator)∧sprint_contracts_pre_phase∧10sprint_decomp∧resets_useful_¬critical;
-  Stage3(Opus_4.6-class):1_planning_pass∧continuous_gen∧1_end_pass_eval∧¬sprint_structure∧auto_compaction
+  Stage3(Opus_4.6-class):1_planning_pass∧continuous_gen∧1_end_pass_eval∧¬sprint_structure∧auto_compaction;
+  Stage4(Opus_5.5/Fable_5.2-class):adaptive_reasoning_effort+Context_Editing/Compaction+`--worktree`+sandboxed_eval;use_`claude-fable-5-2`|`claude-opus-5-5`_for_Planner/Evaluator_on_hard_craft
 }
 
 §CFG{
-  env:{`GAN_MAX_ITERATIONS=15`,`GAN_PASS_THRESHOLD=7.0`,`GAN_PLANNER_MODEL=sonnet`,`GAN_GENERATOR_MODEL=sonnet`,`GAN_EVALUATOR_MODEL=sonnet`,`GAN_EVAL_CRITERIA=design,originality,craft,functionality`,`GAN_DEV_SERVER_PORT=3000`,`GAN_DEV_SERVER_CMD="npm run dev"`,`GAN_PROJECT_DIR=.`,`GAN_SKIP_PLANNER=false`,`GAN_EVAL_MODE=playwright`};
+  env:{`GAN_MAX_ITERATIONS=15`,`GAN_PASS_THRESHOLD=7.0`,`GAN_PLANNER_MODEL=claude-opus-5-5`,`GAN_GENERATOR_MODEL=claude-sonnet-5-5`,`GAN_EVALUATOR_MODEL=claude-opus-5-5`,`GAN_EVAL_CRITERIA=design,originality,craft,functionality`,`GAN_DEV_SERVER_PORT=3000`,`GAN_DEV_SERVER_CMD="npm run dev"`,`GAN_PROJECT_DIR=.`,`GAN_SKIP_PLANNER=false`,`GAN_EVAL_MODE=playwright`};
   modes:{`playwright`:Browser_MCP+live_interaction→full_stack_UI;`screenshot`:screenshot+visual→static/design_only;`code-only`:tests+lint+build→APIs/libs/CLIs}
 }
 

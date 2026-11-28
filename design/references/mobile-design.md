@@ -7,7 +7,7 @@
 §R{
   touch_first:target≥44pt(iOS)|48dp(Android)∧gap∈[8,12]px;
   battery_aware:¬unnecessary_bg_work∧native_anim_drivers;
-  platform_respectful:HIG(iOS)∨Material3(Android)∧native_nav_gestures_UI;
+  platform_respectful:HIG(iOS_26_LiquidGlass+ReduceTransparency)∨Material3_Expressive(Android_springs+predictive_back)∧native_nav_gestures_UI;
   offline_capable:local_cache∧graceful_degradation;
   a11y:labels∧dynamic_type∧contrast
 }

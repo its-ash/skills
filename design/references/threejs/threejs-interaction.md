@@ -1,6 +1,6 @@
 @REF:threejs-interaction
 
-§META{target:three.js@r186;renderers:WebGLRenderer⊕WebGPURenderer("three/webgpu");addons:"three/addons/..."}
+§META{target:three.js@r187;renderers:WebGLRenderer⊕WebGPURenderer("three/webgpu");addons:"three/addons/..."}
 
 §PAT{quick_start|
   events:pointerdown|pointermove|pointerup⇒mouse+touch+pen(¬separate touch listeners);

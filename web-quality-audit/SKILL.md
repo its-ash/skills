@@ -1,40 +1,50 @@
 ---
 name: web-quality-audit
-description: "AUTO_INVOKE(silent)⇔prompt∈{audit,Lighthouse,PageSpeed,CWV,LCP,INP,CLS,TTFB,FID,CrUX,Search_Console,a11y,WCAG,ARIA,screen_reader,contrast,SEO,meta_tags,structured_data,sitemap,robots.txt,CSP,HSTS,X-Frame-Options,HTML_validity,launch_readiness,slow_load,broken_markup,ranking_drop,post_deploy_regression,p95,p99,polyfill}|SUB:{web-performance,performance,web-accessibility,benchmark,latency-critical-systems,production-audit,canary-watch}"
+description: "AUTO_INVOKE(silent)⇔prompt∈{audit,Lighthouse,LHCI,PageSpeed,CWV,LCP,INP,CLS,TTFB,FID,CrUX,CrUX_Vis,Search_Console,LoAF,bfcache,Speculation_Rules,zstd,chrome-devtools-mcp,a11y,WCAG,WCAG_2.2,EAA,ARIA,axe-core,screen_reader,contrast,SEO,meta_tags,structured_data,sitemap,robots.txt,CSP,Trusted_Types,HSTS,COOP,COEP,X-Frame-Options,HTML_validity,launch_readiness,slow_load,broken_markup,ranking_drop,post_deploy_regression,k6,oha,p95,p99,polyfill}|SUB:{audit-checklist,web-performance,performance,web-accessibility,benchmark,latency-critical-systems,production-audit,canary-watch}"
 ---
 @SKL:web-quality-audit
 §R{
   scope:{Performance,Accessibility,SEO,Best_Practices}⇒report(by_severity,exact_fixes);
-  ∀target_page:run(Lighthouse∨equiv)→export_JSON∧parse¬guess_scores;
-  ∀finding:classify(category,severity∈{Critical,High,Medium,Low});
-  ∀finding:emit(file_path:line,impact,exact_code/config_fix);
+  ∀target_page:run(Lighthouse_13+∨chrome-devtools-mcp)→parse_JSON/insights¬guess_scores;
+  LH13_shift:Performance_Insights(lcp-breakdown,cls-culprits,interaction-to-next-paint,document-latency,image-delivery)∧Baseline_diag(web-features);PWA_cat_retired;
+  MCP_split:lighthouse_audit(a11y,SEO,BP,agentic)∧performance_start_trace→performance_analyze_insight(CWV,perf);
+  ∀finding:classify(category,severity∈{Critical,High,Medium,Low})∧emit(file_path:line,impact,exact_code/config_fix);
   report_fmt←references/audit-checklist.md;
-  fix_order:Critical(security,CWV)→High(a11y_barriers)→Medium(SEO,perf)→Low(code_quality);
-  CWV_targets:LCP<2.5s∧INP<200ms∧CLS<0.1(INP_replaces_FID);
-  field_data(Search_Console,CrUX)>single_lab_run_on_conflict;
-  native_HTML>ARIA;contrast≥4.5:1(large_text≥3:1);
+  fix_order:Critical(security,CWV_break)→High(a11y_barriers,CWV_fail)→Medium(SEO,perf,BP)→Low(lint,tuning);
+  CWV_targets(p75):LCP≤2.5s∧INP≤200ms∧CLS≤0.1(FID_retired;web-vitals_v5_drops_onFID);
+  field_data(CrUX_API|CrUX_Vis|Search_Console|RUM)>single_lab_run_on_conflict;
+  a11y_std:WCAG_2.2_AA(EAA_2025/ADA_Title_II)∧native_HTML(<dialog>,[popover],inert)>ARIA;
+  contrast:≥4.5:1_normal∧≥3:1_large(≥18pt/24px∨≥14pt/18.67px_bold)∧≥3:1_UI;targets≥24×24px;
+  sec_hdrs:Strict_CSP(nonce+'strict-dynamic'+frame-ancestors+Trusted_Types)∧HSTS(63072000)∧COOP/COEP(if_isolated);
+  bfcache:¬unload_handlers(use_pagehide|visibilitychange)∧¬no-store_on_HTML;
   ¬run(audits∨load_tests)@3rd_party_sites_without_permission
 }
 §D{
   sev=Critical(security_flaw∨total_fail∨CWV_breaks_page)⇒fix(now)¬defer;
   sev=High(CWV_fail∨major_a11y_barrier∨broken_fn)⇒fix(before_launch)¬ship;
-  sev=Medium(perf/SEO_gain∨non_blocking_best_practice_gap)⇒fix(this_sprint)¬ignore;
+  sev=Medium(perf/SEO_gain∨non_blocking_BP_gap)⇒fix(this_sprint)¬ignore;
   sev=Low(minor_tuning∨lint_warn∨cosmetic)⇒fix(when_convenient)¬block;
   audit_site∨pre_launch⇒full_4_cat_audit+report¬perf_only_Lighthouse_score;
-  slow_page∨CWV_regression⇒load(performance:DevTools_MCP_trace)→web-performance_fixes¬guess_from_source_alone;
-  before_after_Δ⇒benchmark(baseline∧compare)¬single_unpaired_run;
+  slow_page∨CWV_regression⇒performance_start_trace→performance_analyze_insight→web-performance_fixes¬guess_from_source;
+  a11y_SEO_BP_check⇒lighthouse_audit(MCP)∨LH13_CLI+axe-core(wcag22aa)¬stale_wcag21_only_scan;
+  poor_INP∨jank⇒LoAF_API_attrib+scheduler.yield()¬blind_setTimeout_0;
+  slow_nav⇒Speculation_Rules(prefetch|prerender)+bfcache(pagehide¬unload)¬legacy_prefetch_only;
+  modals|menus|drawers⇒native(<dialog>,[popover],inert)¬custom_div_focus_trap;
+  before_after_Δ⇒benchmark(baseline∧compare;LHCI|k6|oha)¬single_unpaired_run;
   ready_to_ship⇒production-audit(score+blockers)¬generic_checklist_only;
   just_deployed⇒canary-watch(vs_baseline)¬wait_user_reports;
   p95/p99∨feeds∨streams⇒latency-critical-systems¬page_load_tuning_only;
-  HSTS⇒enable_only_after_HTTPS_all_subdomains¬preload_before_rollback_clear;
-  polyfills⇒load_on_demand∧self_host¬polyfill.io(compromised_2024)
+  CSP|COEP_rollout⇒Report-Only_1-2wk_first¬blind_enforce_in_prod;
+  HSTS⇒max-age=63072000;includeSubDomains;preload_only_after_HTTPS_all_subdomains¬preload_before_rollback_clear;
+  cross_site_cookie⇒CHIPS(__Host-+Secure;SameSite=None;Partitioned)¬unpartitioned_3p_cookie;
+  polyfills⇒Baseline_diag+on_demand∧self_host¬polyfill.io(compromised_2024)
 }
 §REF{
-  per_cat_checklists,report_tpl,cadence,tools→references/audit-checklist.md;
-  fix_CWV,bundles,caching,images,fonts→references/web-performance.md;
-  Chrome_DevTools_MCP_traces,LCP/INP/CLS_diag→references/performance.md;
-  WCAG_2.1/2.2,ARIA,forms,modals,mobile_a11y→references/web-accessibility.md;
-  baselines,before/after_measurement_loop→references/benchmark.md;
+  per_cat_checklists,headers,report_tpl,cadence,tools→references/audit-checklist.md;
+  fix_CWV,LoAF,scheduler.yield,Speculation_Rules,bfcache,zstd,bundles,caching,images,fonts→references/web-performance.md;
+  Chrome_DevTools_MCP(lighthouse_audit,traces,LH13_insights),LCP/INP/CLS_diag→references/performance.md;
+  WCAG_2.2,EAA/ADA,native_dialog/popover/inert,axe-core_4.14+,ARIA,forms,mobile_a11y→references/web-accessibility.md;
+  baselines,LHCI,CrUX_Vis,k6,oha,autocannon,before/after_loop→references/benchmark.md;
   realtime_p95/p99_latency,throughput,freshness→references/latency-critical-systems.md;
   ship_readiness_score,blockers→references/production-audit.md;
   post_deploy_URL_monitoring→references/canary-watch.md

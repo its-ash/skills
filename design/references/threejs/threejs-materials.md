@@ -1,5 +1,5 @@
 @REF:threejs-materials
-§META{target:three.js@r186;default:WebGLRenderer;webgpu_sec:WebGPURenderer}
+§META{target:three.js@r187;default:WebGLRenderer;webgpu_sec:WebGPURenderer}
 
 §MAT{
   MeshBasicMaterial:{use:"unlit color/tex/wireframe",lit:∅,props:[envMap,reflectivity∈[0,1],combine∈{MultiplyOperation,MixOperation,AddOperation},specularMap(sRGB;masks envMap),color(*map),map,transparent,opacity,side,fog]};
@@ -13,7 +13,7 @@
     sheen:[sheen,sheenColor,sheenRoughness,sheenColorMap,sheenRoughnessMap],
     iridescence:[iridescence,iridescenceIOR,iridescenceThicknessRange([100,400]nm),iridescenceMap,iridescenceThicknessMap],
     anisotropy:[anisotropy,anisotropyRotation,anisotropyMap],
-    other:[dispersion,retroreflectivity,specularIntensity,specularColor,specularIntensityMap,specularColorMap]
+    other:[dispersion,retroreflectivity,specularIntensity,specularColor,specularIntensityMap,specularColorMap,EON_rough_diffuse_BRDF(r187)]
   },glass_cfg:{color:0xffffff,metalness:0,roughness:0,transmission:1,thickness:0.5,ior:1.5,note:"refracts opaque objs+scene.background;scene.environment adds reflections"}};
   MeshToonMaterial:{use:"cel shading",lit:toon_steps,gradientMap:"DataTexture(Uint8Array,w,1,RedFormat);minFilter=magFilter=NearestFilter(hard)|LinearFilter(blend);needsUpdate=true"};
   MeshNormalMaterial:{use:"RGB normals debug/illustrative",props:[flatShading,wireframe]};

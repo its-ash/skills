@@ -1,21 +1,23 @@
 ---
 name: machine-learning
-description: "AUTO_INVOKE(silent)⇔prompt∈{ML,MLE,production_ML,data_contract,leakage,point-in-time,reproducible_training,PyTorch,DataLoader,AMP,torch.compile,recsys,ranking,reranker,threshold,precision,recall,AUC,F1,calibration,drift,label_leakage,train/serve_skew,promotion_gates,shadow,canary,rollback,ETL,backfill,baseline,error_analysis}|SUB:{pytorch-patterns,ml-adoption-playbook,recsys-pipeline-architect,data-throughput-accelerator}"
+description: "AUTO_INVOKE(silent)⇔prompt∈{ML,MLE,production_ML,data_contract,leakage,point-in-time,repro_training,PyTorch,DataLoader,StatefulDataLoader,AMP,bfloat16,torch.compile,torch.export,FSDP2,safetensors,ONNX,skops,scikit-learn,MLflow,recsys,ranking,reranker,threshold,precision,recall,AUC,F1,calibration,drift,train/serve_skew,promotion_gates,shadow,canary,rollback,ETL,Polars,DuckDB,Iceberg,Ray_Data,backfill,baseline,error_analysis}|SUB:{mle-workflow,pytorch-patterns,ml-adoption-playbook,recsys-pipeline-architect,data-throughput-accelerator}"
 ---
 @SKL:machine-learning
 §R{
   start⇒decision_changed_by_model∧¬model_first∧reject('improve_the_model'_req)
-  pre_model_code⇒write(Iteration_Compact→references/mle-workflow.md#iteration-compact-write-before-model-code-fits-in-a-pr-description)
+  pre_model_code⇒write(§COMPACT→references/mle-workflow.md)
   data_contract⇒lock(entity_grain,label_t,feature_t,point_in_time_joins,split_policy,snapshot_ID)
   leakage⇒check_first∧drop(feature∉avail@pred_t∨joined(future_data))
-  complexity⇒baseline_first∧add_cap⇔error_analysis(fixable_cause)
-  repro⇒typed_cfg∧pinned_deps∧seeds∧dataset_ver∧code_SHA∧cfg_hash∧artifact_URI
+  complexity⇒baseline_first(linear→GBDT≺DL)∧add_cap⇔error_analysis(fixable_cause)
+  repro⇒typed_cfg∧pinned_deps∧seeds∧dataset_ver∧code_SHA∧cfg_hash∧artifact_URI(e.g.MLflow_3_LoggedModel)
   preprocess⇒ship_in_artifact∧(share(train_serve_xform)∨test_equiv)
+  serialization⇒safe_only(safetensors|skops.io|ONNX|weights_only=True)∧¬untrusted_pickle
   promo_gates⇒declare_pre_train_end∧automate∧fail_closed
   eval_cmp⇒vs(baseline,cur_prod)∧per_slice∧¬agg_only
   offline_metrics⇒gates∧¬guarantees∧Δ(prod_behavior)⇒(shadow∨canary∨A/B)
   serve⇒in_val∧timeout∧fallback∧model_ver∈(out,logs)∧¬PII∈logs
-  monitor⇒sys_health∧feature_drift∧pred_drift∧delayed_label_qual
+  monitor⇒sys_health∧data_drift∧pred_drift∧concept_drift(delayed_label_qual)
+  retrain⇒produce_candidate_passing_promo_gates∧¬auto_deploy_unvalidated
   rollback⇒switch_known_good_artifact∧¬retrain
   prod_mistakes⇒keep_as(reg_test∨eval_slice∨runbook_entry)
   scope⇒match_sys∧¬heavy_MLOps⇔suffice(contract,baseline,eval_script,rollback_note)
@@ -32,18 +34,23 @@ description: "AUTO_INVOKE(silent)⇔prompt∈{ML,MLE,production_ML,data_contract
   class_imbalance⇒cmp(weighted_loss,resampling,thresh_move,calibration)¬resample_sans_cmp;
   missing_vals⇒decide(informative∨imputable∨abstain)¬silent_fill_0;
   time_dep_data⇒time_split∧point_in_time_joins¬random_split;
-  thresh_tuning⇒tune@val¬repeat_tune@test;
+  thresh_tuning⇒TunedThresholdClassifierCV|tune@val¬repeat_tune@test|0.5_default;
+  sklearn_calib_prefit⇒CalibratedClassifierCV(FrozenEstimator(clf))¬deprecated_cv='prefit';
+  model_persistence⇒safetensors|skops(get_untrusted_types→load)|ONNX¬pickle/joblib_untrusted;
+  pytorch_amp⇒bfloat16(¬GradScaler)_modern_hw|fp16+GradScaler_legacy¬fp16_by_habit;
+  pytorch_export_serve⇒torch.export+AOTInductor|ONNX(dynamo=True)+ORT¬deprecated_TorchScript;
+  ml_data_throughput⇒Iceberg+Polars/DuckDB+Ray_Data/WebDataset+StatefulDataLoader¬single_thread_pandas|tiny_files;
   post_run_mistakes⇒cluster(FP/FN)→map(labels,features,thresh,fallback)¬vague('improve_model');
 }
 §REF{
-  IterCompact,dec_loop,feat_hyp,err_analysis,ObsLedger,contracts,pipe+gate_code,serve,monitor,chk,anti_patterns,MLE-01..10→references/mle-workflow.md;
-  PyTorch:models,train/val_loops,Dataset,DataLoader,ckpt,AMP,torch.compile,non_repro→references/pytorch-patterns.md;
-  first_ML_in_repo:framing,heuristic_chk,data_ready,decoupled_inf_API,flag,baseline→references/ml-adoption-playbook.md;
+  IterCompact,dec_loop,feat_hyp,err_analysis,ObsLedger,contracts,pipe+gate_code,MLflow3,skops,serve,monitor,chk,anti,MLE-01..10→references/mle-workflow.md;
+  PyTorch_2.15+:torch.accelerator,bfloat16,AMP,inference_mode,Dataset,StatefulDataLoader,safetensors,DCP,FSDP2,torch.compile,torch.export,AOTInductor,ONNX_dynamo,FlexAttention,DebugMode→references/pytorch-patterns.md;
+  first_ML_in_repo:framing,heuristic_chk,data_ready,decoupled_inf_API,flag,baseline_ladder,skops,ONNX→references/ml-adoption-playbook.md;
   recsys,ranking,feed,notif_triage,RAG_reranker(Source,Hydrator,Filter,Scorer,Selector,SideEffect)→references/recsys-pipeline-architect.md;
-  slow_ingest,backfill,export,ETL,warehouse_load,prove_by(row_cnt,ts_cnt)→references/data-throughput-accelerator.md;
+  slow_ingest,backfill,export,ETL,warehouse_load,Iceberg,Polars,DuckDB,Ray_Data,WebDataset,prove_by(row_cnt,ts_cnt)→references/data-throughput-accelerator.md;
 }
 §REL{
-  ../python/SKILL.md:layout,uv,ruff,mypy;
+  ../python/SKILL.md:layout,uv,ruff,ty,mypy;
   ../python/references/python-testing.md:xform_tests;
   ../ai-agent-engineering/references/eval-harness.md:reg_gates;
   ../unit-testing-patterns/references/ai-regression-testing.md:reg_gates;

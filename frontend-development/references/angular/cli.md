@@ -1,5 +1,5 @@
 @REF:cli
-§R{prefer(`ng`CLI)over(manual_files|`npm`)}
+§R{prefer(`ng`CLI)over(manual_files|`npm`);Angular_22_req:Node≥22∧TS≥6}
 §DEPS{
   angular_libs:ALWAYS(`ng add <pkg>`,¬`npm install`)⇒installs+runs_init_schematics(`angular.json`,root_providers);
   ex:`ng add @angular/material` | `ng add tailwindcss` | `ng add @angular/fire`;
@@ -7,7 +7,7 @@
 }
 §GEN{
   cmd:`ng generate`∨`ng g`;
-  c:`ng g c path/to/name` (`--inline-style`/`-s`, `--inline-template`/`-t`);
+  c:`ng g c path/to/name` (`--inline-style`/`-s`, `--inline-template`/`-t`;`OnPush`+zoneless_default_v22);
   s:`ng g s path/to/name` (`@Injectable({providedIn:'root'})`);
   d:`ng g d path/to/name`;
   p:`ng g p path/to/name`;
@@ -25,11 +25,11 @@
 §BUILD{
   cmd:`ng build` (default_config=`production`:AOT,minify,tree-shake);
   out:`dist/<project-name>/browser`;
-  builder:`@angular/build:application`(esbuild);
+  builder:`@angular/build:application`;
   cfg:`ng build --configuration=staging`
 }
 §TEST{
-  unit:`ng test` (Karma|Vitest);
+  unit:`ng test` (Vitest+jsdom_default_v22;Karma_deprecated,CLI_migration_avail);
   e2e:`ng e2e` (prompts_install_if_unset:Cypress|Playwright|Puppeteer)
 }
 §DEPLOY{

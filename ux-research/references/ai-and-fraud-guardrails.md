@@ -1,0 +1,51 @@
+@REF:ai-and-fraud-guardrails
+§REL{../SKILL.md;./research-workflow.md;./metrics-and-analysis.md}
+§R{
+  AI_distinction:AI_moderated(automated_interviewer+real_humans)≠synthetic_users(LLM_personas+zero_humans);
+  synthetic_rule:internal_prep_only(stress_test_scripts,survey_wording,edge_case_brainstorm)¬final_design_decisions∨concept_validation∨willingness_to_pay∨a11y;
+  fraud_reality:unvetted_open_links⇒30..40%+(up_to_50..80%)_fraud(LLM_agents+click_farms+qual_creep);
+  defense_model:layered_behavioral_verification¬single_CAPTCHA_or_basic_attention_check;
+  privacy_gate:informed_consent+DSAR_traceability+automated_PII_redaction+no-AI-training_vendor_DPA≺LLM_or_sharing
+}
+§PAT:AI_UXR{
+  AI_moderated:{
+    tools:{Outset,Maze_AI_follow_up};
+    strengths:{scale_100s_concurrent,zero_interviewer_fatigue,fast_turnaround,multilingual,consistent_probing};
+    limits:{weak_deep_empathy,misses_subtle_non_verbals,unsuitable_for_sensitive_emotional_topics,weak_on_complex_multi_step_UI_observation};
+    use_when:structured_discovery_or_post_flow_probing_at_scale_with_real_vetted_humans
+  };
+  synthetic_users:{
+    failure_modes:{mode_collapse(narrow_predictable_band,misses_long_tail_and_dissent),sycophancy_prompt_to_please(inflated_approval_and_unrealistic_completion),training_bias_laundering(presents_LLM_priors_as_user_evidence)};
+    allowed:{rehearse_discussion_guides,pressure_test_ambiguous_survey_Qs,pre_field_edge_case_checklist};
+    forbidden:{ship_go_no_go,usability_pass_fail,concept_testing,pricing_WTP,accessibility_AT_validation}
+  }
+}
+§PAT:FraudDefense{
+  threats:{LLM_bots(bypass_CAPTCHA+attn_checks+write_fluent_backstories),click_farms(VPNs+device_spoof+shared_scripts),qual_creep(fake_profiles+voice_changers+scripted_async_video)};
+  obsolete_alone:{standard_reCAPTCHA,basic_trap("Select Strongly Agree"),grammatical_fluency_check_on_open_text};
+  layer1_recruit:{vetted_ID_panels(Prolific,User_Interviews,Ethnio)≻public_social_links;obscure_happy_path_eligibility_in_ads(¬state_exact_target_role_or_tool)};
+  layer2_screener:{fake_brand_tool_decoys(expect_"None_of_the_above"),split_field_consistency(ask_ZIP/state/industry_start_and_end→flag_mismatch),completion_speed_bounds};
+  layer3_telemetry:{device_OS_mismatch(desktop_on_mobile_study),timezone_IP_VPN_clusters,dup_device_fingerprints,copy_paste_events+uniform_machine_speed_text};
+  layer4_live_qual:{ID_verification_or_unrecorded_camera_check_pre_incentive;first_2min_unscripted_localized_probe(local_weather/landmark_from_screener);audit_lived_messy_detail_vs_polished_generic_LLM_prose("Firstly,secondly,in_conclusion")}
+}
+§PAT:Privacy_GDPR{
+  regulations:{GDPR,CCPA,DPDP_Act,SOC2};
+  consent_pre_session:{explicit_recording_consent,retention_TTL,AI_transcription_analysis_disclosure,opt_out_without_penalty};
+  DSAR_architecture:store(participant_id↔PII_map)_in_restricted_vault_separate_from_research_dataset⇒supports_Right_to_be_Forgotten_deletion;
+  redaction:auto_detect_and_mask(names,emails,phones,financials,faces,voices)∈{Dovetail,Condens,Marvin}≺sharing_clips∨external_LLM_prompts;
+  vendor_gate:require(DPA+data_residency+explicit_no_AI_training_on_customer_data);
+  git_rule:NEVER_commit(raw_transcripts,recordings,emails,IPs)→git;de-identified_CSVs_and_codebooks_only
+}
+§D{
+  need_50+_qual_interviews_fast⇒AI_moderated_w_real_vetted_humans(Outset)¬synthetic_LLM_personas;
+  high_emotion_or_complex_UI_usability⇒human_moderated_live_session¬AI_moderator;
+  stakeholder_asks_for_synthetic_panel⇒run_script_dry_run_only∧escalate_need_for_real_humans¬present_synthetic_as_evidence;
+  open_screener_flooded_w_fluent_responses⇒audit_split_consistency+fake_brand_traps+telemetry∧switch_to_vetted_panel¬accept_by_grammar;
+  sending_transcripts_to_LLM⇒redact_PII_first+use_zero_retention_no_train_endpoint¬paste_raw_PII_into_public_chat
+}
+§ANTI{
+  substituting_synthetic_users_for_real_testing;posting_unprotected_paid_screener_links_on_social_media;revealing_eligibility_criteria_in_recruitment_copy;relying_on_CAPTCHA_or_"Select Strongly Agree"_alone;committing_unredacted_transcripts_to_git;using_consumer_LLM_tools_that_train_on_participant_data
+}
+§CHK{
+  [AI_mod_vs_synthetic_boundary_enforced,vetted_panel_used,eligibility_obscured,fake_brand_and_split_traps_added,device_TZ_paste_telemetry_checked,live_local_warmup_if_moderated,consent+DSAR_logged,PII_redacted≺LLM/VC,vendor_no_AI_training_verified]
+}

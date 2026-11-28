@@ -1,45 +1,50 @@
 ---
 name: database-design
-description: "AUTO_INVOKE(silent)⇔prompt∈{SQL,NoSQL,database_design,schema,ERD,3NF,OLTP,OLAP,PostgreSQL,MySQL,MariaDB,SQLite,MongoDB,ClickHouse,TimescaleDB,Redis,Elasticsearch,OpenSearch,Meilisearch,Neo4j,CockroachDB,Spanner,Prisma,Drizzle,Flyway,Liquibase,Alembic,migrations,EXPLAIN,index,partition,RLS,N+1,CAP,keyset_pagination,expand_contract,BIGINT,UUID}|SUB:{postgresql,mysql-patterns,clickhouse,redis,database-migration,database-optimization,prisma,drizzle-orm}"
+description: "AUTO_INVOKE(silent)⇔prompt∈{SQL,NoSQL,database_design,schema,ERD,3NF,OLTP,OLAP,PostgreSQL,MySQL,MariaDB,SQLite,DuckDB,MongoDB,ClickHouse,TimescaleDB,Redis,Valkey,Elasticsearch,OpenSearch,Meilisearch,Neo4j,CockroachDB,Spanner,pgvector,Prisma,Drizzle,Atlas,Flyway,Liquibase,Alembic,migrations,EXPLAIN,index,partition,RLS,N+1,CAP,keyset_pagination,expand_contract,BIGINT,UUID,UUIDv7}|SUB:{schema-design,postgresql,mysql-patterns,clickhouse,redis,database-migration,database-optimization,prisma,drizzle-orm}"
 ---
 @SKL:database-design
 §R{
   pick_db⇒f(access_patterns,CAP_consistency,scale)¬default_1_engine;
   model⇒business_concepts¬UI_layouts;
   db_integrity⇒{NOT_NULL,UNIQUE,CHECK};
-  PK⇒BIGINT;(distributed⇒UUID);
+  PK⇒BIGINT_IDENTITY;(distributed⇒UUIDv7¬random_UUIDv4_Btree_bloat);
   ∀FK⇒explicit(ON_DELETE)∧index(FK);
-  money⇒DECIMAL∨NUMERIC(¬FLOAT);dates⇒DATE∨TIMESTAMP(¬strings);
+  money⇒DECIMAL∨NUMERIC(¬FLOAT);dates⇒TIMESTAMPTZ∨UTC_DATETIME(¬strings);
   ∀table⇒{created_at,updated_at};
-  index(WHERE,ORDER_BY,JOIN);composite_col_order⇒most_selective_first;
-  explicit_cols¬SELECT_*;prevent_N+1⇒JOIN∨eager_loading;
-  ∀migration⇒version(Flyway∨Liquibase∨Alembic∨Prisma_Migrate)+DOWN_script;
-  live_add_NOT_NULL⇒add_nullable→backfill→apply_constraint;
-  large_tbl_DDL⇒online_schema_change_tools(¬locks);
+  index(WHERE,ORDER_BY,JOIN);composite_order⇒EQ_cols_first→range/sort(sel_tiebreak);
+  profile_first⇒EXPLAIN(ANALYZE,BUFFERS)¬guess_indexes;
+  explicit_cols¬SELECT_*;keyset_pagination¬deep_OFFSET;prevent_N+1⇒JOIN∨eager_loading;
+  conn_pool(PgBouncer∨driver_pool)@serverless|high_concurrency¬unbounded_conns;
+  ∀migration⇒version(Atlas∨Flyway∨Liquibase∨Alembic∨Prisma∨Drizzle)+forward_only_prod+rollback_plan;
+  live_DDL⇒SET_lock_timeout(2-5s)+separate_DDL_&_DML;
+  live_add_NOT_NULL|CHECK|FK⇒nullable→batched_backfill→NOT_VALID→VALIDATE_CONSTRAINT;
+  large_tbl_DDL⇒CONCURRENTLY|ALGORITHM=INSTANT|online_schema_change(gh-ost,REPACK)¬blocking_locks;
+  AI_RAG_embeddings⇒start_in_primary_DB(pgvector,MariaDB_Vector,Redis8/Valkey9)¬premature_vec_DB;
 }
 §D{
-  OLTP(transactional,relational)⇒PostgreSQL∨MySQL+normalize_3NF¬doc_store_for_joins_heavy;
-  simple∨local_app⇒SQLite¬db_server;
-  OLAP(analytics,events,time_series)⇒ClickHouse∨TimescaleDB¬row_store_aggregates@scale;
-  cache∨sessions∨rate_limits∨locks⇒Redis¬cache_in_primary_DB;
+  OLTP(transactional,relational)⇒PostgreSQL(18/19)∨MySQL(8.4/9.x)∨MariaDB(11.8/12.x)+3NF¬doc_store_for_joins_heavy;
+  simple∨local∨edge⇒SQLite|libSQL¬db_server;embedded_OLAP⇒DuckDB;
+  OLAP(analytics,events,time_series)⇒ClickHouse(SharedMergeTree|MergeTree)∨TimescaleDB¬row_store_aggregates@scale;
+  cache∨sessions∨rate_limits∨locks⇒Redis(8)∨Valkey(9)¬cache_in_primary_DB;
   flex_nested_docs_read_together⇒DocDB+embed¬ref_when_always_read_together;
   large∨indep_updated_children⇒reference¬unbounded_embedded_arrays;
   full_text∨faceted_search⇒Elasticsearch∨OpenSearch∨Meilisearch¬LIKE_%x%_scans;
   rel_traversal⇒GraphDB(Neo4j)¬deep_recursive_SQL_joins;
   global_scale+strong_consistency⇒NewSQL(CockroachDB,Spanner)¬hand_rolled_sharding;
+  TS_ORM⇒Prisma_7(prisma-client+driver_adapter+prisma.config.ts)⊕Drizzle_v1(defineRelations+pgTable.withRLS)¬legacy_prisma-client-js;
   read_heavy_hot_path∧proven_slow⇒denormalize∨add_replica¬denormalize_pre_measure;
   large_rearch⇒strangler_pattern+expand_contract¬big_bang_cutover;
 }
 §REF{
-  engine_catalog,design_wf,index_types,scaling,anti_patterns,review_checklist→references/schema-design.md;
-  PostgreSQL(types,constraints,indexes,partitioning,RLS,extensions)→references/postgresql.md;
-  MySQL,MariaDB(defaults,EXPLAIN,upserts,keyset_pagination,locks,replicas)→references/mysql-patterns.md;
-  ClickHouse(MergeTree_family,mat_views,funnel_retention_queries)→references/clickhouse.md;
-  Redis(caching,locks,rate_limits,Streams,eviction,stampede_prev)→references/redis.md;
-  0_downtime_migrations,backfills,expand_contract,rollback(many_ORMs)→references/database-migration.md;
-  slow_queries,EXPLAIN_plans,indexing_strategy,pooling,scaling→references/database-optimization.md;
-  Prisma(schema,migrate,relations,tx,P2002,P2025,P2003)→references/prisma.md;
-  Drizzle_ORM(schema,queries,drizzle-kit,serverless_DBs)→references/drizzle-orm.md;
+  engine_catalog,design_wf,UUIDv7,index_types,scaling,anti_patterns,review_checklist→references/schema-design.md;
+  PostgreSQL(PG18/19,uuidv7,VIRTUAL_gen,AsyncIO,skip_scan,REPACK,RLS,extensions)→references/postgresql.md;
+  MySQL(8.4/9.x),MariaDB(11.8/12.x,collations,VECTOR,INSTANT_DDL,EXPLAIN,locks,replicas)→references/mysql-patterns.md;
+  ClickHouse(25/26,SharedMergeTree,JSON_type,Refreshable_MV,async_insert,analytics)→references/clickhouse.md;
+  Redis(8),Valkey(9,JSON,Vector_Sets,caching,locks,rate_limits,Streams,eviction)→references/redis.md;
+  0_downtime_migrations,lock_timeout,NOT_VALID,backfills,expand_contract,Atlas/ORMs→references/database-migration.md;
+  slow_queries,EXPLAIN_BUFFERS,ESR_indexing,AsyncIO,pgvector_HNSW,pooling,scaling→references/database-optimization.md;
+  Prisma_7(prisma.config.ts,prisma-client,driver_adapters,migrate,tx,P2002/P2025/P2003)→references/prisma.md;
+  Drizzle_v1(defineRelations,RQB_v2,EmptyFilter,pgTable.withRLS,pgPolicy,drizzle-kit)→references/drizzle-orm.md;
 }
 §REL{
   ../backend-development/SKILL.md:APIs,services_over_data_layer;
@@ -47,4 +52,5 @@ description: "AUTO_INVOKE(silent)⇔prompt∈{SQL,NoSQL,database_design,schema,E
   ../backend-development/references/nestjs.md:NestJS_data_access,modules;
   ../java/SKILL.md:JPA,Hibernate,MyBatis;
   ../kotlin/SKILL.md:Exposed_ORM,HikariCP,Flyway;
+  ../secure-coding/SKILL.md:SQLi,RLS,secrets,TLS,least_privilege;
 }

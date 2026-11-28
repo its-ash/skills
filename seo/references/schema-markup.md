@@ -1,11 +1,12 @@
 @REF:schema-markup
-§USE{add_schema∨fix_errors_missing_fields∨expand_rich_results(FAQ,Product,Breadcrumb,etc.)∨audit_structured_data}
+§REL{../SKILL.md:parent;../../frontend-development/references/nextjs.md:Nextjs_metadata;generative-engine-optimization.md:entity_graph}
+§USE{add_schema∨fix_errors_missing_fields∨expand_rich_results(Product,ProductGroup,ProfilePage,Article,Breadcrumb,LocalBusiness)∨entity_graph_for_GEO∨audit_structured_data}
 §FLOW{
-  1:identify_page_type(article,product,FAQ,event,...)→
-  2:select_schema_type(s)→
-  3:gather_required_props→
-  4:author_JSON-LD→
-  5:insert(`<script type="application/ld+json">`∈(`<head>`∨end_`<body>`))→
+  1:identify_page_type(article,product,variants,profile,forum,local,event,...)→
+  2:select_active_Google_supported_type(s)→
+  3:link_entities_via_@graph+@id→
+  4:author_JSON-LD(match_visible_DOM)→
+  5:SSR_inject(`<script type="application/ld+json">`+escape_`<`→`\u003c`)→
   6:validate(Google_Rich_Results_Test∧Schema.org_Validator)→
   7:deploy+monitor(GSC_Enhancements)→
   8:maintain_sync(on_page_content_Δ)
@@ -13,41 +14,46 @@
 §R{
   1:accuracy⇒markup≡visible_page_content(¬hidden_or_nonexistent_fields);
   2:format≡JSON-LD(Google_preferred,¬HTML_interference);
-  3:scope⇒Google_supported_rich_result_types_only;
-  4:validate_pre_publish(syntax∧req_props∧value_match);
-  5:reviews⇒real_customers_only(self_generated⇒Google_policy_violation)
+  3:scope⇒focus_active_Google_supported_types+clean_entity_graph;
+  4:security⇒ALWAYS_escape(`<`→`\u003c`)_in_JSON.stringify(prevent_`</script>`_XSS_breakout);
+  5:validate_pre_publish(syntax∧req_props∧value_match∧HTML≤2MB_so_script_not_truncated);
+  6:reviews⇒real_customers_only∧¬self_serving_reviews_on_Organization/LocalBusiness
+}
+§DEPR{
+  HowTo:FULLY_RETIRED(mobile_Aug2023,desktop_Sep2023;dropped_from_docs/RRT/GSC)⇒use_Article+semantic_`<ol>`;
+  WebSite_SearchAction(Sitelinks_Searchbox):FULLY_RETIRED(removed_SERP/GSC/RRT)⇒keep_WebSite(name,url)_for_Site_Name_ONLY;
+  FAQPage:RESTRICTED(SERP_rich_results=authoritative_gov_health_only)⇒no_commercial_SERP_snippet;optional_clean_Q&A_for_GEO/semantic_context_only;
+  other_retired_2024_2026:{Book_Actions,Course_Info,ClaimReview,Estimated_Salary,Learning_Video,Practice_Problems,SpecialAnnouncement,VehicleListing};
+  note:leftover_deprecated_schema≠ranking_penalty(ignored_by_Google)∧cleanup_optional
 }
 §TYPES{
   "@context":"https://schema.org";
-  Organization:{req:[name,url],rec:[logo,sameAs[],contactPoint:{"@type":"ContactPoint",telephone,contactType}]};
-  WebSite:{req:[name,url],search:{potentialAction:{"@type":"SearchAction",target:{"@type":"EntryPoint",urlTemplate:"https://example.com/search?q={search_term_string}"},"query-input":"required name=search_term_string"}}};
-  Article|BlogPosting:{req:[headline,image,datePublished(ISO8601),author:{"@type":"Person"|"Organization",name}],rec:[dateModified,publisher:{"@type":"Organization",name,logo:{"@type":"ImageObject",url}},description,mainEntityOfPage:{"@type":"WebPage","@id"}]};
-  Product:{req:[name,image,offers:{"@type":"Offer",url,priceCurrency,price,availability:"https://schema.org/InStock",priceValidUntil}],rec:[description,sku,brand:{"@type":"Brand",name},aggregateRating:{"@type":"AggregateRating",ratingValue,reviewCount},review]};
-  FAQPage:{req:[mainEntity:[{"@type":"Question",name,acceptedAnswer:{"@type":"Answer",text}}]]};
+  entity_graph:`"@graph":[Organization(@id:#org),WebSite(@id:#website,publisher:{@id:#org}),Person(@id:#author),Article(author:{@id:#author},publisher:{@id:#org})]`;
+  Organization:{req:[name,url],rec:[logo,sameAs[],contactPoint:{"@type":"ContactPoint",telephone,contactType},hasMerchantReturnPolicy,hasShippingService]};
+  WebSite(Site_Name_only):{req:[name,url],rec:[alternateName],¬SearchAction};
+  Article|BlogPosting|NewsArticle:{req:[headline,image[],datePublished(ISO8601),author:{"@type":"Person"|"Organization",name,url}],rec:[dateModified,publisher:{"@type":"Organization",name,logo:{"@type":"ImageObject",url}},description,mainEntityOfPage:{"@type":"WebPage","@id"}]};
+  Product(Snippets+Merchant_Listings):{req:[name,image,offers:{"@type":"Offer",url,priceCurrency,price,availability:"https://schema.org/InStock",priceValidUntil}],rec:[description,sku,gtin,brand:{"@type":"Brand",name},hasMerchantReturnPolicy:{"@type":"MerchantReturnPolicy",applicableCountry,returnPolicyCategory,merchantReturnDays},shippingDetails:{"@type":"OfferShippingDetails",shippingRate,shippingDestination,deliveryTime},aggregateRating,review]};
+  ProductGroup(Variants):{req:[name,hasVariant:[Product...]],rec:[productGroupID,variesBy:["https://schema.org/size","https://schema.org/color"],url,brand,aggregateRating]};
+  ProfilePage(Creators/Authors/Perspectives):{req:[mainEntity:{"@type":"Person"|"Organization",name}],rec:[dateCreated,dateModified,mainEntity:{alternateName,identifier,description,image,sameAs[],interactionStatistic}]};
+  DiscussionForumPosting(Forums/Communities):{req:[author,datePublished,text|headline|image|video],rec:[url,dateModified,interactionStatistic,comment:[{"@type":"Comment",text,author,datePublished}]]};
   BreadcrumbList:{req:[itemListElement:[{"@type":"ListItem",position:1..N,name,item(url)}]]};
-  LocalBusiness:{req:[name,address:{"@type":"PostalAddress",streetAddress,addressLocality,addressRegion,postalCode,addressCountry}],rec:[image,geo:{"@type":"GeoCoordinates",latitude,longitude},telephone,openingHoursSpecification:[{"@type":"OpeningHoursSpecification",dayOfWeek[],opens,closes}],priceRange]};
-  Review|AggregateRating(on_Product|Service):{req:[aggregateRating:{"@type":"AggregateRating",ratingValue,ratingCount,opt:[bestRating,worstRating]}],opt:[review:[{"@type":"Review",author:{"@type":"Person",name},datePublished,reviewRating:{"@type":"Rating",ratingValue},reviewBody}]]};
-  Event:{req:[name,startDate(ISO8601),location:{"@type":"VirtualLocation",url}|Place]∨eventAttendanceMode:"https://schema.org/OnlineEventAttendanceMode",opt:[endDate,image,description,offers:{"@type":"Offer",url,price,priceCurrency,availability,validFrom},organizer:{"@type":"Organization",name,url}]}
+  LocalBusiness:{req:[name,address:{"@type":"PostalAddress",streetAddress,addressLocality,addressRegion,postalCode,addressCountry}],rec:[image,geo:{"@type":"GeoCoordinates",latitude,longitude},telephone,openingHoursSpecification:[{"@type":"OpeningHoursSpecification",dayOfWeek[],opens,closes}],priceRange,sameAs[]]};
+  Review|AggregateRating(on_eligible_parent):{req:[aggregateRating:{"@type":"AggregateRating",ratingValue,ratingCount|reviewCount,opt:[bestRating,worstRating]}],opt:[review:[{"@type":"Review",author:{"@type":"Person",name},datePublished,reviewRating:{"@type":"Rating",ratingValue},reviewBody}]]};
+  Event:{req:[name,startDate(ISO8601),location:{"@type":"VirtualLocation",url}|Place],rec:[endDate,eventAttendanceMode,image,description,offers,organizer]};
+  FAQPage(gov_health_SERP_only|opt_GEO):{req:[mainEntity:[{"@type":"Question",name,acceptedAnswer:{"@type":"Answer",text}}]]}
 }
 §VAL{
   tools:{Rich_Results_Test:"https://search.google.com/test/rich-results",Schema_Validator:"https://validator.schema.org/",GSC:"Enhancements_reports"};
-  err_watch:{
-    missing_req_props(Google_req≥schema.org_min);
-    date_fmt:ISO8601(`YYYY-MM-DD`∨`YYYY-MM-DDThh:mm:ss±hh:mm`);
-    urls:absolute(`http://`∨`https://`);
-    enums:exact_schema.org_term(e.g.`InStock`);
-    content_mismatch(markup≠visible_DOM)
-  }
+  err_watch:{missing_req_props(Google_req≥schema.org_min);date_fmt:ISO8601(`YYYY-MM-DD`∨`YYYY-MM-DDThh:mm:ss±hh:mm`);urls:absolute(`https://`);enums:exact_schema.org_URI(e.g.`https://schema.org/InStock`);content_mismatch(markup≠visible_DOM);truncated_past_2MB_HTML}
 }
 §PAT{
-  static(HTML,Jekyll,Hugo):inline_JSON-LD_in_template+partials/includes(e.g.Organization);
-  SSR(React,Next.js,Vue):SSR_render_script_tag:
-  ```jsx
-  <Head><script type="application/ld+json" dangerouslySetInnerHTML={{__html:JSON.stringify(schema)}}/></Head>
+  Nextjs_App_Router(Server_Component,safe_XSS):
+  ```tsx
+  <script type="application/ld+json" dangerouslySetInnerHTML={{__html:JSON.stringify(schema).replace(/</g,'\\u003c')}}/>
   ```
-  CMS(WordPress,Drupal):SEO_plugins(Yoast_SEO,Rank_Math,Schema_Pro)⊕custom_via_theme(`functions.php`)|dedicated_plugin
+  TS_types:`schema-dts`(compile_time_JSON-LD_types);
+  static_SSG(Astro,Hugo,Nuxt,SvelteKit):SSR_inline_`<script type="application/ld+json">`+escape_`<`→`\u003c`+shared_org_partial;
+  CMS(WordPress,Drupal):Yoast_SEO|Rank_Math⊕custom_filter_with_wp_json_encode
 }
-§CHK{
-  page_type+target_rich_result∧schema_types∧all_req_props∧Google_supported_fields∧placed(`<head>`∨pre-`</body>`)∧Rich_Results_Test=0_err∧valid(URLs,dates,enums)∧GSC_post_deploy∧sync_on_content_Δ
-}
+§CHK{page_type+active_rich_result∧¬deprecated_HowTo/SearchAction∧@graph_@id_links∧all_req_props∧`<`→`\u003c`_escaped∧placed_within_2MB_HTML∧Rich_Results_Test=0_err∧valid(URLs,ISO8601,enums)∧GSC_post_deploy∧sync_on_content_Δ}
 §Q{page_type,target_rich_results,existing_schema,data_sources,tech_stack}

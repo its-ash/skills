@@ -14,8 +14,8 @@ pat = re.compile(r"(?P<id>\d+)\.\s*(?P<text>.+?)\n(?P<choices>(?:[A-D]\..+?\n)+)
 # parse_structured_text(content:str)->list[ParsedItem]: choices via re.findall(r"[A-D]\.\s*(.+)", choices)
 # score_confidence(item:ParsedItem)->ConfidenceFlag: base=1.0; len(choices)<3⇒"few_choices"(-0.3); ¬answer⇒"missing_answer"(-0.5); len(text)<10⇒"short_text"(-0.2); max(0.0,score)
 # identify_low_confidence(items:list[ParsedItem], threshold:float=0.95)->list[ConfidenceFlag]: f.score<threshold
-def validate_with_llm(item: ParsedItem, original_text: str, client) -> ParsedItem:
-    return client.messages.create(model="claude-haiku-4-5-20251001", max_tokens=500, messages=[{"role":"user","content":f"Extract question,choices,answer.\nText:{original_text}\nCurrent:{item}\nReturn corrected JSON or 'CORRECT'."}])
+def validate_with_llm(item: ParsedItem, original_text: str, client, model: str = "claude-haiku-5-5") -> ParsedItem:
+    return client.messages.create(model=model, max_tokens=500, messages=[{"role":"user","content":f"Extract question,choices,answer.\nText:{original_text}\nCurrent:{item}\nReturn corrected JSON or 'CORRECT'."}])
 # process_document(content:str,*,llm_client=None,confidence_threshold:float=0.95)->list[ParsedItem]: parse→identify_low_conf→if ¬low∨llm_client is None: return items→validate low_conf_ids
 ```
 }

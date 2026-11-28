@@ -1,8 +1,19 @@
 @REF:enterprise-agent-ops
-§SCOPE{prod_ops:lc,obs,safety,chg}
-§WHEN{PM2|systemd|containers;mon|IR|kill_sw|gates;continuous≠CLI}
-§DOM{1:lc(start,pause,stop,restart);2:obs(log,metric,trace);3:safety(scope,perm,kill_sw);4:chg(rollout,rollback,audit)}
-§CTRL{immut_artif;min_priv;env_sec;hard(timeout,retry);audit(high_risk)}
-§MET{succ_rate;retries/task;TTR;cost/succ;fail_dist}
-§IR{spike⇒1:freeze→2:traces→3:isolate→4:min_patch→5:reg+sec→6:resume}
-§REL{PM2|systemd;`devops-iac/references/kubernetes.md`;`devops-iac/references/github-actions.md`;`devops-iac/references/observability.md`;`references/agent-security-hardening.md`}
+§SCOPE{prod_ops:lc,obs(OTel_GenAI),safety(OWASP_ACS+sandbox),chg}
+§WHEN{PM2(`ecosystem.config.cjs`)|systemd|containers|K8s;mon|OTel_tracing|IR|kill_sw|gates;continuous≠interactive_CLI}
+§DOM{
+  1_lc:start,pause,stop,restart,graceful_drain,health_probes;
+  2_obs:structured_logs,metrics,distributed_traces(OTel_GenAI);
+  3_safety:dynamic_capability_scope,runtime_approval_gates(OWASP_ACS),sandbox(`bubblewrap`|containers),kill_sw;
+  4_chg:immut_artifacts,canary_rollout,rollback,audit_trail
+}
+§OTEL{
+  spec:`open-telemetry/semantic-conventions-genai`(`gen_ai.*`,status=Development⇒pin_exact_conv_ver_in_prod_dashboards);
+  spans:{`create_agent`,`invoke_agent`,`execute_tool`,+MCP_and_A2A_protocol_spans};
+  attrs:{req_params,`gen_ai.usage.input_tokens`,`gen_ai.usage.output_tokens`,model,finish_reason,opt_in_redacted_prompt/resp_events};
+  sec_detect:map_anomalies→OWASP_Agentic(recursive_subagent_spawn⇒unbounded_consumption;abnormal_tool_chains⇒ASI01/ASI02_hijack)
+}
+§CTRL{immut_artif;min_priv;env_sec(¬creds_in_logs/spans);hard_caps(timeout,max_turns,max_cost,retry);sandbox_egress_allowlist;audit(high_risk)}
+§MET{succ_rate;pass^k_prod_canary;retries/task;TTR;cost/succ;token_hit_rate;fail_dist}
+§IR{spike|anomaly⇒1:freeze(kill_sw)→2:OTel_traces+transcripts→3:isolate(layer|tool|tenant)→4:min_patch→5:reg+sec_eval→6:staged_resume}
+§REL{../../devops-iac/references/kubernetes.md;../../devops-iac/references/github-actions.md;../../devops-iac/references/observability.md;references/agent-security-hardening.md;references/agent-architecture-audit.md}

@@ -1,37 +1,48 @@
 ---
 name: healthcare
-description: "AUTO_INVOKE(silent)⇔prompt∈{HIPAA,PHI,PII,covered_entity,business_associate,BAA,breach,patient_record,EMR,EHR,encounter,addendum,prescription,drug_interaction,dose_validation,NEWS2,qSOFA,HL7,FHIR,DISHA,GDPR,healthcare,CDSS,MRN,audit_trail,row-level_security,vitals,labs,healthcare-reviewer}|SUB:{phi-compliance,emr,cdss,eval-harness}"
+description: "AUTO_INVOKE(silent)⇔prompt∈{HIPAA,PHI,ePHI,PII,covered_entity,business_associate,BAA,breach,42_CFR_Part_2,Safe_Harbor,DPDP,ABDM,DISHA,GDPR,EHDS,EU_AI_Act,patient_record,EMR,EHR,encounter,addendum,prescription,drug_interaction,dose_validation,NEWS2,ACVPU,qSOFA,HL7,FHIR,US_Core,USCDI,SMART_on_FHIR,CDS_Hooks,HTI-1,DSI,FDA_CDS,SaMD,SNOMED,LOINC,RxNorm,ICD-10,UCUM,Inferno,healthcare,CDSS,MRN,audit_trail,row-level_security,vitals,labs,AI_scribe,healthcare-reviewer}|SUB:{phi-compliance,emr,cdss,eval-harness}"
 ---
 @SKL:healthcare
 §R{
   HIPAA⇒overlay_on(PHI_rules@references/phi-compliance.md);
-  PHI∉{logs,analytics_events,crash_reports,prompts,client_visible_errors};
-  PHI∉{URLs,browser_storage,screenshots,copied_example_payloads};
-  ∀PHI∈{read,write,export}⇒require(auth∧scoped_authz∧audit_trail);
-  default_block({3p_SaaS,observability,support_tools,LLM_providers})_until(BAA_status∧data_boundaries_clear);
-  access⇒minimum_necessary(smallest_PHI_slice_for_task);
-  identifiers⇒opaque_internal_IDs∧¬{names,MRNs,phone_numbers,addresses,other_IDs};
-  free_text(support_transcripts,patient_messages)⇒assume_contains(PHI);
-  Δ∈{patient-safety,clinical-workflow,regulated_prod}⇒2nd_review(healthcare-reviewer_agent)∧release_gate(references/eval-harness.md);
+  PHI∉{logs,analytics_events,crash_reports,prompts,client_errors,URLs,browser_storage,screenshots,example_payloads};
+  ∀PHI∈{read,write,export}⇒require(auth∧MFA∧scoped_authz∧tamper_evident_audit_trail∧TLS1.3∧AES256_at_rest∧idle_logoff);
+  default_block({3p_SaaS,observability,trackers,support_tools,LLM_providers})_until(signed_BAA∧ZDR∧data_boundaries_clear);
+  access⇒minimum_necessary(smallest_PHI_slice)∧opaque_internal_UUIDs∧¬{names,MRNs,phones,addresses,SSNs,national_IDs};
+  free_text(messages,transcripts,notes)⇒assume_PHI;de_id⇒HIPAA_Safe_Harbor(strip_all_18_IDs)∨Expert_Determination;
+  SUD_records⇒42_CFR_Part_2(enforced_2026-02-16:segregated_consent∧redisclosure_guard∧updated_NPP);
+  non_US⇒IN:DPDP_Act_2023+Rules(itemized_consent,72h_DPB_breach)+ABDM(DISHA=shelved)|EU:GDPR_Art9+EHDS(Reg_2025/327)+EU_AI_Act(Art50_2026-08,high_risk_CDSS_2027-12,MDR_2028-08);
+  interop_baseline⇒HL7_FHIR_R4(4.0.1)+US_Core_v9(USCDI_v6)+SMART_App_Launch_v2.2(PKCE_S256)+CDS_Hooks_v2.0;
+  clinical_coding⇒dx(ICD-10-CM|ICD-11+SNOMED_CT)∧meds(RxNorm/RxCUI)∧labs_vitals_doses(LOINC+UCUM);
+  CDSS⇒patient_safety_critical(FN≡0,pure_fn_lib,RCP_NEWS2[ACVPU+SpO2_Scale1|2],UCUM_dose_validation)@references/cdss.md;
+  clinical_AI_CDS⇒verify_FDA_4_non_device_CDS_criteria(Sec_520o1E,else_SaMD+PCCP)∧ASTP_HTI-1_Predictive_DSI_source_attributes;
+  AI_scribe_or_summary⇒AI_DRAFT_badge+clinician_attestation_before_sign∧¬silent_clinical_mutation;
+  locked_encounter⇒immutable+linked_addendum+optimistic_lock(If-Match/versionId)+entered-in-error(¬hard_delete);
+  Δ∈{patient-safety,clinical-workflow,clinical-AI,regulated_prod}⇒2nd_review(healthcare-reviewer)∧release_gate(references/eval-harness.md);
 }
 §D{
-  HIPAA_gate1_in_order(data≡PHI?)⇒yes:all_core_rules|no_or_unk:confirm_cannot_reidentify_patient¬assume_non_PHI;
-  HIPAA_gate2_in_order(actor∈{covered_entity,business_associate}?)⇒yes:HIPAA_duties_apply|no_or_unk:check_contracts¬assume_exempt;
-  HIPAA_gate3_in_order(vendor∨model_provider_touches_data?)⇒yes:require_signed_BAA_first|no_or_unk:proceed¬send_without_BAA;
-  HIPAA_gate4_in_order(access≡minimum_necessary_scope?)⇒yes:proceed|no_or_unknown:narrow(roles,fields,rows)¬overexpose;
-  HIPAA_gate5_in_order(audit(read,write,export)?)⇒yes:proceed|no_or_unknown:add_audit_trail_before_release¬ship_unaudited;
-  AI_visit_summaries_for_clinicians⇒confirm_BAA(LLM_provider)∧review_prompt_boundaries∧(if_affects_decisions⇒references/cdss.md)¬send_PHI_no_BAA;
-  patient_messages→analytics⇒non-PHI_event_model∨redact∧HIPAA-approved_vendor¬raw_message_text_in_events;
+  HIPAA_gate1(data≡PHI?)⇒yes:all_core_rules|no_or_unk:verify_Safe_Harbor_18_IDs_or_no_reID¬assume_non_PHI;
+  HIPAA_gate2(actor∈{covered_entity,business_associate}?)⇒yes:HIPAA_duties_apply|no_or_unk:check_contracts¬assume_exempt;
+  HIPAA_gate3(vendor∨LLM_touches_data?)⇒yes:require_signed_BAA+ZDR_first|no_or_unk:proceed¬send_without_BAA;
+  HIPAA_gate4(access≡minimum_necessary?)⇒yes:proceed|no_or_unk:narrow(roles,fields,rows,FORCE_RLS)¬overexpose;
+  HIPAA_gate5(audit(read,write,export,break_glass)?)⇒yes:proceed|no_or_unk:add_tamper_evident_audit_first¬ship_unaudited;
+  SUD_or_behavioral_data⇒enforce_42_CFR_Part_2_consent+redisclosure_tag¬treat_as_plain_HIPAA;
+  India_health_app⇒DPDP_Act_2023+DPDP_Rules+ABDM(NHA_FHIR_consent)¬target_shelved_DISHA;
+  web_analytics_pixels⇒0_3p_trackers_on_authenticated_portals(OCR_enforced_post_AHA_v_Becerra)¬Meta_Pixel/GA_on_portal;
+  AI_visit_summary_or_CDS⇒BAA+ZDR+AI_DRAFT_attestation+HTI-1_DSI_basis+FDA_4_criteria_check¬black_box_autonomous_rec;
+  EHR_integration⇒FHIR_R4(4.0.1)+US_Core_v9+SMART_v2.2(PKCE)+CDS_Hooks_v2.0¬screen_scraping_or_R5_breaking_EHR;
+  patient_messages→analytics⇒non_PHI_event_model∨Safe_Harbor_redact∧BAA_vendor¬raw_message_text;
   general_auth,secrets,API_hardening⇒../secure-coding/SKILL.md¬restate_here;
 }
 §REF{
-  PHI/PII_classification,RLS,tamper-proof_audit_trails,schema_tagging,leak_vectors(logs,URLs,browser_storage,service_role_keys),HIPAA,DISHA,GDPR→references/phi-compliance.md;
-  EMR/EHR,encounter_workflows,clinical_templates,med_safety,locked_encounters,addenda,Rx_PDFs,labs,vitals,accessible_data_entry→references/emr.md;
-  CDSS,drug_interactions,dose_validation,NEWS2,qSOFA,alert_severity,zero-false-negative_tests→references/cdss.md;
-  deploy_gate,CDSS_accuracy,PHI_exposure,data_integrity,clinical_workflows,HL7/FHIR_integration_tests_CI→references/eval-harness.md;
+  PHI/ePHI/PII,HIPAA_Security_Rule,42_CFR_Part_2,Safe_Harbor_18_IDs,OCR_trackers,DPDP,ABDM,GDPR,EHDS,EU_AI_Act,FORCE_RLS,tamper_evident_audit,break_glass→references/phi-compliance.md;
+  EMR/EHR,encounter_flow,FHIR_R4,US_Core_v9,USCDI_v6,SMART_v2.2,CDS_Hooks_v2,SNOMED/LOINC/RxNorm/UCUM,locked_encounters,addenda,AI_scribe,Rx_PDF,WCAG2.2→references/emr.md;
+  CDSS,drug_interactions(RxCUI),UCUM_dose_validation,RCP_NEWS2(ACVPU+Scale1/2),qSOFA,CDS_Hooks_cards,FDA_non_device_CDS/SaMD/PCCP,HTI-1_DSI,FN=0_tests→references/cdss.md;
+  deploy_gate,CDSS_accuracy,PHI_exposure,data_integrity,clinical_workflows,FHIR/Inferno_conformance,clinical_AI_safety,Jest30/Vitest4/CI→references/eval-harness.md;
 }
 §REL{
   ../secure-coding/SKILL.md:auth,secrets,hardening;privacy∈../secure-coding/references/data-privacy-compliance.md;
-  ../unit-testing-patterns/SKILL.md:Jest,pytest_for_CDSS∧PHI_suites;
-  ../database-design/SKILL.md:patient-data_schema,row-level_security;
+  ../unit-testing-patterns/SKILL.md:Vitest4,Jest30,pytest_for_CDSS∧PHI_suites;
+  ../database-design/SKILL.md:patient-data_schema,PostgreSQL_RLS,audit_tables;
+  ../ai-agent-engineering/SKILL.md:LLM_eval_harness,prompt_injection,guardrails_for_clinical_AI;
 }

@@ -1,10 +1,15 @@
 @REF:intent-driven-development
 §USE{
-  ON:clarify_feature∨define_AC∨derisk_pre_impl∨touches∈{sec,auth,persistent_data,migration,ext_API,compliance}∨handoff_artifact∨ambiguous(outcome¬observable∨¬testable)∨explicit_req;
+  ON:clarify_feature∨define_AC∨SDD_spec∨derisk_pre_impl∨touches∈{sec,auth,persistent_data,migration,ext_API,compliance}∨handoff_artifact∨ambiguous(outcome¬observable∨¬testable)∨explicit_req;
   OFF:trivial_edit∨1L_fix∨active_debug∨code_review∨clear_AC_impl
 }
+§SDD{
+  lifecycle:Specify(living_spec_SoT)→Plan_&_Task(bounded_by_AGENTS.md)→Implement(bound_to_AC)→Validate(objective_spec_review);
+  levels:{Spec-First(spec_pre_codegen),Spec-Anchored(spec_co_evolves_with_code),Spec-As-Source(spec_primary_artifact)};
+  hygiene:prune_obsolete_specs_to_prevent_spec_sprawl;tie_PR_review_&_verification_to_AC_IDs
+}
 §R{
-  1:inspect(repo,docs,issues,design,schemas,test_infra)→discover_tech_facts_PRE_Q;
+  1:inspect(repo,docs,AGENTS.md,issues,design,schemas,test_infra)→discover_tech_facts_PRE_Q;
   2:¬infer(biz_rules,compliance,reg,SLA,pricing,retention,prio,target_users)from_code;treat=unknown→record∈Assumptions(confirm)until(user∨authoritative_artifact∈{PRD,contract,policy});
   3:ask_MIN(required∧uninferable∧Δscope|behavior);group_short_Qs;¬ask_generic_irrelevant_risks;
   4:¬block_impl_default;clear_impl⇒brief(assumptions+AC)→proceed|handoff;
@@ -60,4 +65,7 @@
   Goal=outcome(¬impl_choice);
   relevant_risks_covered;safe_env_for_risky_ops;¬secrets|prod_data;¬unrequested_repo_mutation|impl_block
 }
-§REL{../../unit-testing-patterns/SKILL.md:test_design_from_AC(¬assume_tool_installed)}
+§REL{
+  module-governance.md:AGENTS.md_repo_constraints;
+  ../../unit-testing-patterns/SKILL.md:test_design_from_AC(¬assume_tool_installed)
+}

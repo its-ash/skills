@@ -1,4 +1,5 @@
 @REF:mybatis-patterns
+§STACK{MyBatis_3.6.0,mybatis-spring-boot-starter_4.0(SpringBoot_4/MyBatis-Spring_4.0,Java_17+,JSpecify),MyBatis_Dynamic_SQL_2.0(Java_17+)}
 §REL{java/references/springboot-patterns.md;database-design/references/database-migration.md;database-design/references/postgresql.md;database-design/references/mysql-patterns.md;secure-coding/SKILL.md}
 §URL{https://mybatis.org/mybatis-3/sqlmap-xml.html;https://mybatis.org/mybatis-3/dynamic-sql.html;https://mybatis.org/spring/mappers.html;https://mybatis.org/spring/transactions.html;https://docs.spring.io/spring-framework/reference/data-access/transaction.html}
 
@@ -89,7 +90,7 @@ String sortCol = SORT_COLUMNS.getOrDefault(req.sort(),"created_at"), sortDir = r
 
 §TEST{
   unit_xml:XML_load,namespace/stmt_ids,param_bind,nulls,dynamic_branches,empty_collections,`resultMap` joins;
-  integ:Testcontainers|isolated_DB(prod DB_family);
+  integ:Testcontainers_2(org.testcontainers:testcontainers-postgresql)+@ServiceConnection|isolated_DB(prod DB_family);
   tx:multi-mapper commit,failure rollback,optimistic affected-row stale_update rejection;
   regr:N+1/pagination fix⇒regression test asserting query_shape|stmt_count(¬couple all tests to log_internals);
   mig:separate migration_tests;mapper_tests¬depend on uncommitted schema_Δ

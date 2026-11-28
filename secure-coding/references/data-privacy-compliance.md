@@ -1,51 +1,52 @@
 @REF:data-privacy-compliance
-§SCOPE{GDPR|DSGVO|CCPA/CPRA|HIPAA:privacy_by_design,lawful_basis,DSAR,consent,DPIA,breach_resp,audit_prep}
+§SCOPE{GDPR|DSGVO|CCPA/CPRA|US_State_UOOM(Sec-GPC)|HIPAA:privacy_by_design,lawful_basis,DSAR,consent,DPIA,breach_resp,audit_prep}
 §REG{
-GDPR_DSGVO:{EU_residents_PI(∀geo);req:{lawful_basis,DSAR,DPIA(high_risk),72h_breach,ROPA,PbD_default};max_fine:max(EUR_20M,4%_global_rev);DE:GDPR+BDSG+state+sectoral+fed_state_DPA};
-CCPA_CPRA:{CA_residents_PI;req:{know,delete,correct,opt_out(sale|share),limit_SPI};max_fine:$7500/intentional};
-HIPAA:{US_PHI;req:{Privacy_Rule,Security_Rule(ePHI),60d_breach,BAA};max_fine:$1.5M/cat/yr}
+  GDPR_DSGVO:{EU_residents_PI(∀geo);req:{lawful_basis,DSAR,DPIA(high_risk),72h_breach,ROPA,PbD_default};max_fine:max(EUR_20M,4%_global_rev);DE:GDPR+BDSG+state+sectoral+fed_state_DPA};
+  CCPA_CPRA:{CA_residents_PI;req:{know,delete,correct,opt_out(sale|share),honor_Sec-GPC,limit_SPI};fines_inflation_adj:{unintentional:$2663/viol,intentional|minors<16:$7988/viol,breach_PRA:$107-$799/consumer/incident}};
+  HIPAA:{US_PHI;req:{Privacy_Rule(patient_access),Security_Rule(ePHI_enc_rest_transit,MFA,vuln_mgmt,annual_pentest_NPRM_baseline),60d_breach,BAA};max_fine:tiered_inflation_adj_to_$1.5M+/cat/yr}
 }
 §BASIS{∀purpose⇒basis∈{consent,contract,legal_obligation,vital_interests,public_task,legitimate_interests};special_cat⇒+Art9;ROPA:{purpose,cats,subjects,recipients,retention,sec,transfers};Δproc⇒reassess(purpose,basis)}
 §DSAR{
-flow:intake→verify_id→classify→fulfill→doc→appeal;
-rights:{info_transparency,access,rectification,erasure,restrict,portability,objection,withdraw_consent};
-SLA:{GDPR:1mo(ext≤3mo),CCPA/CPRA:45d(ext≤90d)};edge:{conflicting_rights,3rd_party_rights,legal_retention,LI_balancing};
-access:`handleAccessRequest(userId,email)`→`verifyIdentity(email)`→`collectUserData`→`generatePDFReport({personalInfo,activityLogs,preferences,thirdPartySharing,retentionPeriod:'2 years from last activity',dataProtectionOfficer:'dpo@company.com'})`→`logAccessRequest(userId,'completed')`;
-delete:`handleDeletionRequest(userId,email)`→`verifyIdentity`→`checkRetentionRequirements`:`required`⇒`{status:'partial_deletion',retained,reason:legalBasis,retentionPeriod}`;else `Promise.all([deleteFromDatabase,deleteFromBackups,deleteFromAnalytics,deleteFromThirdPartyServices,revokeAPIKeys,anonymizeHistoricalRecords])`→`sendDeletionConfirmation`→`logDeletionRequest(userId,'completed')`→`{status:'deleted',timestamp}`;refuse_only:{legal_obligations,public_interest|research,legal_claims_defense,free_expression};
-portability:`handlePortabilityRequest(userId,format='json')`→`{exportDate,userId,data:{profile,content:userGeneratedContent,settings:preferences,history:activityHistory}}`→`convertToCSV|convertToXML|json`;scope:subject_provided∧automated∧basis∈{consent,contract}∧structured_machine_readable;
-objection:`handleObjectionRequest(userId,processingType)`→`direct_marketing⇒disableMarketing∧updateConsent(userId,'marketing',false)`|`legitimate_interest⇒assessLegitimateInterest(!compelling⇒stopProcessing)`|`profiling⇒disableProfiling∧updateConsent(userId,'profiling',false)`|else throw→`logObjectionRequest(userId,processingType,'granted')`
+  flow:intake→verify_id→classify→fulfill→doc→appeal;
+  rights:{info_transparency,access,rectification,erasure,restrict,portability,objection,withdraw_consent};
+  SLA:{GDPR:1mo(ext≤3mo),CCPA/CPRA:45d(ext≤90d),HIPAA_access:≤30d(15d_proposed/updated_target)};edge:{conflicting_rights,3rd_party_rights,legal_retention,LI_balancing};
+  access:`handleAccessRequest(userId,email)`→`verifyIdentity(email)`→`collectUserData`→`generateReport({personalInfo,activityLogs,preferences,thirdPartySharing,retentionPeriod,dpoContact})`→`logAccessRequest(userId,'completed')`;
+  delete:`handleDeletionRequest(userId,email)`→`verifyIdentity`→`checkRetentionRequirements`:`required`⇒`{status:'partial_deletion',retained,reason:legalBasis,retentionPeriod}`;else `Promise.all([deleteFromDB,deleteFromBackups,deleteFromAnalytics,deleteFrom3P,revokeAPIKeys,anonymizeHistory])`→`confirm`→`logDeletionRequest`;refuse_only:{legal_obligations,public_interest|research,legal_claims_defense,free_expression};
+  portability:`handlePortabilityRequest(userId,format='json')`→`{exportDate,userId,data:{profile,content,settings,history}}`→`JSON|CSV|XML`;scope:subject_provided∧automated∧basis∈{consent,contract}∧machine_readable;
+  objection:`handleObjectionRequest(userId,processingType)`→`direct_marketing⇒disableMarketing∧updateConsent(false)`|`legitimate_interest⇒assess(!compelling⇒stop)`|`profiling⇒disableProfiling`→`log`
 }
 §CONSENT{
-req:freely_given∧specific∧informed∧unambiguous∧withdraw_easy_as_give;
-rules:{granular/purpose,¬preselect_non_essential,¬trackers_pre_consent,log_record,withdraw_anytime};
-record:`{userId,timestamp,consentVersion,purposes:{essential:{granted:true,required:true},analytics:{granted,purpose},marketing:{granted,purpose}},ipAddress,userAgent,method:'explicit_opt_in'}`→`saveConsentRecord`;
-banner:`#cookie-banner[role=dialog][aria-labelledby]`+`acceptAll()`(set+loadAnalytics/Marketing+hide)|`rejectNonEssential()`(false+hide)|`showPreferences()`
+  req:freely_given∧specific∧informed∧unambiguous∧withdraw_easy_as_give;
+  gpc:honor_browser_UOOM(`Sec-GPC: 1`_HTTP_hdr∨`navigator.globalPrivacyControl===true`)⇒auto_opt_out(sale|share|targeted_ads)∧persist∧confirm_without_friction(mandatory_CA/CO/CT+multi_state);
+  rules:{granular/purpose,¬preselect_non_essential,¬trackers_pre_consent,log_record,withdraw_anytime,equal_prominence_accept_reject};
+  record:`{userId,timestamp,consentVersion,purposes:{essential:{granted:true,required:true},analytics:{granted,purpose},marketing:{granted,purpose}},gpcApplied:boolean,ipAddress,userAgent,method:'explicit_opt_in'|'gpc_signal'}`→`saveConsentRecord`;
+  banner:`#cookie-banner[role=dialog][aria-labelledby]`+`acceptAll()`|`rejectNonEssential()`|`showPreferences()`
 }
 §PBD{
-minimization:necessary_only(`{email,password:hashPassword(pw),displayName}`);
-purpose_limit:`{email:['account_authentication','order_confirmations','password_reset'],phoneNumber:['order_delivery_notifications'],purchaseHistory:['order_fulfillment','customer_support']}`∧`!isAllowedPurpose(data.type,purpose)⇒throw`;
-storage_limit:`{userAccounts:{active:'indefinite',inactive:'2 years',deleted:'30 days grace period'},orderRecords:'7 years',supportTickets:'3 years',analytics:'26 months',marketingData:'1 year or until consent withdrawn'}`+cron(del_inactive,anon_old_analytics)
+  minimization:necessary_only(`{email,password:argon2idHash(pw),displayName}`);
+  purpose_limit:`{email:['auth','order_confirm','pw_reset'],phone:['delivery_notify'],purchaseHistory:['fulfillment','support']}`∧`!isAllowedPurpose(data.type,purpose)⇒throw`;
+  storage_limit:`{userAccounts:{active:'indefinite',inactive:'2y',deleted:'30d_grace'},orderRecords:'7y',supportTickets:'3y',analytics:'26mo',marketing:'1y_or_withdraw'}`+cron(del_inactive,anon_old_analytics)
 }
 §DPIA{
-trigger:large_scale∨special_cat∨systematic_monitoring∨new_high_risk_tech;
-steps:1:screen→2:describe(purpose,data,subjects,recipients,transfers)→3:necessity(necessary?,less_data?,retention_ok?)→4:risks({Data_breach:Med/High→enc+ACL,Unauth_access:Low/High→MFA+audit,Purpose_creep:Med/Med→purpose_doc+training})→5:safeguards({enc_rest_transit,ACL_auth,audits,minimization,retention,DPO_consult,DSAR_mech})+residual→6:report+DPO+authority(if_req)+sign(DPO,Date)→7:monitor
+  trigger:large_scale∨special_cat∨systematic_monitoring∨new_high_risk_tech|automated_decision_AI;
+  steps:1:screen→2:describe(purpose,data,subjects,recipients,transfers)→3:necessity(necessary?,less_data?,retention_ok?)→4:risks({breach→enc+ACL,unauth→MFA+audit,purpose_creep→doc+training})→5:safeguards({enc_rest_transit,ACL_auth,audits,minimization,retention,DPO_consult,DSAR})+residual→6:report+DPO+authority(if_req)+sign→7:monitor
 }
-§XFER{outside_adequate⇒adequacy∨{SCC,BCR,certifications,codes_of_conduct};assess_3rd_country:{gov_access,rights_enforceability};supp:{enc,pseudonym,ACL,min,purpose_limit,retention_limit,audit_rights,transparency,redress};doc(mech+risk)}
-§PHI{special_cat;basis:explicit_consent∨Art9;coord:{providers,device_mfrs,research_orgs,processors};safeguards:{heightened,ACL,audit_trails,enc};xfer=§XFER}
+§XFER{outside_adequate⇒adequacy(e.g.EU-US_DPF)∨{SCC,BCR,certifications,codes_of_conduct};TIA_assess_3rd_country:{gov_access,rights_enforceability};supp:{enc,pseudonym,ACL,min,purpose_limit,retention_limit,audit_rights,transparency,redress};doc(mech+risk)}
+§PHI{special_cat;basis:explicit_consent∨Art9;coord:{providers,device_mfrs,research_orgs,processors};safeguards:{mandatory_enc_rest_transit,MFA,ACL,audit_trails,BAA};xfer=§XFER}
 §IR{
-GDPR:{authority≤72h(risk_rights),subjects:without_undue_delay(high_risk)};
-plan:0-4h:contain(scope,isolate,stop_loss)→4-24h:assess(data_types,count,risk,doc)→24-72h:notify_authority(nature,cats,approx_nums,consequences,measures)→ASAP:notify_subjects(high_risk);
-notice:{date,desc,involved,not_involved,immediate_actions,enhancements,resources,user_recs(pw_reset,monitor_accts),hotline,security@company.com}
+  GDPR:{authority≤72h(risk_rights),subjects:without_undue_delay(high_risk)};HIPAA:{HHS≤60d(≥500_individuals:without_unreasonable_delay≤60d+media)};
+  plan:0-4h:contain(scope,isolate,stop_loss)→4-24h:assess(data_types,count,risk,doc)→24-72h:notify_authority(nature,cats,approx_nums,consequences,measures)→ASAP:notify_subjects(high_risk);
+  notice:{date,desc,involved,not_involved,immediate_actions,enhancements,resources,user_recs(pw_reset,MFA,monitor),hotline,security@company.com}
 }
-§GOV{DPO(req⇒appoint,independent,resourced,access);support:{advisory,cross_func,training,COI};bodies:{DP_committee,steering_grp,dept_champions,compliance_net};evidence:{policies,procs,training,impl}}
+§GOV{DPO(req⇒appoint,independent,resourced,access);support:{advisory,cross_func,training,COI};bodies:{DP_committee,steering_grp,dept_champions};evidence:{policies,procs,training,impl}}
 §AUDIT{
-method:1:plan(scope,inventory,stakeholders,criteria)→2:exec(legal,tech,org,docs)→3:report(gaps,risk,recs,remediation,timelines)→4:ext_authority_prep;
-metrics:{compliance_rate,DSAR_SLA_accuracy,risk_mitigation,breach_SLA,training};watch:{guidance,case_law,enforcement,PETs}
+  method:1:plan(scope,inventory,stakeholders,criteria)→2:exec(legal,tech,org,docs)→3:report(gaps,risk,recs,remediation,timelines)→4:ext_authority_prep;
+  metrics:{compliance_rate,DSAR_SLA_accuracy,GPC_compliance,risk_mitigation,breach_SLA,training};watch:{guidance,case_law,enforcement,PETs}
 }
-§POLICY{req:{controller+DPO_contact,data_collected,basis/purpose,use,sharing/sale,DSAR+contact,retention,sec,xfer_safeguards,change_notice,contact}}
+§POLICY{req:{controller+DPO_contact,data_collected,basis/purpose,use,sharing/sale,GPC_honoring,DSAR+contact,retention,sec,xfer_safeguards,change_notice,contact}}
 §CHK{
-GDPR:{lawful_basis,policy,granular_consent,DSAR,ROPA,DPO,DPIA,breach_proc,vendor_DPAs,xfer_safeguards,training};
-CCPA:{do_not_sell_share_link,disclosures,verifiable_req,opt_out_SLA,annual_rpt,service_provider_agreements,notice_at_collection};
-HIPAA:{risk_assess,sec_policies,training,BAA,ACL_audit,ePHI_enc,breach_proc,DR_plan}
+  GDPR:{lawful_basis,policy,granular_consent,DSAR,ROPA,DPO,DPIA,breach_72h,vendor_DPAs,xfer_safeguards,training};
+  CCPA:{do_not_sell_share_link,honor_Sec-GPC,disclosures,verifiable_req,opt_out_SLA,annual_rpt,service_provider_agreements,notice_at_collection};
+  HIPAA:{risk_assess,sec_policies,training,BAA,MFA+ACL_audit,mandatory_ePHI_enc,vuln_scan+annual_pentest,breach_proc,DR_plan}
 }
-§REL{../SKILL.md:secure-coding;../../database-design/SKILL.md:database-design}
+§REL{../SKILL.md:secure-coding;../../database-design/SKILL.md:database-design;../../healthcare/SKILL.md:healthcare}

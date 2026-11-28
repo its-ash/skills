@@ -1,48 +1,53 @@
 ---
 name: code-review
-description: "AUTO_INVOKE(silent)⇔prompt∈{code_review,PR,merge_request,git_diff,lint,static_analysis,npm_audit,bug_hunt,vuln,code_smell,attack_surface,security_checklist,refactor,dep_update,breaking_change,test_coverage,CI_fail,review_comment,prod_readiness,LGTM,approve,blocker,click_path,blast_radius,Critical,High}|SUB:{code-review-feedback,click-path-audit,change-impact,verification-loop}"
+description: "AUTO_INVOKE(silent)⇔prompt∈{code_review,PR,merge_request,git_diff,gh_pr,stacked_PR,AI_code_review,Conventional_Comments,lint,static_analysis,SAST,Semgrep,CodeQL,SARIF,OSV-Scanner,Trivy,gitleaks,npm_audit,supply_chain,OWASP_2025,ASVS_5,bug_hunt,vuln,code_smell,attack_surface,security_checklist,refactor,dep_update,breaking_change,test_coverage,CI_fail,review_comment,prod_readiness,LGTM,approve,blocker,click_path,blast_radius,Critical,High}|SUB:{code-review-feedback,click-path-audit,change-impact,verification-loop}"
 ---
 @SKL:code-review
 §R{
-  goal:find_real_risk(Δ)∧report_by_severity+evidence;
-  first⇒read({Δ_desc,linked_issues,reqs});
-  diff≡(git diff <base>...HEAD)∧(truncated⇒read_∀_Δ_files)∧list_∀_Δ_files_pre_review;
-  ∀file⇒map_attack_surface({user_input,DB_queries,auth_checks,session_state,external_calls,crypto});
-  ∀Δ_file⇒run_sec_checklist;
-  ∀suspect_issue⇒verify_in(surrounding_code∧tests)∧¬report_unverified_guess_as_fact;
-  run_checks∈{npm test,npm run lint,npm audit,stack_equiv};
-  order_findings:(sec→bugs→quality)¬(style∨format);
-  ∀finding⇒{File:Line,Severity,Problem,Evidence,Fix,References};
+  goal:find_real_risk(Δ)∧improve_net_code_health¬perfect_code(report_by_severity+evidence);
+  first⇒read({Δ_desc,linked_issues,reqs})_pre_diff(ticket≡source_of_truth);
+  diff≡(git diff <base>...HEAD∨gh pr diff)∧(truncated⇒read_∀_Δ_files)∧list_∀_Δ_files_pre_review;
+  layers:1_CI_gates(build,types,lint,tests,SAST,SCA,secrets)→2_AI_prepass→3_human_judgment(intent,arch,sec,risk);
+  ∀file⇒map_attack_surface({user_input,DB_queries,auth/authz,session,SSRF/ext_calls,crypto,deser,deps,CI_workflows});
+  ∀Δ_file⇒run_sec_checklist(OWASP_Top10:2025∧ASVS_5.0);
+  AI_generated_Δ⇒verify(intent_vs_spec,edge_cases,exceptional_paths_A10,hallucinated_APIs/deps,silent_fallbacks)¬trust_clean_naming;
+  ∀suspect_issue⇒verify_in(surrounding_code∧callers∧tests)∧¬report_unverified_guess_as_fact;
+  run_checks∈{build,typecheck,lint,tests,SAST/SCA/secrets(semgrep|osv-scanner|trivy|gitleaks|stack_equiv)};
+  order_findings:(sec→correctness→perf→quality)¬(style∨format_owned_by_linter);
+  ∀finding⇒{File:Line,Severity,Conventional_Label,Problem,Evidence,Fix,References}∧uncertain⇒question(Have_you_considered...?);
   findings≡∅⇒state_so¬invent_issues;
   mode≡report_only¬modify_code_unless_asked;
   pre_conclude⇒list({files_reviewed,checks_done,unverified_areas});
-  feedback≡specific+actionable∧uncertain⇒ask_Q(Have_you_considered...?);
-  only_minor_issues⇒approve¬block_on_pref(goal:less_risk¬perfect_code);
+  only_minor/nitpick⇒approve(non-blocking)¬block_on_pref∧target_turnaround<24h;
 }
 §D{
-  Δ∈{schema,API_contract,framework,hot_path,sec_code}⇒flag_senior_review∧load(change-impact)¬approve_on_diff_alone;
-  large_diff⇒ask_split∧review(Critical∨High_first)¬line_by_line_nits_∀_files;
+  Δ∈{schema,API_contract,framework,hot_path,sec_code,CI_workflow}⇒flag_senior_review∧load(change-impact)¬approve_on_diff_alone;
+  large_diff(>400L∨multi_concern)⇒ask_stacked_PRs∧review(Critical∨High_first)¬line_by_line_nits_∀_files;
+  CI_gates_red⇒fix_CI_first¬burn_human_review_on_broken_build;
   many_findings⇒report(Critical∨High_first)∧track_rest(issues+owners)¬flat_list;
   suspect_issue⇒check({callers,guards,tests})¬report_wo_evidence;
   prod_readiness_Q⇒run_audit_table(review-checklist)¬diff_only_review;
-  UI_action_does_nothing_post_refactor⇒load(click-path-audit)¬guess_from_component_code;
-  receive_review_cmts⇒load(code-review-feedback)¬agree_wo_verification;
-  sev≡Critical(exploit∨data_loss∨outage)⇒block_merge¬merge;
-  sev≡High(wrong_behavior@main_path)⇒block_merge¬merge;
+  UI_action_does_nothing∨optimistic_snapback_post_refactor⇒load(click-path-audit)¬guess_from_component_code;
+  receive_review_cmts(human∨bot)⇒load(code-review-feedback)¬agree_wo_verification;
+  pre_PR_gate⇒run(verification-loop)¬self_approve_unverified_diff;
+  sev≡Critical(exploit∨data_loss∨outage∨supply_chain)⇒block_merge¬merge;
+  sev≡High(wrong_behavior@main_path∨unhandled_fail_A10)⇒block_merge¬merge;
   sev≡Medium(edge_bug∨missing_test∨perf_risk)⇒fix⊕ticket¬ignore;
-  sev≡Low(maintainability∨minor_clarity)⇒comment_only¬block_merge;
+  sev≡Low(maintainability∨nitpick)⇒comment(non-blocking)¬block_merge;
 }
 §REF{
-  per_area_checklist(functionality,sec,perf,quality,tests,docs,design),prod_readiness_audit,pitfalls→references/review-checklist.md;
-  cmt_shapes,audit_report_tpl,final_checklist→references/review-output.md;
-  request_review∨handle_received_feedback→references/code-review-feedback.md;
-  button_does_nothing∨wrong_UI_state_post_shared_store_refactor→references/click-path-audit.md;
-  cross_module,migration,auth,public_iface_Δ,blast_radius→references/change-impact.md;
-  pre_PR:build,types,lint,tests,sec_grep,PASS_FAIL_report→references/verification-loop.md;
+  per_area_checklist(func,OWASP_2025_sec,AI_code,perf,qual,tests,docs,design),prod_audit,pitfalls→references/review-checklist.md;
+  Conventional_Comments,cmt_shapes,GH_suggestions,SARIF,audit_report_tpl,final_chk→references/review-output.md;
+  request_review,handle_human_or_bot_feedback,gh_PR_cmds→references/code-review-feedback.md;
+  button_does_nothing,wrong_UI_state,React19_actions/optimistic,store_refactor→references/click-path-audit.md;
+  cross_module,migration,auth,public_iface_Δ,blast_radius,rollback→references/change-impact.md;
+  pre_PR:build,types(tsgo/ty/pyrefly),lint(Biome/Oxlint/Ruff/golangci-lint_v2),tests,SAST/SCA/secrets,PASS_FAIL→references/verification-loop.md;
 }
 §REL{
-  ../secure-coding/SKILL.md:secrets,auth,input_val,injection_checks;
+  ../secure-coding/SKILL.md:OWASP_2025,ASVS_5,secrets,auth,injection,supply_chain;
   ../unit-testing-patterns/SKILL.md:judge,write_missing_tests;
   ../systematic-debugging/SKILL.md:root_cause_confirmed_bug;
-  ../clean-code/SKILL.md:naming,fn_design,deslop_diff;
+  ../clean-code/SKILL.md:naming,fn_design,deslop_AI_diff;
+  ../git-workflow/SKILL.md:stacked_PRs,gh_CLI,commits,branch_ops;
+  ../software-architecture/SKILL.md:ADRs,bounded_contexts,module_regression;
 }

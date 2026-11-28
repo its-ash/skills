@@ -1,13 +1,18 @@
 @REF:fastapi
-§USE{CRUD|custom_action∈FastAPI∧(async_SQLAlchemy2|Pydantic_v2|DI_auth(JWT|API_key)|pagination(cursor|offset)|cache|rate_limit|pytest-asyncio)}
+§USE{FastAPI_0.165+∧CRUD|custom_action∧(async_SQLAlchemy_2|Pydantic_v2|pwdlib|DI_auth(JWT|API_key)|pagination(cursor|offset)|cache|rate_limit|pytest-asyncio)}
 §WF{
-  1_explore:{entry∈{main.py,app.py,app/__init__.py},router∈{router.py,routers/},ORM:(app/database.py,Base,async_engine),auth:OAuth2PasswordBearer,tests:(tests/,httpx.AsyncClient)};
+  1_explore:{entry∈{main.py,app.py,app/__init__.py},router∈{router.py,routers/},ORM:(app/database.py,DeclarativeBase,async_engine),auth:OAuth2PasswordBearer,tests:(tests/,httpx.AsyncClient)};
   2_interview(short_rounds):{resource:(new|existing|nested),methods:(CRUD|read_only|custom),fields:(<6|6-15+rel|nested/poly),auth:(JWT_bearer|API_key|public|existing),RBAC:(none|role|ownership),pagination:(cursor[rec]|offset_limit|none),cache:(none|Cache-Control|Redis)};
   3_plan:{files:(app/schemas/resource.py,app/models/resource.py,app/crud/resource.py,app/routers/resource.py),schemas:(Create,Update,Response,ListResponse),ORM,async_CRUD,router+deps,tests:(happy,validation,auth_fail,404)};
   4_impl_order:schemas→ORM→CRUD/service→router→auth_DI→pagination→tests
 }
+§CMD{
+  install:`uv add "fastapi[standard]" sqlalchemy[asyncio] asyncpg alembic pydantic-settings "pwdlib[argon2]" pyjwt`;
+  dev:`uv run fastapi dev app/main.py`;
+  prod:`uv run fastapi run app/main.py --port 8000 --workers 4`(⊕`uvicorn app.main:app --host 0.0.0.0 --port 8000`)
+}
 §PAT{
-  layout:my_app/{app/{main.py,config.py,dependencies.py,database.py,routers/,models/,schemas/,services/},tests/conftest.py,pyproject.toml};
+  layout:my_app/{app/{main.py,config.py,dependencies.py,database.py,security.py,routers/,models/,schemas/,services/},tests/conftest.py,pyproject.toml};
   lifespan_cors:```python
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -26,6 +31,12 @@ class Settings(BaseSettings):
     app_name: str = "My App"; app_version: str = "0.1.0"; database_url: str; secret_key: str
     algorithm: str = "HS256"; access_token_expire_minutes: int = 30; allowed_origins: list[str] = ["http://localhost:3000"]
 ```
+  password_hash(`pwdlib` replaces unmaintained `passlib`, Python 3.13+ safe):```python
+from pwdlib import PasswordHash
+password_hash = PasswordHash.recommended()  # Argon2id default
+hash_password = password_hash.hash
+verify_password = password_hash.verify
+```
   schemas:```python
 class ResourceBase(BaseModel): name: str
 class ResourceCreate(ResourceBase): pass
@@ -35,19 +46,20 @@ class ResourceResponse(ResourceBase):
     id: UUID; created_at: datetime; updated_at: datetime
 class ResourceListResponse(BaseModel): data: list[ResourceResponse]; next_cursor: str | None = None; has_more: bool
 class UserCreate(BaseModel):
-    email: EmailStr; username: str = Field(min_length=3, max_length=50); password: str = Field(min_length=8); password_confirm: str
+    email: EmailStr; username: str = Field(min_length=3, max_length=50); password: str = Field(min_length=12); password_confirm: str
     @model_validator(mode="after")
-    def passwords_match(self) -> "UserCreate":
+    def passwords_match(self) -> Self:
         if self.password != self.password_confirm: raise ValueError("Passwords do not match")
         return self
 ```
-  orm_model:```python
+  orm_model(SQLAlchemy_2.0_typed_`DeclarativeBase`+`Mapped`+`mapped_column`;¬legacy_`Column`):```python
+class Base(DeclarativeBase): pass
 class Resource(Base):
     __tablename__ = "resources"
-    id = Column(PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    name = Column(String, nullable=False, index=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    id: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name: Mapped[str] = mapped_column(String(200), nullable=False, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 ```
   crud_cursor_service:```python
 encode_cursor = lambda dt: base64.urlsafe_b64encode(dt.isoformat().encode()).decode()
@@ -56,7 +68,7 @@ async def list_resources(db: AsyncSession, cursor: str | None = None, limit: int
     q = select(Resource).order_by(Resource.created_at.desc()).limit(limit + 1)
     if cursor: q = q.where(Resource.created_at < decode_cursor(cursor))
     items = list((await db.execute(q)).scalars().all())
-    return items[:limit], (encode_cursor(items[-1].created_at) if len(items) > limit else None)
+    return items[:limit], (encode_cursor(items[limit - 1].created_at) if len(items) > limit else None)
 class DuplicateUserError(Exception): pass
 class UserService:
     def __init__(self, db: AsyncSession) -> None: self.db = db
@@ -70,10 +82,10 @@ class UserService:
         rows = await self.db.execute(select(User).order_by(User.id).offset(skip).limit(limit))
         return list(rows.scalars()), total
 ```
-  crud_ops:{get:`select(Resource).where(Resource.id==id)`→`scalar_one_or_none()`;create:`add`→`commit`→`refresh`;update:`data.model_dump(exclude_unset=True)`→`setattr`→`commit`→`refresh`;delete:`db.delete(obj)`→`commit`};
-  router:`APIRouter(prefix="/resources", tags=["resources"])`:{GET `""`(cursor:`str|None=Query(None)`, limit:`int=Query(20,ge=1,le=100)`, `DbDep`, `get_current_user`)→`ResourceListResponse(data,next_cursor,has_more=bool(next_cursor))`; GET `"/{resource_id}"`→200|`HTTPException(404,"Resource not found")`; POST `""`→201(`DuplicateUserError`→409); PATCH `"/{resource_id}"`→200|404; DELETE `"/{resource_id}"`→`HTTP_204_NO_CONTENT`|404};
+  crud_ops:{get:`select(Resource).where(Resource.id==id)`→`scalar_one_or_none()`;create:`add`→`commit`→`refresh`;update:`data.model_dump(exclude_unset=True)`→`setattr`→`commit`→`refresh`;delete:`await db.delete(obj)`→`commit`};
+  router:`APIRouter(prefix="/resources", tags=["resources"])`:{GET `""`(cursor:`str|None=Query(None)`, limit:`int=Query(20,ge=1,le=100)`, `DbDep`, `ActiveUserDep`)→`ResourceListResponse(data,next_cursor,has_more=bool(next_cursor))`; GET `"/{resource_id}"`→200|`HTTPException(404,"Resource not found")`; POST `""`→201(`DuplicateUserError`→409); PATCH `"/{resource_id}"`→200|404; DELETE `"/{resource_id}"`→`HTTP_204_NO_CONTENT`|404};
   deps_auth:```python
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/users/token") # or "/auth/token"
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/users/token")
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
     async with AsyncSessionLocal() as s:
         try: yield s
@@ -95,7 +107,7 @@ def require_role(*roles: str):
 DbDep = Annotated[AsyncSession, Depends(get_db)]
 ActiveUserDep = Annotated[User, Depends(get_active_user)]
 ```
-  tests_conftest:```python
+  tests_conftest(`pyproject.toml`:`[tool.pytest.ini_options] asyncio_mode = "auto"`):```python
 engine = create_async_engine("sqlite+aiosqlite:///:memory:")
 TestingSession = async_sessionmaker(engine, expire_on_commit=False)
 @pytest_asyncio.fixture(autouse=True)
@@ -111,43 +123,42 @@ async def client():
     app.dependency_overrides[get_db] = override_get_db
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac: yield ac
 ```
-  test_cases:{`auth_client`:POST `/users/`→POST `/users/token`→`headers["Authorization"]=f"Bearer {token}"`; `@pytest.mark.asyncio`:POST→201; GET `00000000-0000-0000-0000-000000000000`→404; GET `?limit=2`→`has_more`&`next_cursor`; PATCH→200; DELETE→204→GET 404}
+  test_cases:{`auth_client`:POST `/users/`→POST `/users/token`→`headers["Authorization"]=f"Bearer {token}"`; POST→201; GET `00000000-0000-0000-0000-000000000000`→404; GET `?limit=2`→`has_more`&`next_cursor`; PATCH→200; DELETE→204→GET 404}
 }
 §R{
-  async_first:∀route⇒`async def`∧`await` DB;
+  async_first:∀route⇒`async def`∧`await` DB(sync_CPU/blocking⇒`def` route runs in threadpool);
   migrations:Alembic(prod)∧`Base.metadata.create_all`∈{demos,tests};
   ORM_mode:`ConfigDict(from_attributes=True)`∀response_schema;
   DI:`Depends`+`Annotated` small/reusable;split authn(401)≠authz(403);
-  errors:`HTTPException`∈{404,409,403,422};Pydantic handles validation;
+  passwords:`pwdlib[argon2]`(¬legacy `passlib`);
+  errors:`HTTPException`∈{404,409,403,422}∨RFC9457 handler;Pydantic handles validation;
   uniqueness:unique_index+catch `IntegrityError`→rollback→409(¬pre-check SELECT);
   pagination:prefer cursor(base64 timestamps⇒hide internal IDs);offset requires `order_by`;
   caching:server=Redis GET/SET+TTL|client=`Cache-Control`;
-  logging:structured(`loguru`|`structlog`)∈CRUD(request_id,exec_time);
+  logging:structured(`structlog`|`loguru`)∈CRUD(request_id,exec_time);
   OpenAPI:declare `response_model`,`summary`,`description`;
   testing:`httpx.AsyncClient(ASGITransport(app=app))`+DB_override+auth_fixtures
 }
 §ANTI{
   business_logic_in_routes(hashing,commits)⇒move_to_service;
   sync_Session_in_async_route⇒blocks_event_loop;
+  legacy_SQLAlchemy_1x_`Column()`⇒use `Mapped[]`+`mapped_column()`;
+  `passlib`(unmaintained,broken_Py3.13+)⇒use `pwdlib`;
   missing_response_model⇒leaks_private_fields∧breaks_OpenAPI;
   offset_without_order_by⇒skipped/repeated_rows;
   pre_insert_exists_check⇒concurrency_race
 }
 §CHK{
   routes_async∧AsyncSession;
+  SQLAlchemy_2.0_`Mapped`/`mapped_column`;
   response_models:`ConfigDict(from_attributes=True)`;
-  auth_dep∀non-public_route;
+  auth_dep∀non-public_route∧`pwdlib` hashing;
   cursor_pagination:`next_cursor`≠None⇔has_more;
   rate_limit/circuit_breaker(if_external_APIs);
   tests:(happy,validation,auth_fail,404);
   `app.include_router(resource_router.router)`;
-  Dockerfile:multi-stage+`uvicorn app.main:app --host 0.0.0.0 --port 80`;
+  Dockerfile:multi-stage(`uv`)+`fastapi run app/main.py --port 80`;
   `/health`→200;
-  Prometheus_exporter(if_observability_req)
+  OTel/Prometheus_exporter(if_observability_req)
 }
-§REL{
-  [backend-development](../SKILL.md);
-  [database-design](../../database-design/SKILL.md);
-  [unit-testing-patterns](../../unit-testing-patterns/SKILL.md);
-  [secure-coding](../../secure-coding/SKILL.md)
-}
+§REL{../SKILL.md,error-handling.md,../../python/SKILL.md,../../database-design/SKILL.md,../../unit-testing-patterns/SKILL.md,../../secure-coding/SKILL.md}

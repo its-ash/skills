@@ -3,14 +3,18 @@
 §R{
   1:lead_concrete(artifact|ex|out|anecdote|num|screenshot|code);
   2:explain_post_ex(¬pre);3:tight_sent(unless_expansive_src);4:proof>adj;5:¬invent(facts,cred,cust_proof);
-  voice⇒VOICE_PROFILE([brand-voice.md](brand-voice.md))∧¬2nd_analysis_unless_req;
+  6:info_gain+E-E-A-T⇒add(first_hand_exp|orig_data|benchmark|artifact|earned_angle)¬consensus_rehash;
+  voice⇒VOICE_PROFILE(brand-voice.md)∧¬2nd_analysis_unless_req;
   ∅_refs⇒op_voice(concrete,unsentimental,useful);
-  bans([brand-voice.md](brand-voice.md))∧cut_AI_throat_clear
+  bans(brand-voice.md)∧cut_AI_throat_clear
 }
 §PAT{
-  proc:1:aud+purpose→2:outline(1_job/sec)→3:open_sec(proof|artifact|conflict|ex)→4:expand_iff_earned→5:cut(templated,over_expl,self_congrat);
-  tech_guide:{open=takeaway,sec∈{code,cmd,screenshot,out},end=actionable(¬recap)};
+  proc:1:aud+purpose+intent→2:outline(1_job/sec+fanout_subQs)→3:open_sec(proof|artifact|conflict|direct_ans)→4:expand_iff_earned→5:cut(templated,over_expl,self_congrat);
+  web_geo:{inverted_pyramid(direct_ans_post_H2),cited_stats+expert_quotes,clean_lists_tables_for_RAG,named_author+method_transparency};
+  tech_guide:{open=takeaway,sec∈{code,cmd,screenshot,out,benchmark},end=actionable(¬recap)};
   essay:{open=tension|contradiction|obs,1_thread/sec,opinion→evidence};
   newsletter:{first_screen=work,¬diary_filler,labels_iff_scan}
 }
-§CHK{claims_sourced;¬AI_trans;voice==ex|VOICE_PROFILE;∀sec_adds_new;fmt==medium}
+§ANTI{consensus_summary_∅new_info;throat_clear_intro;unattributed_stats;fabricated_cases;AI_slop_transitions}
+§CHK{claims_sourced;info_gain_real;¬AI_trans;voice==ex|VOICE_PROFILE;∀sec_adds_new;GEO_extractable(if_web);fmt==medium}
+§REL{../SKILL.md:parent;brand-voice.md:voice+hard_bans;seo-blog-and-calendar.md:SEO_GEO_specs;../../seo/SKILL.md:tech_SEO+GEO}

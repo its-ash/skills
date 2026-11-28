@@ -22,17 +22,17 @@ badge:.badge{border-radius:999px;text-box:trim-both cap alphabetic;background:co
 }
 §FRM{
 :root{accent-color:var(--accent)} input,textarea,select{font:inherit} textarea{field-sizing:content;min-block-size:3lh;max-block-size:12lh} input:user-invalid{border-color:var(--danger)} input:user-invalid+.error{display:block} label:has(+:required)::after{content:" *";color:var(--danger)};
-field-sizing:content(Cr123+,FF152,SfTP)⇒min/max;:user-invalid>:invalid(¬load);
+field-sizing:content(Base2026:Cr123+,FF152+,Sf26.2+)⇒min/max;:user-invalid>:invalid(¬load);
 mobile:{inputmode(numeric|email|search),autocomplete,enterkeyhint(search|send|next)};form.requestSubmit(btn)(valid+submit+event.submitter);
 switch(role="switch"):.switch{appearance:none;inline-size:2.5rem;block-size:1.5rem;border-radius:1lh;position:relative} .switch::before{content:"";position:absolute;inset:2px auto 2px 2px;aspect-ratio:1;border-radius:50%;transition:translate 180ms var(--ease-out)} .switch:checked{background:var(--accent)} .switch:checked::before{translate:1rem 0};
-select(Cr135+;fb=native;¬<selectmenu>|¬<selectlist>;<selectedcontent>∈<button>):select,::picker(select){appearance:base-select;field-sizing:content} option:checked{background:var(--accent-soft)} option::checkmark{content:"✓"} select::picker-icon{transition:rotate .2s} select:open::picker-icon{rotate:180deg}
+select(Cr135+,Sf_rec,FF_flag;fb=native;¬<selectmenu>|¬<selectlist>;<selectedcontent>∈<button>):select,::picker(select){appearance:base-select;field-sizing:content} option:checked{background:var(--accent-soft)} option::checkmark{content:"✓"} select::picker-icon{transition:rotate .2s} select:open::picker-icon{rotate:180deg}
 }
 §OVR{
 dialog(<button commandfor="dlg" command="show-modal">,<dialog id="dlg" aria-labelledby="dlg-title" closedby="any">,<form method="dialog">→close+returnValue;closedby="any"|JS_backdrop;dialog.show()_non-modal;ret_focus;autofocus):
 dialog::backdrop{background:oklch(0 0 0/.45);backdrop-filter:blur(4px)} html:has(dialog[open]:modal){overflow:hidden} dialog{transition:opacity .2s var(--ease-out),scale .2s var(--ease-out),display .2s allow-discrete,overlay .2s allow-discrete;opacity:0;scale:.96} dialog[open]{opacity:1;scale:1} @starting-style{dialog[open]{opacity:0;scale:.96}};
 popover(Base2024:Cr114,FF125,Sf17;¬modal→<dialog>):popovertarget="menu" popover(=auto)|"manual"(hidePopover())|"hint"(¬closes_auto);popovertargetaction="show|hide|toggle";JS:{showPopover(),hidePopover(),togglePopover(),toggle|beforetoggle};
 hover:interestfor="tip"(interest-delay-start/end)=Cr_only⇒also_focus+tap;
-anchor(Cr125+,Sf26+;chk_FF;fb=abs_under;a11y:aria-describedby/controls/details):
+anchor(Base2026:Cr125+,Sf26+,FF147+;fb=abs_under_legacy;a11y:aria-describedby/controls/details):
 .trigger{anchor-name:--menu-btn} .menu{position:absolute;position-anchor:--menu-btn;position-area:block-end span-inline-end;min-inline-size:anchor-size(inline);position-try-fallbacks:flip-block,flip-inline} .tooltip{position-area:top;inset-inline-start:calc(anchor(center) - 1rem)};
 anchor_rules:position-area=3×3;anchor()_in_inset(math→calc());@position-try --name{…};anchor-scope:--name;popovertarget⇒implicit_anchor;
 tooltip:suppl¬inter(else_toggletip_<button>+popover);hover+focus+Esc(WCAG1.4.13);¬title

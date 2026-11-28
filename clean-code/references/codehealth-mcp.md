@@ -1,43 +1,49 @@
 @REF:codehealth-mcp
-@REL{std:coding-standards.md;verify:../../code-review/references/verification-loop.md;sec:../../secure-coding/SKILL.md;tdd:../../unit-testing-patterns/references/test-driven-development.md}
-§META{
-  upstream:https://github.com/codescene-oss/codescene-mcp-server;pkg:@codescene/codehealth-mcp(stdio_npx);
-  token:https://github.com/codescene-oss/codescene-mcp-server/blob/main/docs/getting-a-personal-access-token.md;
-  faq:https://github.com/codescene-oss/codescene-mcp-server#frequently-asked-questions;
-  policy:https://codescene.com/policies
+§REL{coding-standards.md:style_naming_vs_structure;deslop.md:post_Δ_cleanup;../../code-review/references/verification-loop.md:verify_gate;../../secure-coding/SKILL.md:sec+maint;../../unit-testing-patterns/references/test-driven-development.md:tests_pass≠healthy}
+§R{
+  engine:CodeScene_CodeHealth_MCP(`cs-mcp`,repo:`github.com/codescene-oss/codescene-mcp-server`|`codehealth-mcp`);deterministic_local_analysis(1.0-10.0_score+smells);
+  privacy:standalone_runs_locally(source_code_¬sent_to_external_servers);pass_only_relevant_local_paths(+base_branch_for_change_set);¬scan_secrets|creds|restricted_paths;
+  auth:opt_in;¬bundled_token;OAuth_first(`login`_tool|IDE_command_palette)⊕user_CS_ACCESS_TOKEN_env(¬commit);
+  unavailable(offline|auth_err|crash)⇒¬invent_scores,report_skipped,continue_only_with_user_approval,gate=lint+tests+`../../code-review/references/verification-loop.md`,re_enable_on_reconnect;
+  when:pre_edit_hotspot|legacy|unfamiliar;post_large_or_AI_diff;pre_commit|PR_gate;pair_TDD+linters(¬replaces_tests|lint);
 }
-§SEC{
-  opt_in;¬bundled_token;user_sets_CS_ACCESS_TOKEN(¬commit);
-  reads_passed_local_repo_paths(+branch_ctx_analyze_change_set),¬autonomous;¬secrets|creds|restricted_paths;
-  unavailable(offline|bad_token|crash)⇒¬invent_scores,report_skipped,continue_only_with_user_approval,gate=lint+tests+../../code-review/references/verification-loop.md,re-enable_on_reconnect
+§CMD[install]{
+  macOS_Linux_Homebrew:`brew tap codescene-oss/codescene-mcp-server && brew install cs-mcp`;
+  Windows_PowerShell:`irm https://raw.githubusercontent.com/codescene-oss/codehealth-mcp/main/install.ps1 | iex`;
+  VS_Code_Copilot:install_official_"CodeScene CodeHealth MCP"_extension(bundled_server+OAuth_zero_config);
+  alt_install:GitHub_Releases_prebuilt_binary(`cs-mcp-macos-aarch64`,`cs-mcp-linux-amd64`)⊕Docker_container;
 }
-§WHEN{review_quality|refactor|check_AI_diff;pre_edit_hotspot|legacy|unfamiliar;pre_commit|PR_gate;post_large_diff;pair_TDD|verification_loop(¬replaces_tests|lint)}
 §CFG{
-  // ~/.claude.json(mcpServers|`claude mcp add`) or .mcp.json; standalone=free(4_tools); restart&verify
-  `"codescene":{"command":"npx","args":["-y","@codescene/codehealth-mcp"],"env":{"CS_ACCESS_TOKEN":"YOUR_CS_ACCESS_TOKEN_HERE"}}`
+  mcp_json(`.mcp.json`|`~/.claude.json`|Cursor_mcp.json):`{"mcpServers":{"codescene":{"command":"cs-mcp","args":[],"env":{"CS_ACCESS_TOKEN":"<PAT_IF_NOT_OAUTH>"}}}}`;
+  AGENTS.md:copy_upstream_`AGENTS-standalone.md`_rules→root_`AGENTS.md`(symlink_`CLAUDE.md`_if_used;`.amazonq/rules`_for_Amazon_Q);keep_repo_budget≤150-200L;
+  minimal_AGENTS_rule:`Pre-edit: code_health_review (<4 narrow, 4-8.9 ¬broad); Post-edit: code_health_score (fix if <baseline); Pre-commit: pre_commit_code_health_safeguard; Pre-PR: analyze_change_set`;
 }
-§TOOLS{
-  // Standalone ONLY; ¬platform_tools(debt_hotspots); ¬delta_analysis(unavailable)
-  code_health_review:pre_edit_structural_analysis;
-  code_health_score:post_edit_numeric_delta;
-  pre_commit_code_health_safeguard:pre_commit_regression_gate;
-  analyze_change_set:pre_PR_branch_check(vs_base_e.g.main)
+§PAT[tools_scores_loop]{
+  standalone_all_users_tools:{
+    code_health_review:pre_edit_structural_analysis+smell_diagnostics;
+    code_health_score:post_edit_numeric_maintainability_delta(1.0-10.0);
+    pre_commit_code_health_safeguard:local_staged_or_modified_regression_gate;
+    analyze_change_set:pre_PR_branch_diff_check_vs_base(e.g.main);
+    code_health_refactoring_business_case:quantifies_tech_debt_ROI_and_business_impact;
+    explain_code_health|explain_code_health_productivity:structural_pattern_guidance
+  };
+  core_enterprise_only:repo_wide_historical_debt_hotspots+evolutionary_team_metrics_require_CodeScene_Core(Cloud|On-Prem)+PAT;
+  score_bands:{
+    9.0-10.0⇒Green(healthy:safe_to_extend,vertical_slices);
+    4.0-8.9⇒Yellow(debt:cautious_scoped_edits,¬drive_by_refactors);
+    1.0-3.9⇒Red(severe:narrow_scoped_diff_only+characterization_tests)
+  };
+  loop:1_pre_edit(`code_health_review(path)`→baseline+smells→band_plan)→2_edit(minimal_cohesive_Δ)→3_post_edit(`code_health_score(path)`→score<baseline⇒fix_pre_continuing)→4_pre_commit(`pre_commit_code_health_safeguard`)→5_pre_PR(`analyze_change_set(base)`);
 }
-§SCORES{
-  9.0-10.0⇒Green(healthy:safer_extend,vertical_slices);
-  4.0-8.9⇒Yellow(debt:careful,¬drive_by_refactors);
-  1.0-3.9⇒Red(severe:narrow_scope_only)
+§D{
+  interactive_IDE_setup⇒OAuth_login(VS_Code_ext|login_tool)¬manual_PAT_copy;
+  headless_CI_or_Core_Cloud⇒CS_ACCESS_TOKEN_env_var¬hardcoded_token;
+  tests_pass_but_score_regressed⇒fix_structural_regression¬ship_as_done;
+  idle_or_trivial_edit⇒disable_idle_MCP_to_preserve_context_budget¬keep_bloated_tool_list;
 }
-§LOOP{
-  pre_edit:code_health_review(path)→baseline+smells→smallest_plan(<5:minimal_diff;5-7:¬broad_refactors;>7:safer_refactor,verify_each);
-  post_edit:code_health_score(path)→score<baseline⇒fix_before_continuing(¬done_if_regressed);
-  pre_commit:pre_commit_code_health_safeguard(repo);pre_PR:analyze_change_set(base);
-  ex:pallets/flask(4.82→9.1_standalone);
-  AGENTS.md:`Pre-edit: code_health_review (<5 narrow; 5-7 ¬broad); Post-edit: code_health_score (fix if regressed); Pre-commit: pre_commit_code_health_safeguard; Pre-PR: analyze_change_set`
+§ANTI{
+  edit_first_check_later;invent_scores_when_offline;ignore_score_drop(tests_pass≠healthy);drive_by_cleanup_on_score<5;commit_CS_ACCESS_TOKEN;prefer_legacy_npx_over_native_cs-mcp
 }
-§ANTI{edit_first_check_later;ignore_score_drop(tests_pass≠done);drive_by_cleanup_on_score<5}
-§PAIR{
-  coding-standards.md:style/naming_vs_structure/complexity;verification-loop.md:structural_gate;
-  secure-coding/SKILL.md:sec+maint;test-driven-development.md:tests_pass≠healthy;
-  ctx_tip:keep_MCP_count_low(enable_large_edits,disable_idle)
+§CHK{
+  cs-mcp_verified_or_fallback_reported∧baseline_recorded∧post_score≥baseline∧safeguard_green∧change_set_checked
 }

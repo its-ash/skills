@@ -2,6 +2,7 @@
 §R{
   purpose:reusable_data_fetch∨business_logic∨state_mgmt(shared_across_comps/svcs);
   default:@Injectable({providedIn:'root'})⇒singleton(app)∧auto_available(¬providers[])∧tree_shakeable(bundled⇔injected);
+  v22_DI:@Service()_decorator∧`injectAsync()`_for_async_DI;
   inject:inject(Svc)∈class_field_init(Component|Directive|Injectable)
 }
 §CMD{

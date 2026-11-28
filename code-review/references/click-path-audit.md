@@ -1,29 +1,30 @@
 @REF:click-path-audit
-§META{type:behavioral_flow_audit;target:state_side_effects|async_races|handler_conflicts_missed_by_static_read}
+§META{type:behavioral_flow_audit;target:state_side_effects|async_or_transition_races|optimistic_snapbacks|handler_conflicts_missed_by_static_read}
 §USE{
-  triggers:{sys_debug_finds_0_bugs∧UI_broken,post_Zustand/Redux_action_Δ(check_all_callers),post_shared_state_refactor,pre_release_critical_flows,button_does_nothing};
-  not_for:{API_bugs(shape|missing_ep)→../../systematic-debugging/SKILL.md,styling/layout→visual_inspection,perf→profiling}
+  triggers:{sys_debug_finds_0_bugs∧UI_broken,post_store_action_Δ(Zustand/Redux/Context/TanStack_Query_check_∀_callers),post_React19_action/optimistic_refactor,post_shared_state_refactor,pre_release_critical_flows,button_does_nothing,optimistic_UI_snapback};
+  not_for:{API_bugs(shape|missing_ep)→../../systematic-debugging/SKILL.md,styling/layout→visual_inspection,perf→profiling};
 }
 §REL{
   ../../systematic-debugging/SKILL.md:run_AFTER;
   verification-loop.md:run_BEFORE;
-  ../../unit-testing-patterns/references/test-driven-development.md:feeds_tests_for_every_bug
+  ../../unit-testing-patterns/references/test-driven-development.md:feeds_tests_for_every_bug;
 }
 §PAT[Execution]{
-  Step1_MapStores[MUST_RUN_FIRST]:∀store/context,∀action/setter⇒`actionName→{sets:[...],resets:[...]}`+flag_DANGEROUS_RESETS(clears_unowned_state,e.g.`selectThread`→resets{composeMode:false,composeData:null,redraftOpen:false});
-  Step2_AuditTouchpoints:∀btn/toggle/submit⇒1_id_handler(onClick|onSubmit|onChange)→2_trace_calls_IN_ORDER(READ,WRITE,SIDE_EFFECTS,RESET)→3_check_later_UNDO→4_check_FINAL_state==btn_label_intent→5_check_async_race;
-  Step3_Report_Fmt:`CLICK-PATH-NNN:[CRITICAL|HIGH|MEDIUM|LOW]|Touchpoint:label@file:line|Pattern|Handler|Trace(1.sets,2.RESETS←CONFLICT)|Expected|Actual|Fix`
+  Step1_MapStores[MUST_RUN_FIRST]:∀store/context/query_cache,∀action/setter/mutator⇒`actionName→{sets:[...],resets:[...],invalidates:[...]}`+flag_DANGEROUS_RESETS(clears_unowned_state,e.g.`selectItem`→resets{composeMode:false,draftData:null,drawerOpen:false});
+  Step2_AuditTouchpoints:∀btn/toggle/submit/action⇒1_id_handler(onClick|onSubmit|onChange|formAction)→2_trace_calls_IN_ORDER(READ,WRITE,TRANSITION,SIDE_EFFECTS,RESET,INVALIDATE)→3_check_later_UNDO→4_check_FINAL_state==label_intent→5_check_async_or_optimistic_race;
+  Step3_Report_Fmt:`CLICK-PATH-NNN:[CRITICAL|HIGH|MEDIUM|LOW]|Touchpoint:label@file:line|Pattern|Handler|Trace(1.sets,2.RESETS←CONFLICT)|Expected|Actual|Fix`;
 }
-§D[BugPatterns_1_to_6]{
-  1_SequentialUndo:call1_sets(X=true)→call2_side_effect_resets(X=false)(e.g.ThreadList.tsx:`setComposeMode(true);selectThread(null)`⇒final_X=false);
-  2_AsyncRace:fetchA().then(setState({loading:false}))∧fetchB().then(setState({loading:true}))⇒non_deterministic_final_state;
-  3_StaleClosure:useCallback(()=>{setCount(count+1);setCount(count+1)},[count])⇒+1_not_+2;
+§D[BugPatterns_1_to_7]{
+  1_SequentialUndo:call1_sets(X=true)→call2_side_effect_resets(X=false)(e.g.`setComposeMode(true);selectItem(null)`⇒final_X=false);
+  2_AsyncRace:fetchA().then(setState({loading:false}))∧fetchB().then(setState({loading:true}))⇒non_deterministic_final_state(fix:AbortController|req_id);
+  3_StaleClosure:`setCount(count+1);setCount(count+1)`⇒+1_not_+2(fix:`c=>c+1`)∨React19_`useActionState`_closing_over_volatile_state_instead_of`(prev,formData)`;
   4_MissingStateTransition:label("Save"|"Delete"|"Send")vs_handler(only_validates|sets_flag_¬API|broken_ep);
   5_ConditionalDeadPath:`if(someState){doThing()}`∧someState≡false_at_exec;
-  6_useEffectInterference:handler_sets(X=true)→useEffect([X])_resets(X=false)
+  6_useEffectInterference:handler_sets(X=true)→useEffect([X])_resets(X=false);
+  7_OptimisticTransitionRace:`useOptimistic`_called_outside_`startTransition`/form_action(dropped_immediately)∨concurrent_out_of_order_mutations_snap_back_wo_`useActionState`+server_reconciliation(`revalidatePath`|`invalidateQueries`);
 }
 §R[ScopeControl]{
-  FullApp:parallel_subagents{Agent1[MUST_COMPLETE_FIRST]:Step1_all_stores,Agent2:Dashboard,Agent3:Chat,Agent4:Email,Agent5:Project,Agent6:CRM,Agent7:Profile/Settings/Notifications};
-  SinglePage:new_page∨broken_button;
-  StoreFocused:post_Zustand_Δ⇒audit_all_consumers_of_changed_actions
+  FullApp:parallel_subagents{Agent1[MUST_COMPLETE_FIRST]:Step1_all_stores,Agent2..N:1_feature_domain_or_route_group_each};
+  SinglePage:new_page∨broken_button∨broken_form_action;
+  StoreFocused:post_Zustand/Redux/Query_action_Δ⇒audit_∀_consumers_of_changed_actions;
 }

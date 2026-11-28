@@ -1,5 +1,5 @@
 @REF:threejs-shaders
-§META{ver:three.js_r186;WebGL⇒WebGLRenderer;WebGPU/TSL⇒WebGPURenderer}
+§META{ver:three.js_r187;WebGL⇒WebGLRenderer;WebGPU/TSL⇒WebGPURenderer}
 
 §PAT{QUICK_START:
 ```js

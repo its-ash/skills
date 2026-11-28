@@ -1,45 +1,50 @@
 ---
 name: content-writing
-description: "AUTO_INVOKE(silent)⇔prompt∈{blog,SEO_post,article,guide,tutorial,newsletter,copywriting,hero,pricing_page,landing_page,CTA,headline,brand_voice,voice_profile,content_calendar,repurpose,crosspost,hook,LinkedIn,X_post,X_API,SocialClaw,Instagram,TikTok,lead_scoring,warm_intro,outreach,pitch_deck,one_pager,investor_email,launch_campaign,keyword_research,cited_writing,co-writing}|SUB:{copywriting,social-content,brand-voice,article-writing,social-publishing,lead-intelligence,investor-materials,marketing-campaign}"
+description: "AUTO_INVOKE(silent)⇔prompt∈{blog,SEO_post,GEO,E-E-A-T,article,guide,tutorial,newsletter,copywriting,hero,pricing_page,landing_page,CTA,headline,brand_voice,voice_profile,content_calendar,repurpose,crosspost,hook,LinkedIn,X_post,X_API,SocialClaw,Instagram,TikTok,Threads,Bluesky,lead_scoring,warm_intro,cold_email,outreach,pitch_deck,one_pager,investor_email,launch_campaign,keyword_research,cited_writing,co-writing}|SUB:{copywriting,social-content,brand-voice,article-writing,social-publishing,lead-intelligence,investor-materials,marketing-campaign,seo-blog-and-calendar}"
 ---
 @SKL:content-writing
 §R{
-  def(audience_need)≺write;
-  research(keywords,data,sources)≺draft;
-  voice_sensitive⇒(build∨load(voice_profile))≺write∧keep_invariant(voice);
-  draft1(¬edit)→apply_SEO→edit_voice;
-  ∀(fact,figure,quote)⇒cite(1_consistent_style);
-  ∀platform⇒fit{length,format,hashtag_cnt,media_size};
-  ∀piece⇒end_w/(1_clear_CTA);
+  def(audience_need,search_or_channel_intent)≺write;
+  research(topics,entities,data,sources)≺draft;
+  voice_sensitive⇒(build∨load(VOICE_PROFILE))≺write∧keep_invariant(voice);
+  draft1(¬edit)→apply_SEO_GEO→edit_voice∧strip_AI_slop;
+  ∀(fact,figure,quote)⇒cite(1_consistent_style)∧¬fabricate;
+  web_content⇒inject(E-E-A-T:first_hand_exp,orig_data,named_author)+info_gain¬consensus_rehash;
+  ∀platform⇒fit{char_limit,fold,media_spec,hashtag_cap,native_fmt};
+  ∀piece⇒end_w/(1_clear_earned_CTA);
   co_writing⇒suggest_edits∧¬overwrite(author_voice);
-  proofread(facts,grammar,citations)≺publish;
-  schedule(calendar)∧review(metrics,monthly)→Δplan;
+  outbound_or_publish⇒draft_first∧explicit_user_approval≺(post∨send∨prune);
+  email_outreach⇒verify(SPF+DKIM+aligned_DMARC,spam<0.1%_cap_0.3%)≺send;
+  proofread(facts,grammar,citations,links)≺publish;
+  schedule(calendar)∧review(metrics,monthly:org_traf,GEO_cit,saves,sends,conv)→Δplan;
 }
 §D{
-  seo_blog⇒primary_kw∈{title(<60c),URL,first_100w,≥2_H2}∧kw_density∈[1%,3%]¬kw_stuffing;
-  meta_desc⇒len∈[150,160]c∧kw∧CTA¬auto_excerpt;
-  long_form⇒words∈[1500,2500]∧links(internal≥2,external≥2)¬thin_post∨∅sources;
-  1_idea×N_channels⇒repurpose_core_msg_per_platform¬same_text_crossposted;
+  seo_blog⇒pri_kw∈{title(<60c),URL,first_100w,H2}+entity_coverage+info_gain¬kw_density_quota∨LSI_myth∨stuffing;
+  geo_aio⇒direct_answer_post_H2+cited_stats+expert_quotes+clean_lists_tables+fanout_subQs¬fluff_intro;
+  meta_desc⇒len∈[150,160]c∧pri_kw∧CTA¬auto_excerpt;
+  long_form⇒intent_fit_depth(guides≈1500-2500w)+orig_proof+links(int≥2,ext≥2)¬thin_post∨padded_wc∨∅sources;
+  1_idea×N_channels⇒repurpose_core_msg_per_platform(native_fmt+fold)¬identical_xpost;
   calendar_mix⇒{40%:educational,25%:promotional,25%:community,10%:evergreen}¬all_promotional;
   weekly_prod⇒batch_write(1_session)¬piece_by_piece_voice_drift;
   weak_hook⇒analyze+3_alts_w/_rationale¬1_rewrite_∅reason;
   web_page_copy(hero,pricing,CTA)⇒use(references/copywriting.md)¬blog_struct_on_landing_page;
+  x_api_media⇒use(v2_api.x.com/2/media/upload+media.write)¬sunset_v1.1_upload.twitter.com;
 }
 §REF{
-  quick_voice_guide,seo_elem_tbl,platform_limits,cal_tpl,outline_skel,cowrite_loop,checklist,metrics→references/seo-blog-and-calendar.md;
+  quick_voice_guide,seo_geo_specs,platform_limits,cal_tpl,outline_skel,cowrite_loop,checklist,metrics→references/seo-blog-and-calendar.md;
   full_VOICE_PROFILE_from_real_samples,shared_hard_ban_list→references/brand-voice.md;
-  articles,guides,tutorials,newsletters(proof_first_struct)→references/article-writing.md;
+  articles,guides,tutorials,newsletters(proof_first+E-E-A-T+GEO)→references/article-writing.md;
   social_plans,platform_strategy,hooks,tpls,repurposing,crossposting→references/social-content.md;
-  post/read/schedule(X_API∨SocialClaw),auth,rate_limits,approval→references/social-publishing.md;
-  website_copy(home,landing,pricing,feature_pages,headlines,CTAs)→references/copywriting.md;
-  lead_scoring,warm_intro_paths,network_cleanup,outreach_drafts→references/lead-intelligence.md;
-  pitch_decks,one_pagers,memos,models,investor_emails,updates→references/investor-materials.md;
+  post/read/schedule(X_API_v2∨SocialClaw_CLI_MCP),auth,rate_limits,approval→references/social-publishing.md;
+  website_copy(home,landing,pricing,feature_pages,headlines,CTAs,7_sweep)→references/copywriting.md;
+  lead_scoring,warm_intro_paths,network_cleanup,deliverability,outreach_drafts→references/lead-intelligence.md;
+  pitch_decks,one_pagers,memos,models,DocSend_benchmarks,investor_emails,updates→references/investor-materials.md;
   multi_channel_launch(positioning,landing_page,emails,social,video,ads,calendar)→references/marketing-campaign.md;
 }
 §REL{
-  ../seo/SKILL.md:tech+onpage_SEO_audits,schema_markup;
+  ../seo/SKILL.md:tech+onpage_SEO_audits,GEO,schema_markup;
   ../product-strategy/SKILL.md:market_research,positioning_pre_campaigns;
   ../research/SKILL.md:cited_research,Exa_search(sources,leads);
   ../video-production/SKILL.md:short_form+launch_videos_from_scripts;
-  ../conversion-optimization/SKILL.md:CRO_landing_pages;
+  ../conversion-optimization/SKILL.md:CRO_landing_pages,AB_testing;
 }

@@ -5,7 +5,7 @@ cascade:@layer(reset→base→components→utilities)∧1-cls_spec;
 tokens:prim(--blue-600)→sem(--color-action)→comp(--btn-bg);comp∈{sem,comp};
 native>preproc(if_sup):vars,nesting,color-mix(),@layer,@scope,math_fns;
 0-rt(Modules,vanilla-extract,Tailwind,Panda,StyleX)>rt-CSS-in-JS(styled-components,Emotion⇒JS_cost∧RSC_conflict);
-lint:Stylelint16(stylelint-config-standard)|Biome2;fmt:Biome2|Prettier;CI:fail_err;
+lint:Stylelint18(ESM,stylelint-config-standard)|Biome2;fmt:Biome2|Prettier;CI:fail_err;
 targets:1_browserslist(LightningCSS∧JS)
 }
 §PAT{
@@ -18,11 +18,11 @@ state:[aria-expanded="true"],[data-state="open"]¬classes
 }
 §TOK{
 `@layer tokens{:root{--blue-600:oklch(55% .2 260);--color-action:var(--blue-600)}}` `.btn{--btn-bg:var(--color-action);background:var(--btn-bg)}`;
-SOT:DTCG2025($value,$type)→StyleDictionary4|5→{CSS,iOS,Android};
+SOT:DTCG2025($value,$type)→StyleDictionary5(native_DTCG)→{CSS,iOS,Android};
 theme:swap_sem([data-theme]|light-dark())∧¬override_internals;docs:Storybook∧DevTools_names
 }
 §TW{
-v4(4.3):CSS-first(¬tailwind.config.js);`@import "tailwindcss";`@theme{--color-brand:…}|@utility|@variant|@custom-variant|@source;
+v4(4.3.5+):CSS-first(¬tailwind.config.js);`@import "tailwindcss";`@theme{--color-brand:…}|@utility|@variant|@custom-variant|@source;
 layers:@layer(theme,base,components,utilities);unlayered>TW;
 engine:LightningCSS(¬PostCSS|Autoprefixer);
 scan:whole_cls_in_src;¬`bg-${color}-500`⇒map→full_str;
@@ -30,7 +30,7 @@ scan:whole_cls_in_src;¬`bg-${color}-500`⇒map→full_str;
 }
 §TOOL{
 Sass:@use "tokens" as t;@forward;(¬@import);$radius:4px !default;→@use "lib" with($radius:8px);mixins(@content)>%extend(bloat);math.div()>/;@each/@for_small;compile=Sass_var,rt=CSS_var;
-LightningCSS(Rust):prefix,lower_nest,color_fb,minify,Modules(Vite8∧TW4_default)>PostCSS;
+LightningCSS(Rust):prefix,lower_nest,color_fb,minify,Modules(Vite8_Rolldown∧TW4_default)>PostCSS;
 PostCSS:plugins_only(postcss-preset-env_drafts,custom-media);¬lower_sup;
 Modules(.module.css):hash/file;`composes:base from "./base.module.css"`;
 FW:Vue(<style scoped>),Svelte,Astro(:where(.astro-xyz));:global()_rare;native:@scope;

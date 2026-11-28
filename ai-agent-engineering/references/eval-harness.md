@@ -1,16 +1,20 @@
 @REF:eval-harness
 §GOAL{EDD:evals_before_code,graders,head_to_head_agent_cmp,self_score_deliverable}
 §WHEN{setup_EDD;pass_fail_criteria;pass@k_reliability;regression_suite(prompt|agent_Δ);model_benchmarks;cmp_agents(Claude_Code,Aider,Codex);self_rate_deliverable}
-§PHIL{evals=unit_tests_of_AI:define_before_impl→run_continuously→track_regressions_per_Δ→measure_pass@k}
+§PHIL{evals=unit_tests_of_AI:define_before_impl→run_continuously→track_regressions_per_Δ→measure_pass@k_and_pass^k}
+§ANATOMY{
+  Task(spec+fixtures)→Trial(1_stochastic_run)→Transcript(full_prompts,tool_calls,reasoning)→Outcome(final_env_state/artifacts)→Grader;
+  rule:grade_Outcome(final_state)>rigid_trajectory(agents_take_valid_alt_paths);inspect_Transcripts_to_diagnose_fails∧calibrate_judges
+}
 §EVAL_TYPES{
-  Capability:`[CAPABILITY EVAL: <name>]`{Task,Success Criteria[- [ ]],Expected Output};
-  Regression:`[REGRESSION EVAL: <name>]`{Baseline(SHA|checkpoint),Tests(PASS/FAIL),Result(X/Y_vs_prev_Y/Y)}
+  Capability:`[CAPABILITY EVAL: <name>]`{Task,Success Criteria[- [ ]],Expected Output}(starts_low_pass_rate_for_hill_climbing→graduate_solved_to_Regression);
+  Regression:`[REGRESSION EVAL: <name>]`{Baseline(SHA|checkpoint),Tests(PASS/FAIL),Result(X/Y_vs_prev_Y/Y)}(target:near_100%_pass^k)
 }
 §GRADERS{
-  1:Code(deterministic,preferred):`grep -q "<pat>" <file> && echo PASS || echo FAIL`;`npm test -- --testPathPattern="<pat>"`;`npm run build`;
+  1:Code(deterministic,preferred,fast,cheap_but_brittle_on_open_ended):`grep -q "<pat>" <file> && echo PASS || echo FAIL`;`npm test -- --testPathPattern="<pat>"`;`npm run build`;
   2:Rule:regex|schema_constraints;
-  3:Model(LLM_judge_rubric):eval(solves_problem,well_structured,edge_cases,err_handle)⇒Score(1-5)+Reasoning;
-  4:Human(mandatory_for_sec|ambiguous):`[HUMAN REVIEW REQUIRED]`{Change,Reason,Risk(LOW|MEDIUM|HIGH)}
+  3:Model(LLM_judge_rubric,semantic/nuance):eval(solves_problem,well_structured,edge_cases,err_handle)⇒Score(1-5)+Reasoning;calibrate_regularly_vs_Human_gold_spot_checks;
+  4:Human(mandatory_for_sec|ambiguous|judge_calibration):`[HUMAN REVIEW REQUIRED]`{Change,Reason,Risk(LOW|MEDIUM|HIGH)}
 }
 §METRICS{
   pass@k:≥1_success_in_k_trials(`pass@1`=direct,`pass@3`=practical_w/_retries,target:`pass@3 > 90%`|`>= 0.90`);

@@ -1,41 +1,51 @@
 ---
 name: ux-research
-description: "AUTO_INVOKE(silent)⇔prompt∈{ux-research,user_research,interviews,surveys,usability_test,test_plan,persona,journey_map,heuristic_eval,prototype_test,Figma_prototype,Maze,UserTesting,Hotjar,UX_metrics,SUS,task_success,affinity_map,thematic_analysis,design_validation,findings_synthesis,Likert,TF-IDF,K-means,survey_CSV,transcripts}|SUB:{∅}"
+description: "AUTO_INVOKE(silent)⇔prompt∈{ux-research,user_research,interviews,surveys,usability_test,test_plan,persona,JTBD,journey_map,heuristic_eval,prototype_test,Figma_prototype,Maze,UserTesting,Lyssna,Dovetail,Great_Question,Outset,Contentsquare,Hotjar,Clarity,PostHog,UX_metrics,SUS,UX-Lite,SEQ,SUPR-Q,task_success,geometric_mean,Adjusted_Wald,affinity_map,thematic_analysis,BERTopic,Cohen_Kappa,IRR,synthetic_users,AI_moderated,participant_fraud,inclusive_UX,AT_testing,GDPR_PII,findings_synthesis,Likert,survey_CSV,transcripts}|SUB:{research-workflow,metrics-and-analysis,ai-and-fraud-guardrails}"
 ---
 @SKL:ux-research
 §R{
-  pipeline:collect→clean→find_patterns→personas→journey→test_plan→run→synthesize→validate;
-  raw_data(transcripts,survey_CSV,analytics_exports)∈version_controlled_dir;
-  clean:drop(dup_rows∨missing_fields>30%)∧norm(categorical,Likert→1..5);
-  |persona_clusters|∈[3,5];
-  ∀cluster:participants≥5⇒reliable_confidence;
-  persona.confidence=(supporting_participants/total)×100;
-  |persona.scenario|<150w;
-  ∀journey_stage:map(touchpoint,emotion,pain_point)∧include(alt_paths);
-  pre_test:define(tasks,success_criteria,participant_criteria);
-  target(critical_tasks):success≥80%∧mean_time≤2m;
-  record(quant:{success,time,errors},qual:{think_aloud,comments})→structured_CSV;
-  ∀theme:insight_stmt→design_implication∧prioritize(impact/effort);
-  keep(negative_feedback∧outliers)⇒surfaces_critical_issues;
-  recruit(cross_demographics)¬single_group_skew;
-  validate(Δ)⇒2nd_test_vs_baseline
+  pipeline:scope→recruit(vetted)→consent+collect→redact_PII+clean→analyze→archetypes/JTBD+journey→test_plan→run(quant+qual)→synthesize(atomic)→validate(retest);
+  standards:ISO_9241-11(effectiveness,efficiency,satisfaction)∧ISO_9241-210(iter_ctx_of_use)∧WCAG_2.2∧EAA;
+  PII_gov:capture(consent+DSAR_key)∧redact(names,emails,faces,voices)≺LLM∨git;raw∈SOC2/GDPR_repo(no-AI-train);de-id_only∈VC;
+  anti_fraud:vetted_ID_panels(Prolific,User_Interviews,Ethnio)≻open_links;layer(fake_brand_traps+split_consistency+meta/paste_telemetry+live_local_probe);
+  AI_boundary:AI_moderated(real_humans)⇒scale_qual;synthetic_users⇒internal_prep_only(script/survey_dry_run)¬validation∨design_decisions∨a11y;
+  clean:drop(dups∨missing>30%∨fraud_flags)∧norm(snake_cols,Likert→1..5);
+  archetypes:|clusters|∈[3,5]∧behavioral/JTBD_first(demographics_only_if_predictive)∧≥5_participants/cluster∧scenario<150w;
+  journey:∀stage⇒map(touchpoint,action,emotion,pain_point,opportunity)+alt_paths;
+  pre_test:define(realistic_tasks,success_criteria,segment_criteria,device/AT_ctx)∧pilot_test≺field;
+  usability_stats:task_time⇒geometric_mean∨median¬arith_mean;success_%⇒Adjusted_Wald_CI;critical_target:success≥80%;
+  scales:post_task⇒SEQ(1-7);post_session⇒SUS(0-100)∨UX-Lite/UMUX-Lite(2-item);web_bench⇒SUPR-Q(8-item)¬ad_hoc_scales;
+  capture:quant(success,geom_time,errs,SEQ/SUS)+qual(think_aloud,verbatims,ctx)→structured_CSV+repo_clips;
+  qual_scale:N<100⇒manual_thematic/affinity;N∈[100,1000]⇒LLM_few_shot_codebook+IRR(Cohen_κ≥0.80_vs_human_gold);N>500_exploratory⇒BERTopic(SBERT+UMAP+HDBSCAN);
+  atomic_synthesis:evidence(verbatim/metric)→insight→design_implication/opportunity;keep(negatives∧outliers);prioritize(impact/effort);
+  inclusive_UX:recruit(diverse_demographics+disabilities)∧test(daily_AT:JAWS/NVDA/VoiceOver/TalkBack/kbd);
+  triangulate:qual_why(interviews/usability)+quant_what(analytics/replays/surveys)¬single_method_bias;
+  validate(Δ)⇒retest(same_segments)vs_baseline(Adjusted_Wald/geom_time)¬design_review_signoff
 }
 §D{
-  small_dataset⇒freq_counts(goals,pain_points)¬clustering_noise;
-  large_text_dataset⇒TF-IDF+K-means∧label(centroids)¬hand_sort_100s_rows;
-  2_distinct_types_look_similar⇒keep_separate_personas¬merge_generic_persona;
-  choose_test_method⇒moderated_remote(depth)∨unmoderated_remote(scale)∨in_person(physical/context)¬1_method_∀_Q;
-  many_findings⇒impact/effort_matrix∧ship(high_impact,low_effort)_first¬fix_arrival_order;
-  quantify_perceived_usability⇒SUS(post_session)¬ad_hoc_satisfaction_scale;
-  validate_fix⇒retest(same_persona_groups)∧compare(baseline)¬declare_success_from_design_review;
-  compare_2_live_variants⇒A/B_test¬usability_test_5_users
+  small_text(N<100)⇒freq_counts+manual_thematic¬clustering_noise;
+  large_exploratory_text(N>500)⇒BERTopic(SBERT+UMAP+HDBSCAN)¬TF-IDF+K-means_rigid_K;
+  apply_known_codebook(N≥100)⇒LLM_few_shot+human_IRR(κ≥0.80)¬unchecked_LLM_tags;
+  distinct_behaviors_look_similar⇒separate_archetypes¬merge_generic_persona;
+  choose_method⇒moderated_remote(depth/complex/sensitive)∨AI_moderated(scale_qual)∨unmoderated(Maze/Lyssna_fast)∨in_person(physical/AT_ctx)¬1_method_∀_Q;
+  pre_test_fast_sweep⇒heuristic_eval(10_Nielsen+sev_0..4)≺usability_spend¬replace_real_users;
+  session_replay_heatmaps⇒Contentsquare(Hotjar_merged_2025-07)∨Clarity(free)∨PostHog(OSS)∨FullStory/LogRocket(dev_debug)¬legacy_Hotjar_standalone;
+  open_recruit_link⇒vetted_panel+multi_layer_fraud_defense¬trust_CAPTCHAs_or_fluent_text;
+  asked_for_synthetic_validation⇒limit_to_pilot_rehearsal+recruit_real_humans¬ship_on_LLM_personas;
+  many_findings⇒impact/effort_matrix∧ship(H_impact,L_effort)_first¬fix_arrival_order;
+  compare_2_live_variants⇒A/B_test(power_N)¬5_user_usability_test;
+  validate_fix⇒retest(same_segments)+compare(baseline_CI)¬declare_win_from_review
 }
 §REF{
-  step_detail,pandas_clean,K-means_code,persona_tpl,journey_map,impact_effort_ex,final_checklist→references/research-workflow.md
+  pipeline,ReOps_stack,JTBD_personas,journey_map,heuristic_eval,usability_test,inclusive_AT,checklist→references/research-workflow.md;
+  ISO_9241-11,SUS,UX-Lite,SEQ,SUPR-Q,geom_mean,Adjusted_Wald,pandas_clean,BERTopic,LLM_coding,IRR_Kappa,atomic_nuggets→references/metrics-and-analysis.md;
+  AI_moderated_vs_synthetic,fraud_bot_LLM_defense,screening_traps,GDPR_PII_redaction,consent_DSAR→references/ai-and-fraud-guardrails.md
 }
 §REL{
   ../design/SKILL.md:parent_workflow_UI_brief→prod;
-  ../design/references/figma.md:Figma_MCP_context,screenshots,assets;
-  ../conversion-optimization/references/ab-testing.md:split,multivariate_exp;
-  ../conversion-optimization/SKILL.md:funnel,form,signup,paywall_CRO
+  ../design/references/figma.md:Figma_MCP_context,prototypes,screenshots;
+  ../conversion-optimization/SKILL.md:funnel,form,signup,paywall_CRO;
+  ../conversion-optimization/references/ab-testing.md:split,multivariate_exp,power_N;
+  ../product-strategy/SKILL.md:PRODUCT-BRIEF,journey_audit,ICE_prioritization;
+  ../web-quality-audit/references/web-accessibility.md:WCAG_2.2,EAA,AT_compliance
 }

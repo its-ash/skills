@@ -1,54 +1,55 @@
 @REF:service-architecture
-@REL{parent:../SKILL.md;api:api-design.md;errors:error-handling.md}
+§REL{../SKILL.md,api-design.md,error-handling.md,contract-first.md,../../devops-iac/SKILL.md,../../devops-iac/references/observability.md}
 §DESIGN{
   1:req(domain,latency,throughput,consistency,avail);
   2:DDD_bounded_ctx(start_coarse,split_at_clear_boundary);
   3:ADR;4:stateless(h_scale);5:Docker→K8s
 }
 §CONTRACT{
-  docs:OpenAPI/Swagger(REST),SDL(GraphQL);sdk:openapi-generator|graphql-codegen;tests:Pact|Spring_Cloud_Contract;
+  docs:OpenAPI_3.2/3.1(REST+SSE),AsyncAPI_3(events),SDL(GraphQL),Protobuf(gRPC);sdk:openapi-typescript|orval|openapi-generator|graphql-codegen|buf;tests:Pact|Spring_Cloud_Contract;
   openapi_cursor:`paths./orders.get.parameters:[{in:query,name:cursor,schema:{type:string}}]->responses.200.content['application/json'].schema.$ref:'#/components/schemas/OrderPage'`
 }
 §INT{
-  sync:REST|gRPC;async:queues(RabbitMQ,SQS)|streams(Kafka,NATS);
-  discovery:K8s_DNS|Consul|Eureka;gw:Kong|Envoy|AWS_API_GW(route,auth,ratelimit,xform);
+  sync:REST|gRPC|tRPC_v11;async:queues(RabbitMQ,SQS)|streams(Kafka,NATS);
+  discovery:K8s_DNS|Consul;gw:Kong|Envoy|AWS_API_GW(route,auth,ratelimit,xform);
   mesh:Istio|Linkerd(traffic,mTLS,obs);BFF:per_UI_agg;Strangler:incremental_replace;
-  Saga:choreography(events)|orchestration(coord);CQRS:split_R/W(+event_sourcing_for_audit)
+  Saga:choreography(events)|orchestration(Temporal|coord);CQRS:split_R/W(+event_sourcing_for_audit)
 }
 §EVT{
-  p2p:RabbitMQ|SQS;log:Kafka|Kinesis;pubsub:topic,fanout,content_filter;
+  p2p:RabbitMQ|SQS;log:Kafka|NATS_JetStream|Kinesis;pubsub:topic,fanout,content_filter;
+  outbox:transactional_outbox(DB_tx→relay→broker)⇒¬dual_write_loss;
   event_sourcing:immutable_events+replay;fail:DLQ+exp_backoff;exactly_once:idempotent+dedup_keys
 }
 §SEC{
-  TLS+mTLS_S2S;OAuth2(auth_code,client_credentials)|OIDC;short_JWT+key_rotate;RBAC+ABAC;
-  per_consumer_API_keys(rotate+ratelimit);schema_val(Zod,Joi,JSON_Schema)+allowlist;
-  ratelimit:token|leaky_bucket(gw|svc);secrets:Vault|AWS_Secrets_Manager|runtime_env
+  TLS+mTLS_S2S;OAuth2(auth_code+PKCE,client_credentials)|OIDC;short_JWT+key_rotate;RBAC+ABAC;
+  per_consumer_API_keys(rotate+ratelimit);schema_val(Standard_Schema:Zod_4/Valibot/ArkType,Pydantic_v2,JSON_Schema_2020-12)+allowlist;
+  ratelimit:token|sliding_window(gw|Redis);secrets:Vault|AWS_Secrets_Manager|runtime_env
 }
 §RES{
   CB(`CLOSED|OPEN|HALF_OPEN`,trip`failures>=5`→`OPEN`,reset_on_ok);
-  retry+exp_backoff(transient,capped);bulkhead(isolate_threads/DB_conns/dep);
-  timeouts(req+conn+deadline_prop);graceful_degrade(cached|default);idempotency(POST/PUT_req_IDs);chaos(chaos-mesh,Gremlin)
+  retry+exp_backoff+jitter(transient,capped,¬retry_4xx);bulkhead(isolate_threads/DB_conns/dep);
+  timeouts(req+conn+deadline_prop);graceful_degrade(cached|default);idempotency(POST/PUT_`Idempotency-Key`);chaos(chaos-mesh,Gremlin)
 }
 §OBS{
-  logs:JSON(traceId,spanId,userId)→ELK|Loki|CloudWatch;metrics:Prom_RED(Rate,Errors,Duration)+biz;
-  traces:OTel→Jaeger|Zipkin;health:/health/live,/health/ready;
+  logs:JSON(traceId,spanId,userId)→Loki|OpenSearch|CloudWatch;metrics:Prom_RED(Rate,Errors,Duration)+biz;
+  traces:OTel_OTLP→Grafana_Tempo|Jaeger;health:/health/live,/health/ready;
   alerts:SLO(p95|err>1%);Grafana:latency,err_rate,queue_depth
 }
 §DATA{
-  DI_repo;ORM(Prisma,SQLAlchemy,Hibernate)_CRUD,raw_SQL_hot;DB_per_svc(¬cross_svc_schema);
-  cache:LRU→Redis|Memcached(cache_aside:`redis.get`→DB→`redis.setex(k,300,v)`|read_through)→HTTP_ETag+Cache-Control;
+  DI_repo;ORM(Prisma_7,Drizzle,SQLAlchemy_2,Hibernate)_CRUD,raw_SQL_hot;DB_per_svc(¬cross_svc_schema);
+  cache:LRU→Redis|Valkey|Memcached(cache_aside:`redis.get`→DB→`redis.set(k,v,{EX:300})`|read_through)→HTTP_ETag+Cache-Control;
   inval:TTL|event_purge|versioned_keys
 }
-§JOBS{BullMQ(Node)|Celery(Py)|Sidekiq(Rb)on_Redis|RMQ;cron:node-cron|K8s_CronJob;long:jobId+status(+webhook);ETL:Kafka_Streams|Flink}
+§JOBS{BullMQ(Node)|Celery_5.7/django.tasks(Py)|Sidekiq/SolidQueue(Rb)on_Redis|Valkey|RMQ|PG;cron:K8s_CronJob;long:jobId+status(+webhook)|Temporal;ETL:Kafka_Streams|Flink}
 §TEST{
-  unit:Jest|pytest|JUnit;int:Testcontainers;contract:Pact;E2E:Playwright|Cypress;load:k6|Gatling;chaos:chaos-mesh|Gremlin;
+  unit:Vitest|node:test|Jest|pytest|JUnit;int:Testcontainers;contract:Pact|oasdiff;E2E:Playwright;load:k6|Gatling;chaos:chaos-mesh|Gremlin;
   dir:src/__tests__;cov>80%_critical;run_all_CI
 }
 §DEPLOY{
-  Docker_multistage<150MB(`node:20-alpine`:`npm ci`→`npm run build`→`npm ci --omit=dev`→`CMD["node","dist/main.js"]`);
-  Helm|Kustomize(live+ready);CI/CD(GHA,GitLab_CI:build,test,Snyk,deploy);flags:LaunchDarkly|unleash;
-  rollout:blue_green|canary(mesh|ingress);mig(Flyway,Liquibase,Prisma_Migrate)_pre_pod;cfg:ConfigMaps;sec:sealed_secrets|vault
+  Docker_multistage<150MB(`node:24-alpine`∨`node:26-alpine`[LTS;¬EOL_`node:20`]:`npm ci`→`npm run build`→`npm ci --omit=dev`→non-root_`USER node`→`CMD["node","dist/main.js"]`);
+  Helm|Kustomize(live+ready+PDB);CI/CD(GHA,GitLab_CI:build,test,audit/Trivy,deploy);flags:LaunchDarkly|Unleash|OpenFeature;
+  rollout:blue_green|canary(mesh|ingress);mig(Flyway,Liquibase,Prisma_Migrate,Alembic)_pre_pod(expand-contract);cfg:ConfigMaps;sec:External_Secrets|Vault
 }
 §CHK{
-  req;boundary+data_own;OpenAPI|SDL;sync_vs_async;val;AuthN/Z;ctrl+svc+repo;JSON_logs+corrID;Prom+OTel;unit+int+contract;SAST+scan;img;staging+health;load_vs_SLO;canary|BG;docs+diag+ADR
+  req;boundary+data_own;OpenAPI_3.2|AsyncAPI_3|SDL;sync_vs_async;val;AuthN/Z;ctrl+svc+repo;RFC9457_err;JSON_logs+corrID;Prom+OTel;unit+int+contract;SAST+scan;non_root_img;staging+health;load_vs_SLO;canary|BG;docs+diag+ADR
 }

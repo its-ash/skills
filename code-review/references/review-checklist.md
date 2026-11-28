@@ -1,14 +1,52 @@
 @REF:review-checklist
-§R{∀Δ_file:chk_all∧verify_ctx_&_tests;scope:prob+flow∧¬req/arch_conflict∧small_Δ(large⇒hide_bugs);senior_flag∈{db_schema,API_contract,fw,perf_path,sec_code}}
-§CHK{
-  func:{solves_prob,AC,edge/err,in_val,¬off_by_1,loops_end,rec_base,state_ok,errs_caught∧clear_msg∧¬leak,rollback_fail,log_fits};
-  sec:{inj∈{SQL,cmd,tpl,hdr}⇒param_only;XSS⇒escape_out;auth⇒req_prot;authz/IDOR⇒chk_access(¬auth_only);CSRF⇒prot_state_Δ;race⇒TOCTOU(read→write);sess:{fixation,expiry,secure_flags};crypto:{rng,algo,¬log_secrets,pw≥bcrypt(¬MD5∧¬SHA1)};leak:{err,log,timing};DoS:{unbounded,rate_limit,exhaust};biz:{state_machine,overflow};secrets∈env(fail_missing);in∈schema|allowlist;rm_unused_deps};
-  perf:{¬unneeded(loop,query,alloc);N+1⇒join|prefetch;idx(FK,filter);cache+TTL;¬O(n²);block→async;¬leak|unbounded;fe:{bundle,split,opt_img};goals(non_univ):API<200ms∧gzip<200KB};
-  qual:{CC≤10/fn;¬god(>500L|>20m);¬cycles|coupling;¬dead|cmt_out|magic_num|dup;conv→[clean-code](../../clean-code/SKILL.md)};
-  tests:{edge/err_cov,meaningful∧¬over_branch∧CI_pass,cov≥80%_crit,int+e2e_crit};
-  docs_git:{cmt=why(¬what),upd(API_docs,README,migration),breaking_Δ,clear_commits,base_sync,¬conflict|stray,.gitignore_ok};
-  design:{arch_fit,compat|migration,acceptable_maint}
+§R{
+  ∀Δ_file:chk_all∧verify_ctx_&_tests;
+  scope:ticket_intent+flow∧¬req/arch_conflict∧small_Δ(>400L∨multi_concern⇒stacked_PRs);
+  senior_flag∈{db_schema,API_contract,fw,perf_path,sec_code,CI_workflow,supply_chain};
+  std:OWASP_Top10:2025∧OWASP_ASVS_5.0;
 }
-§PAT{sqli:db.query('SELECT * FROM users WHERE email = $1',[email]);n1:User.objects.prefetch_related('profile');effect:useEffect(()=>{fetchData(userId)},[userId]);}
-§CHK{prod_audit:arch:{cycles,coupling,god,mod_bounds};sec:{SQLi,XSS,secrets,auth/authz,weak_hash,val,CSRF,deps};perf:{N+1,idx,async,cache,algos,bundles,img,leaks};qual:{CC,dup,magic_num,naming,err_handle,dead,TODO/FIXME};test:{crit_untested,cov<80%,edge,flaky,int};infra:{env,log,err_track,health,mon,rate_limit,docs,CI/CD}}
-§ANTI{edge⇒ask("null|empty|unauth?");scan(`npm audit`,Snyk)+OWASP_Top_10;flood⇒Crit+High_first;false_pos⇒verify_ctx;no_followup⇒issues_w_owners}
+§CHK{
+  func:{solves_ticket,AC,edge/err,in_val,¬off_by_1,loops_end,rec_base,state_ok,errs_caught∧clear_msg∧¬leak,rollback_fail,fail_closed,log_fits};
+  sec_A01_BAC_SSRF:{srv_side_authz(¬UI_only);IDOR/BOLA⇒chk_ownership_∀_obj;reuse_auth_mw;multi_tenant⇒RLS;SSRF⇒URL_allowlist+block_priv_IP/IMDSv1+IMDSv2};
+  sec_A02_Misconfig:{explicit_CORS(¬*_with_creds);strict_CSP;sec_hdrs;¬debug/default_creds;least_priv_IAM/container};
+  sec_A03_SupplyChain:{lockfile_Δ_verified;CI_actions⇒40char_SHA_pin(¬@v4/@main);SCA(osv-scanner|trivy);¬hallucinated/typosquatted_deps;rm_unused_deps;SBOM_tracked};
+  sec_A04_Crypto:{pwd⇒Argon2id≻scrypt≻bcrypt(legacy,72B_cap)¬MD5¬SHA1;TLS_1.3;AES-GCM;CSPRNG;secrets∈env/secrets_mgr(fail_missing);¬log_secrets/PII};
+  sec_A05_Injection:{SQL/NoSQL/ORM_raw⇒param_only;¬cmd/tpl/LDAP/hdr_inj;XSS⇒context_escape|DOMPurify;safe_parsers(¬unsafe_deser/XXE);in∈schema|allowlist};
+  sec_A06_Design:{state_machine_valid;race⇒TOCTOU(read→write);overflow/rounding;rate_limit(IP+user@auth/expensive);CSRF⇒Sec-Fetch-Site+SameSite+(legacy⇒tok)};
+  sec_A07_Auth:{cookies(__Host-,HttpOnly,Secure,SameSite)¬localStorage_sens_tok;JWT(alg_allowlist,exp≤1h,iss/aud,revoke);MFA/passkeys;sess_rot_on_login};
+  sec_A08_Integrity:{verify_webhook_sigs;signed_artifacts;CI_persist-credentials:false};
+  sec_A09_LogAlert:{audit(auth_fail,priv_Δ,admin_act);¬log(pwd,tok,secret,PII);¬stack_or_DB_leak_to_client};
+  sec_A10_Exceptions:{fail_closed_on_err;¬silent_catch/empty_except;partial_tx_rollback;timeouts+circuit_breakers;bounded_retries};
+  ai_code:{matches_ticket(¬plausible_alt);ignore_naming_trap(verify_logic_not_identifiers);verify_APIs/flags/pkgs_exist;¬silent_fallback_defaults;edge_cases(null/empty/net_fail/race/bounds);¬over_defensive_slop/dead_helpers→../../clean-code/SKILL.md};
+  perf:{¬unneeded(loop,query,alloc);N+1⇒join|prefetch|DataLoader;idx(FK,filter,composite);cache+TTL+inval;¬O(n²);block→async;¬mem/listener_leak|unbounded_query;fe(bundle,split,CWV_LCP/INP/CLS,opt_img);goals(non_univ):API<200ms∧gzip<200KB};
+  qual:{CC≤10/fn;¬god(>500L|>20m);¬cycles|coupling;¬dead|cmt_out|magic_num|dup;conv→../../clean-code/SKILL.md};
+  tests:{edge/err/A10_cov;behavior_not_impl;¬flaky/over_mocked;CI_pass;cov≥80%_crit;int+contract+e2e_crit};
+  docs_git:{cmt=why(¬what);upd(API_docs,OpenAPI,README,migration);breaking_Δ_flagged;atomic_commits;base_sync;¬conflict|stray;.gitignore_ok};
+  design:{arch_fit;expand_contract_compat|migration;acceptable_maint};
+}
+§PAT{
+  sqli:`db.query('SELECT id,email FROM users WHERE email = $1',[email])`;
+  n1:`User.objects.prefetch_related('profile')`;
+  effect:`useEffect(()=>{const ac=new AbortController();fetchData(userId,{signal:ac.signal});return()=>ac.abort()},[userId])`;
+}
+§CHK[ProdAudit]{
+  arch:{cycles,coupling,god,mod_bounds};
+  sec:{OWASP25_A01_to_A10,ASVS5,secrets,CI_SHA_pins,SCA_SBOM};
+  ai_risks:{unverified_logic,hallucinated_deps,silent_fallbacks,missing_edge_tests};
+  perf:{N+1,idx,async,cache,algos,bundles,CWV,leaks};
+  qual:{CC,dup,magic_num,naming,err_handle,dead,TODO/FIXME};
+  test:{crit_untested,cov<80%,edge,flaky,int,contract};
+  infra:{env,structured_log,err_track,health,OTel_mon,rate_limit,docs,CI/CD};
+}
+§ANTI{
+  edge⇒ask("null|empty|unauth|timeout|concurrent?");
+  sec_scan⇒(semgrep|codeql)+(gitleaks|trufflehog)+(osv-scanner|trivy)+OWASP_Top10:2025+ASVS_5.0;
+  flood⇒Crit+High_first;
+  false_pos⇒verify_ctx;
+  no_followup⇒issues_w_owners;
+  style_nits⇒automate_in_linter¬human_review;
+}
+§REL{
+  ../../secure-coding/SKILL.md:deep_OWASP25_ASVS5_controls;
+  ../../clean-code/SKILL.md:coding_standards_deslop;
+}

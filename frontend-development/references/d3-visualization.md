@@ -1,6 +1,6 @@
 @REF:d3-visualization
 §WHEN{custom_visual_encodings/layouts|complex_pan/zoom/brush|network/graph/hierarchy/tree/chord|geo_custom_projections|choreographed_transitions|pub_quality_styling|novel_charts|3D⇒Three.js}
-§SETUP{ESM:`import * as d3 from 'd3';`|CDN:`<script src="https://d3js.org/d3.v7.min.js"></script>`}
+§SETUP{ESM(`d3@7.9+`,ESM-only):`import * as d3 from 'd3';`∨tree-shake(`import{scaleLinear}from'd3-scale';import{max}from'd3-array';`)|CDN:`<script src="https://d3js.org/d3.v7.min.js"></script>`}
 
 §INT{
   A_direct_DOM(complex_interactions/transitions):`if(!data||!data.length)return;const svg=d3.select('#chart');svg.selectAll('*').remove();`→scales/axes/els;
@@ -46,13 +46,13 @@
 }
 
 §SCALES{
-  quant:`scaleLinear().domain([0,100]).range([0,500])`|`scaleLog().domain([1,1000])`|`scalePow().exponent(2)`|`scaleTime().domain([new Date(2020,0,1),new Date(2024,0,1)])`;
+  quant:`scaleLinear().domain([0,100]).range([0,500])`|`scaleLog().domain([1,1000])`|`scalePow().exponent(2)`|`scaleTime().domain([new Date(2024,0,1),new Date(2026,0,1)])`;
   ord:`scaleBand().domain([...]).range([0,400]).padding(0.1)`|`scalePoint()`|`scaleOrdinal(d3.schemeCategory10)`;
   seq_div:`scaleSequential(d3.interpolateBlues).domain([0,100])`|`scaleDiverging(d3.interpolateRdBu).domain([-10,0,10])`
 }
 
 §R{
-  prep:filter`d.value!=null&&!isNaN(d.value)`,sort`[...data].sort((a,b)=>b.value-a.value)`,parse`d3.timeParse('%Y-%m-%d')(d.date)`;
+  prep:filter`d.value!=null&&!isNaN(d.value)`,sort`data.toSorted((a,b)=>b.value-a.value)`,parse`d3.timeParse('%Y-%m-%d')(d.date)`;
   perf:DOM>1000⇒canvas|quadtree_collision|simplify`d3.line().curve(d3.curveStep)`|virtual_scroll|`requestAnimationFrame`|debounce_resize|`.join()`(¬enter/update/exit)|¬unnecessary_rerenders;
   a11y:`svg.attr('role','img').attr('aria-label','...')`+`<title>`/`<desc>`+contrast+keyboard_nav+data_table_alt;
   style:palette(`{primary:'#4A90E2',secondary:'#7B68EE',background:'#F5F7FA',text:'#333333',gridLines:'#E0E0E0'}`)+`font-family:'Inter, sans-serif';font-size:'12px'`+`.tick line`{`stroke:gridLines`,`stroke-dasharray:'2,2'`};

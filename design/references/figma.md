@@ -13,7 +13,7 @@ codex mcp add figma --url https://mcp.figma.com/mcp                 # Codex CLI
 }
 §PAT:workflow{
   1_id_node:{URL:`/design/<fileKey>/...?node-id=<nodeId>`(e.g.`https://figma.com/design/kL9xQn2VwM8pYrTb4ZcHjF/DesignSystem?node-id=42-15`⇒`fileKey=kL9xQn2VwM8pYrTb4ZcHjF`,`nodeId=42-15`);figma-desktop⇒open_file⇒`nodeId`_only};
-  2_fetch:`get_design_context(fileKey="<fileKey>",nodeId="<nodeId>")`+`get_variable_defs`→map_tokens+Code_Connect;truncated⇒`get_metadata(fileKey="<fileKey>",nodeId="<nodeId>")`→child_ids→`get_design_context(fileKey="<fileKey>",nodeId="<childNodeId>")`;
+  2_fetch:`get_design_context(fileKey="<fileKey>",nodeId="<nodeId>")`+`get_variable_defs`+`get_libraries`(attached_DS)→map_tokens+Code_Connect;truncated⇒`get_metadata(fileKey="<fileKey>",nodeId="<nodeId>")`→child_ids→`get_design_context(fileKey="<fileKey>",nodeId="<childNodeId>")`;remote_MCP⇒write/canvas_tools_avail;
   3_screenshot:`get_screenshot(fileKey="<fileKey>",nodeId="<nodeId>")`(keep_for_validation);
   4_assets:MCP_assets_endpoint;rules:{`localhost`_URL⇒use_direct,¬external_icon_pkgs,¬placeholder_when_real_src_exists};
   5_translate:MCP_output(React+TW)=blueprint¬final;TW_utils→project_DS_tokens;reuse_existing(btns,inputs,icons,layout);follow_project(routing,state,data-fetch,DS_dir,naming);

@@ -1,0 +1,54 @@
+@REF:component-library
+§REL{../SKILL.md:parent+§7_rules;design-system.md:tokens+elev;direction.md:§4_forms+tables+cards;motion.md:§5-9_states+overlays;preflight.md:§21_chk}
+§WHEN{build_UI_comp,component_lib,app_shell,nav,forms,tables,overlays,feedback,UX_polish}
+§R:UX_CORE{
+  prog_disc:show(essential+1_primary_CTA)∧tuck(secondary,adv_filters,destructive)→menu|drawer|collapsible;
+  cta_cap:max_1_primary_CTA/(viewport∨card)⇒demote_rest(secondary|ghost);
+  feedback:immediate(optimistic_UI|inline_load|layout_skeleton)¬blocking_fullscreen_spinner;
+  edge_cases:handle{empty(icon+why+CTA),long_txt(ellipsis|wrap),zero/large_nums(tabular-nums),slow/failed_net(retry)};
+  targets:touch≥44×44px∧desktop_ctrl≥36px_h∧inter_target_gap≥8px;
+  states_7(∀interactive):1_default|2_hover(subtle_shift,¬layout_jump)|3_focus-visible(2px_hi_ctr_ring+offset)|4_active(scale_0.98∨tone_dark)|5_disabled(dim,non_inter,disabled|aria-disabled)|6_loading(inline_spin|skeleton,preserve_width,¬dbl_submit)|7_error(danger_border+icon+inline_msg@aria-describedby+aria-invalid="true");
+  a11y_base:semantic_HTML_1st(<button>,<nav>,<main>,<header>,<dialog>,<label>,<table>)≻ARIA;¬color_alone(pair_icon|lbl|pattern);kbd(Tab/Shift+Tab,Enter/Space,Esc_dismiss,Arrows@menu|tab|radio);modal/drawer⇒focus_trap+restore_trigger_focus
+}
+§PAT:1_LAYOUT{
+  app_shell:desk=collapsible_left_sidebar(240-260px_exp,64-72px_col)+sticky_topbar(56-64px,full_w,rounded-none)+scroll_main;mob=slide_drawer∨bottom_tabs(3-5_max);first_focus="Skip to main content";
+  card/bento:anatomy(opt_media/hdr,title+sub,body,opt_footer);pad=uniform(16px_compact|24px_std);¬nested_cards;clickable_card⇒1_semantic_link/btn_overlay(¬interactive_inside_clickable_div);
+  accordion:<details name>∨(<button>_in_heading+aria-expanded+aria-controls+180deg_chevron);
+  split/div:1px_border-subtle_sparingly;whitespace≻lines
+}
+§PAT:2_NAV{
+  topbar:left(brand+5-7_max_links)+right(search/Cmd+K,notifs,theme_toggle,profile);active=aria-current="page"+tonal_pill;
+  tabs/seg:tabs=same_ctx_views;seg=2-5_mutually_excl(List/Board/Cal);filled_round_active∈muted_track(¬underline_only);ARIA(role="tablist|tab|tabpanel",aria-selected,Left/Right_arrows);
+  breadcrumbs:depth>2⇒<nav aria-label="Breadcrumb">+<ol>+aria-current="page"@last;
+  pagination/stepper:pag(Prev/Next,cur,total,page_size);stepper(Completed_chk+clickable_review,Active_hi,Upcoming);
+  cmdk(Cmd+K/Ctrl+K):kbd_first_modal,fuzzy_filter,grouped(Recent/Actions/Pages),shortcut_hints,Up/Down+Enter
+}
+§PAT:3_ACTIONS{
+  hierarchy:{Primary:solid_accent(max_1/sec|dialog);Secondary:neutral_tonal+1px;Ghost:transp+hover_fill;Destructive:solid_red@confirm_dialog|outline/ghost_near_safe_acts;IconOnly:aria-label+tooltip};
+  sizes:sm=32px|md=36-40px(def)|lg=44-48px(CTA/mob);loading⇒lock_width+inline_spinner+prevent_dbl_submit
+}
+§PAT:4_FORMS{
+  layout:1_col_def(side-by-side_only_tight_pairs:First/Last,City/Postal,Exp/CVC);visible_<label>_above(¬placeholder_as_lbl);mark_(Optional)_when_most_req(¬red_*_clutter);val_on_blur/submit+clear_immed_on_fix;
+  text/search:opt_lead_icon,trail_clear|pw_toggle,helper+char_cnt,aria-describedby,aria-invalid="true",:user-invalid,field-sizing:content;
+  select/combo:5-12_opts⇒<select>(base-select)|listbox;12+_or_async⇒searchable_Combobox;MultiSelect⇒removable_chips+Backspace+Clear_all;
+  choice:{Checkbox:multi_opt+indeterminate@Select_all;Radio:2-5_excl∈<fieldset>+<legend>;Switch:immed_binary_on/off(¬Save_btn)+role="switch"+aria-checked};
+  specialized:{Slider:show_num_val(opt_editable_input)+arrow_keys;DatePicker:calendar_grid+direct_kbd_entry+range_hi;FileUpload:drag-drop+browse+types/limits_upfront+per_file_prog/preview/rm/retry;OTP:auto_advance+full_paste(Cmd+V)+Backspace_back}
+}
+§PAT:5_DATA{
+  table:sticky_hdr,right_num(tabular-nums),left_txt,row_44-52px,horiz_hairlines(¬vert/zebra),aria-sort,search/filter_bar,col_vis_toggle,row_sel+floating_bulk_bar;mob=horiz_scroll+sticky_col1∨stacked_kv_cards;
+  kpi:lbl+large_tabular-nums+delta_badge(%+arrow+timeframe)+opt_sparkline;
+  badge/avatar/timeline:{Badge:pill+soft_tonal_fill+hi_ctr_txt+opt_6px_dot(¬pulse);Avatar:circle+1px_inner_border+initials_fallback+opt_presence|stack(+N);Timeline:vert_rail+timestamp+actor_avatar+summary+expand_payload};
+  tooltip:1-2_short_lines(shortcut/icon_name);popover="hint"+anchor;¬interactive_links/btns/essential_info(⇒Popover)
+}
+§PAT:6_FEEDBACK{
+  alert/banner:icon+bold_title+1-2_sent+opt_act/dismiss;role="alert"(urgent)|role="status"(polite);tonal+1px_hairline(¬1sided_border);
+  toast:desk=bottom-right,mob=top-center;max_3_stack;auto_dismiss_4-6s(pause@hover/focus);persist(err|Undo);
+  progress/skeleton:skeleton_matches_exact_layout(¬CLS);determinate(0-100%+lbl)@uploads/jobs;indeterminate_spinner_only@brief_unknown;
+  empty/err:icon/visual+clear_why+primary_CTA(create_1st|reset_filters)
+}
+§PAT:7_OVERLAYS{
+  modal:<dialog>(showModal(),closedby="any")|role="dialog"+aria-modal="true"+aria-labelledby;focused/destructive_only;scrim+blur,hdr(title+X),scroll_body,sticky_ftr(Cancel_L,Primary/Destr_R);focus_trap+Esc+restore_focus;
+  drawer:detail_inspect|multi_field_form|filters;desk=right_400-560px,mob=bottom_sheet;
+  menu/popover:{Menu:grouped+dividers+icons+shortcuts+destructive_isolated_bottom+Up/Down_arrows;Popover:[popover]+CSS_anchor+position-try-fallbacks(auto_flip_vp_edge)}
+}
+§ANTI{multi_primary_btns,placeholder_as_label,heavy_card_shadows,arbitrary_px(13/19/27),anim_layout_props(w/h/top/left),hidden_mob_actions_wo_drawer/menu,interactive_in_tooltip}

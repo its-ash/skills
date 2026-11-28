@@ -1,9 +1,97 @@
 @REF:patterns-and-ddd
-§REL{parent:../SKILL.md;style:../../clean-code/SKILL.md;ADR:architecture-decision-records.md;glossary:../../documentation/SKILL.md(context-and-decisions)}
-§FLOW{1:reqs(func,NFR:{perf,sec,compliance},prio)→2:constraints(reg,infra,skills,budget,time)→3:alts/concern(data,svc_bounds,UI)→4:tradeoffs:{Clean:+sep,+test,-layers,-curve,R:Low,E:Med;Hex:+infra_agn,-adapter/sys,R:Low,E:Med;Monolith:+fast,-scale,R:Med,E:Low}→5:choice→ADR(architecture-decision-records.md)→6:val(high_prio∧team_buildable)}
-§PAT{Clean:Entities→UseCases→Adapters→Frameworks(inward);Hex:core+ports(iface)+adapters(impl);DDD:bounded_ctx,agg,events,subdomains;CQRS:sep_cmd_vs_query;ES:immut_events→replay;Saga:local_txns+comp;Microservices:own(data+API);REST|GraphQL|msg}
-§DDD{strat:1.subdomains(Core,Supporting,Generic)→2.bounded_ctx(own,¬leak)→3.glossary(../../documentation/SKILL.md)→4.ctx_map(Customer-Supplier,Conformist,ACL);tact:{Entity:id+life;VO:immut,¬id;Agg:cluster,root_inv;Event:state_Δ→eventual;Repo:persist→Agg;Factory:complex_new};mix:{read_heavy:CQRS;audit:ES+Agg;cross_ctx:Saga}}
-§R{lim:fn≤50L,file≤200L,nest≤3;names:¬{utils,helpers,common};domain(`OrderCalculator`,`InvoiceGenerator`)+ctx(`Billing/InvoiceService`);sep:¬biz∈UI;ctrl→uc;data∈repo|mapper;infra_behind_dom_iface;err:typed|domain_ex;test:unit/uc,integ/adapter,coloc(`src/.../order.service.test.ts`);lib1st:search(npm,Maven,PyPI,SaaS)(auth,retry:`cockatiel`,val:`zod`,cache);custom⇔unique_biz∨unmet_perf∨sec_ctrl∨no_lib;flow:`UI--HTTP-->API-->UseCases-->Entities-->Repositories`}
-§ANTI{NIH⇒lib;biz∈UI|ctrl⇒uc;`utils.js`⇒dom_mod;full_DDD|μsvc_CRUD⇒simplest;big_file|deep_nest⇒split+guard;no_ADR⇒ADR}
-§CHK{reqs+prio+constraints;∀major=ADR+tradeoffs+rejected_simple;pattern_fits(comp,scale);ctx+bounds;name+struct;libs_vetted(sec,lic);perf+mon;sec(val,auth,param_SQL);mig_path}
-§REF{Clean_Arch(R.C.Martin);DDD(E.Evans);PoEAA(M.Fowler);ADR:https://github.com/joelparkerhenderson/architecture-decision-record;Mermaid:https://mermaid.js.org/}
+§REL{
+  parent:../SKILL.md;
+  style:../../clean-code/SKILL.md;
+  ADR:architecture-decision-records.md;
+  hex:hexagonal-architecture.md;
+  fitness_c4:fitness-and-c4.md;
+  glossary:../../documentation/SKILL.md;
+  contracts:../../backend-development/references/contract-first.md;
+  db:../../database-design/SKILL.md
+}
+§FLOW{
+  1:reqs(func,NFR:{perf,sec,avail,compliance,observability},biz_prio)→
+  2:constraints(reg,existing_infra,team_skills,team_topologies,budget,timeline)→
+  3:alts/concern(macro_topology,slice_struct,data_ownership,integration,workflow)→
+  4:tradeoffs:{
+    Mod_Monolith:+fast_deploy,+no_net_hop,+extractable,-strict_boundary_discipline,R:Low,E:Low;
+    Vertical_Slice:+feature_cohesion,+low_churn,+mix_complexity,-dup_if_ungoverned,R:Low,E:Low;
+    Clean:+sep,+test,-layers,-curve,R:Low,E:Med;
+    Hex:+infra_agn,+multi_adapter,-port_boiler,R:Low,E:Med;
+    Microservices:+indep_scale,+team_autonomy,-dist_ops,-net_latency,R:High,E:High
+  }→
+  5:decide→record(ADR@architecture-decision-records.md)+enforce(fitness_fn@fitness-and-c4.md)→
+  6:validate(§CHK∧team_buildable)
+}
+§PAT{
+  Mod_Monolith:single_deployable∧strict_domain_modules∧isolated_DB_schemas∧explicit_public_facade∧in_process_events;
+  Vertical_Slice:organize_by_feature(end_to_end_slice)¬global_horizontal_layers;apply(Clean|Hex|DDD)_selectively_per_slice_complexity;
+  Clean:Entities→UseCases→Adapters→Frameworks(deps→inward);
+  Hex:domain_core+ports(ifaces)+adapters(impl)@hexagonal-architecture.md;
+  DDD:subdomains+bounded_ctx+aggregates+domain_events+ubiquitous_lang;
+  CQRS:sep_cmd(write_invariants)_vs_query(read_projections,indep_scale);
+  ES:immutable_event_log→state_replay+audit;
+  DCB:Dynamic_Consistency_Boundary(runtime_event_query_boundary+optimistic_append_concurrency)¬rigid_aggregate_lock;
+  Durable_Exec:workflow_as_code(Temporal)→durable_state+retries+timeouts+crash_recovery;
+  Saga:local_txns+idempotent_compensations(orchestration|choreography)¬dist_2PC;
+  Microservices:own(data+API+deploy_unit+outbox)¬shared_DB
+}
+§MOD_MONO{
+  default_blueprint:Modular_Monolith(macro)+Vertical_Slices(inside_modules)+Clean|Hex(complex_slices_only);
+  data_isolation:separate_DB_schema_or_owned_tables_per_module;¬cross_module_SQL_joins∨direct_table_writes;
+  comms:sync⇒module_public_facade_iface(DTOs¬domain_entities);async⇒in_process_events+transactional_outbox;
+  enforcement:CI_fitness_functions(Spring_Modulith,dependency-cruiser,Tach,ArchUnitNET,go-arch-lint)@fitness-and-c4.md;
+  extraction:extract_module→microservice_ONLY_when(indep_scaling∨deploy_cadence∨team_autonomy∨compliance_isolation)_proven
+}
+§DDD{
+  viability:adopt_full_DDD⇔(|{complex_changing_invariants,multi_team_overlapping_models,versioned_unstable_contracts,crit_audit_or_reg}|≥2);
+  strat:1.subdomains(Core→build_best,Supporting→pragmatic,Generic→buy/OSS)→2.bounded_ctx(own_model+data,¬leak)→3.ubiquitous_lang(glossary@../../documentation/SKILL.md)→4.ctx_map(Customer-Supplier,Conformist,ACL,Published_Language,Open_Host_Service,Shared_Kernel_sparingly);
+  tact:{Entity:id+lifecycle;VO:immutable,¬id,structural_eq;Aggregate:consistency_cluster,root_enforces_invariants,keep_small;Domain_Event:past_tense_fact→eventual_consistency;Repo:persist_aggregate_root_only;Factory:complex_invariant_creation};
+  DCB_vs_Agg:single_entity_invariants⇒classic_Aggregate;cross_entity_invariants_causing_bloat_or_contention(e.g.student_max_courses∧course_max_students)⇒DCB(query_relevant_events_at_runtime+optimistic_concurrency_append_check);
+  mix:{read_heavy:CQRS;audit_or_temporal:ES+(Agg|DCB);cross_ctx_workflow:Durable_Exec|Saga}
+}
+§DIST{
+  dual_write_ban:¬(DB_commit+broker_publish_separately);use_Transactional_Outbox(atomic_DB_tx_writes_state+outbox_row→CDC(Debezium)|polling_relay)∧Idempotent_Inbox(dedup_key_in_consumer_DB_tx);
+  workflow_choice:long_running_stateful_proc(min..months,timers,retries,human_in_loop)⇒Durable_Execution(Temporal)≻hand_rolled_state_tables;decoupled_cross_org_event_flows⇒Saga(orchestration_for_complex_ctrl,choreography_for_simple_2-3_step)+idempotent_compensation+DLQ;
+  resilience:timeouts+bounded_retries_w_jitter+circuit_breaker+bulkhead(libs:TS=`cockatiel`v4[Node>=22],Java=`Resilience4j`,.NET=`Polly`)
+}
+§ORG{
+  Team_Topologies:{Stream-aligned(end_to_end_biz_slice),Platform(self_serve_internal_caps),Enabling(upskill_gaps),Complicated-subsystem(deep_specialist_core)};
+  interactions:{Collaboration(discovery),X-as-a-Service(clear_API),Facilitating(temporary_coaching)};
+  Inverse_Conway:align_bounded_ctx_&_module_ownership_with_stream_aligned_teams;size_boundaries_to_team_cognitive_load(¬over_fragment)
+}
+§MIG{
+  Strangler_Fig:route_slice_by_slice_to_new_impl→retire_legacy;
+  Branch_by_Abstraction:introduce_iface_over_legacy→swap_impl_behind_toggle→delete_old;
+  Expand_Contract:expand(add_new_col/field,dual_write/read)→backfill→switch_readers→contract(drop_old)⇒zero_downtime;
+  verify:characterization_tests+shadow/parallel_run+reversible_toggle¬big_bang_rewrite
+}
+§R{
+  cohesion:keep_fns_&_files_cohesive_&_shallow(guard_clauses,early_return,¬god_files,¬deep_nest>3);
+  naming:domain_concepts(`OrderCalculator`,`InvoiceGenerator`)+ctx(`Billing/InvoiceService`)¬(`utils`,`helpers`,`common`);
+  layers:¬biz_logic∈(UI|controllers);ctrl→usecase/slice_handler;persistence∈repo|mapper;infra_behind_domain_iface;
+  errors:typed_domain_errors|Result(¬swallowed_exceptions|raw_DB_leaks);
+  lib_first:vet(security,maintenance,license)before_custom(auth,validation:`zod`/Pydantic,resilience:`cockatiel`/`Resilience4j`/`Polly`,caching);custom⇔unique_biz∨unmet_perf∨sec_ctrl∨no_viable_lib
+}
+§ANTI{
+  NIH⇒vetted_lib;
+  biz_in_UI|ctrl⇒domain/slice_handler;
+  utils_dumping_ground⇒domain_module;
+  full_DDD|microservices_for_CRUD⇒modular_monolith+vertical_slices;
+  distributed_monolith(shared_DB|lockstep_deploys)⇒isolated_data_or_remerge_monolith;
+  dual_write_without_outbox⇒transactional_outbox+idempotent_inbox;
+  bloated_cross_domain_aggregates⇒DCB|process_manager|eventual_consistency;
+  unrecorded_major_choice⇒MADR_4.0_ADR;
+  review_only_boundaries⇒CI_fitness_functions
+}
+§CHK{
+  reqs+NFRs+biz_prio+constraints_captured;
+  ∀major_choice⇒ADR(MADR_4.0|Nygard)+≥2_alts+rejected_rationale;
+  simplest_viable_pattern_chosen(mod_monolith+slices_default);
+  bounded_ctx+module_data_isolation+public_facades_explicit;
+  deps_inward+CI_fitness_functions_enforced;
+  async_cross_boundary⇒outbox+idempotent_consumer;
+  libs_vetted(sec,maintenance,license);
+  observability+perf+sec(input_val,authz,param_SQL);
+  zero_downtime_migration_&_rollback_path
+}

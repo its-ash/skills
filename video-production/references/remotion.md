@@ -1,18 +1,20 @@
 @REF:remotion
-§WHEN{remotion|@remotion/*|overlays|lower_thirds|anim_charts|captions|explainers|dyn_dur_dims; docs:"https://www.remotion.dev/docs"}
+§WHEN{remotion|@remotion/*|overlays|lower_thirds|anim_charts|captions|explainers|dyn_dur_dims; docs:"https://www.remotion.dev/docs"; v4.x(Node16+)}
 §R{
   1:anim←`useCurrentFrame()` ∧ sec*`fps`(`useVideoConfig()`);
   2:FORBID:{CSS_transitions,CSS_animations,Tailwind `transition-*`|`animate-*`};
   3:3rd_party_anim=OFF(charts,shaders,Lottie,3D) ∧ `useFrame()`(@react-three/fiber)=FORBID;
-  4:media(wait_load):`<Img>`(¬`<img>`|Next`<Image>`|CSS`background-image`), `<Video>`+`<Audio>`(@remotion/media), `<AnimatedImage>`(GIF/APNG/AVIF/WebP);
-  5:`public/`←`staticFile()`; remote_URLs⇒CORS;
-  6:∀`<Sequence>`⇒`premountFor`;
-  7:install←`npx remotion add <pkg>`(bunx|yarn|pnpm exec)
+  4:media(wait_load):`<Img>`(¬`<img>`|Next`<Image>`|CSS`background-image`), `<Video>`+`<Audio>`(`@remotion/media`,Mediabunny-backed), `<AnimatedImage>`(GIF/APNG/AVIF/WebP);
+  5:async_wait←`useDelayRender()`(30s_def_timeout;¬raw`delayRender()`_for_browser/cloud_compat);
+  6:`public/`←`staticFile()`; remote_URLs⇒CORS;
+  7:∀`<Sequence>`⇒`premountFor`;
+  8:install←`npx remotion add <pkg>`(bunx|yarn|pnpm exec) ∧ LOCK_EXACT_VERSION(∀`remotion`+`@remotion/*`,¬version_drift);
+  9:media_parse←`mediabunny`(¬deprecated`@remotion/media-parser`|`@remotion/webcodecs`)
 }
 §COMP{
-  `src/Root.tsx`:`Folder`(name∈`[A-Za-z0-9-]+`),`Composition`(id,component,durationInFrames,fps,width,height,defaultProps `satisfies` T),`Still`(id,component,width,height);
-  props:`type`(¬`interface`),JSON-serializable(`Date`,`Map`,`Set`,`staticFile()` OK);
-  render:`npx remotion render src/index.ts Promo out.mp4`;
+  `src/Root.tsx`:`Folder`(name∈`[A-Za-z0-9-]+`),`Composition`(id,component,durationInFrames,fps,width,height,schema?,defaultProps `satisfies` T),`Still`(id,component,width,height);
+  props:`type`(¬`interface`),strict_JSON_object(v4_rejects_non-object;validate_via_Zod`schema`;`Date`,`Map`,`Set`,`staticFile()` OK);
+  render:`npx remotion render src/index.ts Promo out.mp4` # agent_skills:`npx remotion skills add`;
   `CalculateMetadataFunction<Props>`:`async({props,abortSignal})=>({durationInFrames?,width?,height?,props?,defaultOutName?,defaultCodec?})` # overrides `<Composition>`, `abortSignal` cancels stale Studio fetches
 }
 §ANIM{
@@ -34,10 +36,10 @@
 §MEDIA{
   `<Img src={staticFile(...)} style/>`;
   `<AnimatedImage src width height fit="fill"|"contain"|"cover" playbackRate loopBehavior="loop"|"pause-after-finish"|"clear-after-finish"/>`;
-  `<Video src trimBefore trimAfter volume={(f)=>...} playbackRate muted loop loopVolumeCurveBehavior="repeat"|"extend"/>`;
+  `<Video src trimBefore trimAfter volume={(f)=>...} playbackRate muted loop loopVolumeCurveBehavior="repeat"|"extend"/>` # `@remotion/media`+`<OffthreadVideo>`:mixed_sample_rate_sync,muted_skips_heavy_audio_init;
   `<Audio src volume loop toneFrequency/>`;
   notes:`trimBefore`/`trimAfter` in frames; `<Sequence>` delays; multi `<Audio>` layers; `toneFrequency`∈`0.01..2`(pitch w/o speed Δ); `loopVolumeCurveBehavior`:"repeat"(reset/loop)|"extend"(keep counting);
-  lottie(`@remotion/lottie`):fetch JSON in `delayRender()`/`continueRender()`(`cancelRender(err)` on fail)→state→`<Lottie animationData={data}/>`
+  lottie(`@remotion/lottie`):`const {delayRender,continueRender,cancelRender}=useDelayRender()`→fetch JSON→state→`<Lottie animationData={data}/>`
 }
 §FONTS_TEXT{
   gfonts:`@remotion/google-fonts/<Font>`:`loadFont("normal",{weights:["400","700"],subsets:["latin"]})`→`{fontFamily,waitUntilDone}` # minimal weights/subsets;
@@ -47,8 +49,9 @@
   DOM:divide `getBoundingClientRect()` by `useCurrentScale()`
 }
 §CAPTIONS{
-  stt:{`@remotion/install-whisper-cpp`(local_free),`@remotion/whisper-web`(WASM_slower),`@remotion/openai-whisper`(paid)};
-  srt(`@remotion/captions`):fetch `staticFile("subs.srt")` in `useDelayRender()`→`parseSrt({input})`;
+  stt:{Studio_WebGPU_local,`@remotion/install-whisper-cpp`(local_free),`@remotion/whisper-web`(WASM),`@remotion/openai-whisper`(paid)};
+  parse(`@remotion/captions`):fetch `staticFile("subs.srt"|"subs.vtt")` in `useDelayRender()`→`parseSrt({input})`|`parseVtt({input})`;
+  presets:`npx remotion elements use`(Basic,Rounded,Moving_Pill,Popping_Word);
   display:`createTikTokStyleCaptions({captions,combineTokensWithinMilliseconds:1200})`(higher=more words/page)→`<Sequence>`(`page.startMs/1000*fps`..next_page)→highlight active token(`fromMs`..`toMs`)
 }
 §CHARTS_3D_TW{
@@ -57,9 +60,11 @@
   tailwind:OK if enabled,¬`transition-*`|`animate-*`
 }
 §MEDIABUNNY{
-  `import {Input,ALL_FORMATS,UrlSource,FileSource} from "mediabunny"`(browser/Node/Bun);
+  replaces_deprecated:`@remotion/media-parser`,`@remotion/webcodecs`;
+  `import {Input,ALL_FORMATS,UrlSource,FileSource} from "mediabunny"`(browser/Node/Bun;WebCodecs-native);
   `open(src)`:`new Input({formats:ALL_FORMATS,source:new UrlSource(src,{getRetryDelay:()=>null})})` # `UrlSource`=URLs/`staticFile()`,`FileSource`=`File`;
   `getMediaMetadata`:`input.computeDuration()`(video&audio)+`track=await input.getPrimaryVideoTrack()`→`{displayWidth,displayHeight}`;
   `canDecode`:`await input.getFormat()`(try/catch→false)∧`v.canDecode()`∧`a.canDecode()`;
   thumbs:`VideoSampleSink(primaryVideoTrack)`→iterate timestamps→close each `VideoSample`
 }
+§ANTI{¬CSS_transitions|Tailwind`animate-*`; ¬`useFrame()`; ¬raw`delayRender()`(use`useDelayRender()`); ¬`@remotion/media-parser`|`@remotion/webcodecs`; ¬pkg_version_mismatch; ¬unclamped`interpolate`; ¬non-object`inputProps`; ¬legacy_Lambda_x86}

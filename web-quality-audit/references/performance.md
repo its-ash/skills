@@ -1,9 +1,37 @@
 @REF:performance
-§R{retrieval>pretraining(metrics,thresholds,APIs);assertive:verify(net∨DOM∨code)→state;verify_unused_before_rm;quantify:use(insight_est_savings)∧¬prioritize(0ms);render_blocking(est=0ms)⇒note∧¬rec;specific:"compress hero.png (450KB) to WebP"∧¬"optimize images";prioritize:(LCP=200ms∧CLS=0)⇒excellent}
-§SRC{web.dev:https://web.dev/articles/vitals(CWV);devtools:https://developer.chrome.com/docs/devtools/performance(APIs,trace);lh:https://developer.chrome.com/docs/lighthouse/performance/performance-scoring(weights,thresholds)}
-§PRE{check:{navigate_page,performance_start_trace};missing⇒STOP∧req_mcp:`"chrome-devtools":{"type":"local","command":["npx","-y","chrome-devtools-mcp@latest"]}`}
-§FLOW{1_Trace:navigate_page(url:"<target-url>")→performance_start_trace(autoStop:true,reload:true)→retrieve;err⇒verify(navigate_page_loaded);insight_mismatch⇒inspect(trace_resp);2_CWV:performance_analyze_insight(insightSetId:"<id-from-trace>",insightName:"...");note:names_vary(devtools_ver)⇒check(insightSetId∈trace_resp);insights:{LCPBreakdown:TTFB+res_load+render_delay,CLSCulprits:unsized_imgs|injected_DOM|font_swaps,RenderBlocking:CSS|JS_blocking_FP,DocumentLatency:srv_resp,NetworkRequestsDepGraph:critical_chains};3_Net:list_network_requests(resourceTypes:["Script","Stylesheet","Document","Font","Image"]);detail:get_network_request(reqid:<id>);chk:{render_blk:head_JS|CSS∧¬(async∨defer∨media),chains:late_disc(CSS_imports,JS_fonts),preloads:missing(fonts,hero_imgs,key_JS),cache:missing|weak(Cache-Control,ETag,Last-Modified),payload:uncompressed|oversized(JS,CSS),preconnect:reqs==0⇒unused→rm|late_reqs⇒valuable};4_A11y:take_snapshot(verbose:true);flag:{missing|dup_ARIA_IDs,contrast<AA(4.5:1_norm|3:1_lg),focus_traps|no_focus_ind,interactive_no_acc_name};5_Code:skip⇔3rd_party_no_code_access}
-§THR{fmt:good/needs_impr/poor;TTFB:<800ms/<1.8s/>1.8s;FCP:<1.8s/<3s/>3s;LCP:<2.5s/<4s/>4s;INP:<200ms/<500ms/>500ms;TBT:<200ms/<600ms/>600ms;CLS:<0.1/<0.25/>0.25;SpeedIndex:<3.4s/<5.8s/>5.8s}
-§CODE{stack(package.json[deps,scripts]∧cfg):{Webpack:webpack.config.js|webpack.*.js,Vite:vite.config.js|vite.config.ts,Rollup:rollup.config.js|rollup.config.mjs,esbuild:esbuild.config.js|scripts(esbuild),Parcel:.parcelrc|package.json(parcel),Next.js:next.config.js|next.config.mjs,Nuxt:nuxt.config.js|nuxt.config.ts,SvelteKit:svelte.config.js,Astro:astro.config.mjs};tree_shake:{Webpack:mode:'production'∧sideEffects(package.json)∧usedExports,Vite|Rollup:default_on∧chk(treeshake),smells:barrel(index.js)∨wholesale(lodash,moment)};unused:{CSS_in_JS_vs_static,PurgeCSS|UnCSS(Tailwind.content),dyn_vs_eager_imports};polyfills:{@babel/preset-env(targets,useBuiltIns),core-js_bloat,broad(browserslist)};compress_min:{terser|esbuild|swc,gzip|brotli(build|srv),prod_sourcemaps(external∨off)}}
-§OUT{1:CWV_Summary(metric,val,rating);2:Top_Issues(est_impact∈{high,medium,low});3:Recs(specific_fixes+code|cfg);4:Codebase_Findings(stack+opts;omit⇔¬code_access)}
+§R{
+  retrieval>pretraining(metrics,thresholds,APIs);
+  assertive:verify(net∨DOM∨trace∨code)→state;verify_unused_before_rm;
+  quantify:use(insight_est_savings)∧¬prioritize(0ms);render_blocking(est=0ms)⇒note∧¬rec;
+  specific:"compress hero.png (450KB) to AVIF/WebP"∧¬"optimize images";
+  prioritize:(LCP=200ms∧CLS=0)⇒excellent;
+  LH13_model:unified_Performance_Insights_replace_legacy_audits(PWA_cat_retired;Baseline_web-features_diag_in_BP)
+}
+§SRC{
+  web.dev:https://web.dev/articles/vitals(CWV);
+  devtools:https://developer.chrome.com/docs/devtools/performance(APIs,trace,insights);
+  lh:https://developer.chrome.com/docs/lighthouse/performance/performance-scoring(LH13_weights,insights)
+}
+§PRE{
+  check:{navigate_page,performance_start_trace,performance_analyze_insight,lighthouse_audit,list_network_requests,take_snapshot};
+  missing⇒STOP∧req_mcp:`"chrome-devtools":{"type":"local","command":["npx","-y","chrome-devtools-mcp@latest"]}`
+}
+§FLOW{
+  1_Trace:navigate_page(url:"<target-url>")→performance_start_trace(pageId,reload:true,autoStop:true,ignoreCache:true_for_cold,filePath:"opt_trace.json.gz")→retrieve;err⇒verify(navigate_page_loaded);
+  2_Insights:performance_analyze_insight(pageId,insightSetId:"<id-from-trace>",insightName:"...");note:names_vary(devtools_ver)⇒inspect(available_insights∈trace_resp);
+    LH13_insights:{LCPBreakdown/lcp-breakdown-insight(TTFB+res_load_delay+res_load_dur+render_delay),LCPDiscovery/lcp-discovery-insight(preload+fetchpriority+¬lazy),CLSCulprits/cls-culprits-insight(unsized_imgs|injected_DOM|non_composited_anim|font_swaps),INPBreakdown/interaction-to-next-paint-insight(input+proc+pres_delay),DocumentLatency/document-latency-insight(redirects+TTFB+comp),ImageDelivery/image-delivery-insight(AVIF/WebP+responsive),FontDisplay/font-display-insight,RenderBlocking,NetworkDependencyTree,DuplicatedJavaScript,LegacyJavaScript,BFCache(flag_unload)};
+  3_Net:list_network_requests(resourceTypes:["Script","Stylesheet","Document","Font","Image"]);detail:get_network_request(reqid:<id>);
+    chk:{render_blk:head_JS|CSS∧¬(async∨defer∨media),chains:late_disc(CSS_imports,JS_fonts),preloads:missing(LCP_img,crit_fonts),cache:missing|weak(Cache-Control,ETag,no-store_blocking_bfcache),comp:missing(zstd|br|gzip)∨oversized,proto:HTTP/2|HTTP/3,preconnect:reqs==0⇒unused→rm|late_reqs⇒valuable};
+  4_NonPerf_Audit:lighthouse_audit(pageId,device:"mobile"|"desktop",mode:"navigation"|"snapshot")→a11y,SEO,BP,agentic,Baseline(excludes_perf)+take_snapshot(verbose:true)→flag(missing|dup_ARIA_IDs,contrast<AA,focus_traps,missing_acc_name);
+  5_Code:skip⇔3rd_party_no_code_access
+}
+§THR{fmt:good/needs_impr/poor;TTFB:≤800ms/≤1.8s/>1.8s;FCP:≤1.8s/≤3s/>3s;LCP:≤2.5s/≤4s/>4s;INP(field/inter):≤200ms/≤500ms/>500ms;TBT(LH_lab_proxy):≤200ms/≤600ms/>600ms;CLS:≤0.1/≤0.25/>0.25;SpeedIndex:≤3.4s/≤5.8s/>5.8s}
+§CODE{
+  stack(package.json[deps,scripts]∧cfg):{Vite/Rolldown:vite.config.ts,Next.js/Turbopack:next.config.ts|mjs,Nuxt:nuxt.config.ts,Astro:astro.config.ts|mjs,SvelteKit:svelte.config.js,Webpack:webpack.config.js,Rollup:rollup.config.mjs,esbuild:esbuild.config.js,Parcel:.parcelrc};
+  tree_shake:{Webpack:mode:'production'∧sideEffects∧usedExports,Vite|Rolldown|Rollup:default_on∧chk(treeshake),smells:barrel(index.ts)∨wholesale(lodash,moment)};
+  unused:{CSS_in_JS_vs_static,Tailwind_v4_auto_scan(v3:content_globs),dyn_vs_eager_imports};
+  polyfills:{LH13_Baseline_diag+browserslist_modern_targets,avoid_core-js_bloat(legacy-javascript-insight),@babel/preset-env_only_if_legacy_required};
+  compress_min:{Oxc|esbuild|swc|terser,LightningCSS,zstd|brotli|gzip(edge/CDN/build),prod_sourcemaps(hidden∨external∨off)}
+}
+§OUT{1:CWV_Summary(metric,val,rating);2:Top_Insights(est_impact∈{high,medium,low});3:Recs(specific_fixes+code|cfg);4:Codebase_Findings(stack+opts;omit⇔¬code_access)}
 §REL{[web-performance](web-performance.md);[web-quality-audit](../SKILL.md);[playwright](../../unit-testing-patterns/references/playwright.md);[frontend-development](../../frontend-development/SKILL.md);[nextjs](../../frontend-development/references/nextjs.md)}

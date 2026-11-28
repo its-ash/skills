@@ -27,11 +27,16 @@
   gate:¬automate_until_known(owner,delta,failed_gate,safe_merge)
 }
 §PANES{
+  native_first:{
+    Claude_Code_Agent_Teams:parent_orch_spawns_specialized_subagents(coding,testing,review,DevOps)+`--worktree`(auto_isolated_git_wt)+sandbox(`bubblewrap`|containers);
+    OpenAI_Agents_SDK_Handoffs:typed_delegation_keeping_each_agent_ctx_clean;
+    A2A_cross_boundary:strict_identity+least_priv_token_delegation+crypto_signed_payload+schema_val(OWASP_ASI06/ASI03;¬blindly_trust_peer_text)
+  };
   dmux(`https://github.com/standardagents/dmux`):3rd_party_tmux_mgr(Claude_Code,Codex,OpenCode,Cline,Gemini,Qwen)[vet_first];keys:`n`(new+prompt),`m`(merge);
   pat:{res_impl:P1→file+P2_build→merge;multi_file:schema/API/UI→main;test_fix:watcher→fixer;cross_harness:Claude_sec+Codex_refac;rev_pipe:sec/perf/cov→report};
-  wt:`git worktree add -b feat/auth ../feature-auth HEAD` ... `git merge feat/auth`;
+  wt:`claude --worktree` ∨ `git worktree add -b feat/auth ../feature-auth HEAD` ... `git merge feat/auth`;
   layout:1_branch_wt/worker+`.orchestration/<session>/{task.md,handoff.md,status.md}`+1_tmux_pane/worker+free_main_orch;
-  rules:{indep_only,distinct_files,rev_pre_merge,wt_on_overlap,panes<5-6};
+  rules:{indep_only,distinct_files,rev_pre_merge,wt_on_overlap,sandbox_unattended_workers,panes<5-6};
   fix:{hung⇒switch|`tmux capture-pane -pt <session>:0.<pane-index>`,conflicts⇒wt,tokens⇒<panes,no_tmux⇒`brew install tmux`|`apt install tmux`}
 }
 §FAIL{agent_soup(¬owner/gate);invisible(chat_only);board_theater(¬acceptance);overlap_writes(¬wt);no_artifact(docs_only)}

@@ -1,10 +1,30 @@
 @REF:agent-harness-construction
-§CORE{out_quality≤min(action_space,observation,recovery,ctx_budget)}
-§ACT{1:stable_explicit_names;2:schema_first∧narrow_in∧decl_out_schema;3:determ_out_shapes;4:¬catch_all∨iso_impossible;5:MCP_annots∈{readOnlyHint,destructiveHint,idempotentHint,openWorldHint}}
+§CORE{out_quality≤min(context_eng,action_space,observation,recovery,ctx_budget);context_eng>static_prompt_tuning}
+§ACT{
+  1:stable_explicit_names;
+  2:schema_first(Standard_Schema:Zod_v4|Pydantic)∧narrow_in∧decl_out_schema;
+  3:determ_out_shapes;
+  4:¬catch_all∨iso_impossible;
+  5:MCP_annots∈{readOnlyHint,destructiveHint,idempotentHint,openWorldHint};
+  6:many_tools(>20)⇒dynamic_tool_search+programmatic_tool_calling¬stuff_all_schemas_in_sys_prompt
+}
 §GRAN{high_risk(deploy,migration,perms)⇒micro;common_loop(edit|read|search)⇒medium;round_trip_dominant⇒macro}
 §OBS{∀resp⇒{status∈{success,warning,error},summary:1_line,next_actions:[...],artifacts:[paths|IDs]}}
 §ERR{∀err⇒{root_cause_hint,safe_retry_instr,explicit_stop_cond}}
-§CTX{1:min_invariant_sys_prompt;2:large_guide→on_demand_skills;3:file_refs≻inline_docs;4:compact@phase_bounds(¬arbitrary_tok);5:set(maxTurns,tool_budget,stop_cond)∧checkpoint→mem_file|handoff}
-§ARCH{explore_uncertain⇒ReAct;structured_determ⇒fn_calling;rec⇒Hybrid(ReAct_plan+typed_tool_exec)}
-§BENCH{track:{completion_rate,retries_per_task,pass@k,pass^k(all_k_pass),cost_per_success}}
-§ANTI{¬overlapping_tools;¬opaque_out¬recovery_hints;¬err_only¬next_steps;¬ctx_overload_irrel_refs}
+§CTX{
+  1:attention_budget:degradation(context_rot,lost_in_middle)_starts_WELL_BEFORE_token_ceiling⇒curate_every_turn;
+  2:min_invariant_sys_prompt;
+  3:large_guide→on_demand_modular_skills(`.claude/skills/`,`.claude-plugin/plugin.json`);
+  4:file_refs≻inline_docs;
+  5:prune_stale_history(Context_Editing)+compact@phase_bounds(Compaction_API|`/compact`)∧subagent_isolation;
+  6:set(maxTurns,tool_budget,stop_cond)∧checkpoint→mem_file|handoff
+}
+§SDK{
+  prefer_native_SDK_over_bespoke_while_loop;
+  Claude_Agent_SDK(`@anthropic-ai/claude-agent-sdk`|`claude-agent-sdk`):built_in_tools(Read,Write,Edit,Bash,Grep,WebFetch),subagents,MCP,Skills,Compaction,Hooks(`PreToolUse`,`PostToolUse`,`PermissionRequest`,`SessionStart`;stdin_JSON;exit_2=block;array_cfg);
+  OpenAI_Agents_SDK:automated_agent_loop,programmatic_fn_tools,Handoffs(context_clean_delegation),input/output_Guardrails,auto_compaction,built_in_tracing
+}
+§ARCH{explore_uncertain⇒ReAct;structured_determ⇒fn_calling;rec⇒Hybrid(ReAct_plan+typed_tool_exec+lifecycle_hooks+sandbox)}
+§BENCH{track:{completion_rate,retries_per_task,pass@k,pass^k(all_k_pass),cost_per_success};grade_outcomes+inspect_transcripts}
+§ANTI{¬overlapping_tools;¬stuff_hundreds_MCP_schemas;¬opaque_out¬recovery_hints;¬err_only¬next_steps;¬ctx_overload_irrel_refs;¬prompt_only_safety_wo_hooks_sandbox}
+§REL{references/mcp-server-patterns.md;references/agent-security-hardening.md;references/strategic-compact.md;references/eval-harness.md}

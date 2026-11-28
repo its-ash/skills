@@ -1,15 +1,59 @@
 @REF:research-workflow
-§REL{../SKILL.md}
-§FLOW{1_Collect→2_Clean→3_Patterns→4_Persona→5_Journey→6_TestPlan→7_Capture→8_Synthesize→9_Validate}
-§STEPS{
-  1:interviews→txt|JSON;surveys→CSV;analytics(views,clicks)→CSV|JSON;∈VC;
-  2(pandas):`read_csv("survey_responses.csv")`,`read_json("interview_tags.json")`;`c.strip().lower().replace(" ","_")`;`drop_duplicates()`;`isna().mean(axis=1)<=0.30`;`dropna(subset=["age","goal","pain_point"])`;`satisfaction.map({"Very Satisfied":5,"Satisfied":4,"Neutral":3,"Dissatisfied":2,"Very Dissatisfied":1})`;
-  3:small→freq(goals,pain_points);large(3-5)→`TfidfVectorizer(stop_words="english").fit_transform(s["goal"])`+`KMeans(n_clusters=4,random_state=42).fit(X).labels_`(`sklearn`);label_centroids("Power User","Occasional Shopper");
-  4:{Name,Demographics(age,gender,loc,occ),Behaviors(freq,device),Goals,PainPoints,Psychographics(attitudes,motivations,values),Scenario(<150w),Conf(supporting/total*100)};
-  5:Awareness(Social_ad,Curious,jargon)→Consideration(Product_page,Interested,no_pricing)→Purchase(Checkout,Anxious,validation)→Use(Mobile_onboard,Confident,UI_inconsist)→Support(Live_chat,Frustrated,wait);(touchpoint,emotion,pain_point);tools[table,Miro,FigJam,Lucidchart];+alt_paths;
-  6:tasks←scenarios;criteria(≤2m,≤1_err);diverse_demo;method∈{mod_remote,unmod_remote(Maze,UserTesting),in_person};
-  7:quant[success_rate,time_on_task,error_count,SUS]+qual[comments,think_aloud,expressions]→CSV;
-  8:mean_time+success_%;affinity/thematic→(insight→implication);imp/eff(Nav:H/L→H,Checkout:M/M→M);
-  9:Figma_Δ→retest_same_personas→vs_baseline
+§REL{../SKILL.md;./metrics-and-analysis.md;./ai-and-fraud-guardrails.md}
+§R{
+  flow:1_Scope→2_Recruit_Screen→3_Consent_Collect→4_Redact_Clean→5_Analyze→6_Archetype_Journey→7_TestPlan_Pilot→8_Run_Capture→9_Synthesize_Validate;
+  ISO_9241-210:anchor_study∈context_of_use(users,tasks,equipment/AT,physical_social_env)∧iterate_on_evidence;
+  triangulate:attitudinal(interviews,surveys)+behavioral(usability,replays,analytics)¬rely_on_self_report_alone;
+  privacy:de-identified_data+scripts∈VC;raw_video/audio/PII∈access_controlled_GDPR_repo(no-AI-train)
 }
-§CHK{[raw∈VC,dupes+nulls,clusters,persona+conf,journey,plan,CSV,prio_insights+implications,retest,shared]}
+§CFG:ReOps_Stack{
+  prototype_unmod:{Maze(prototypes+AI_follow_up),Lyssna(ex-UsabilityHub:5s,first_click,card_sort,tree_test),UserTesting(enterprise_panel+Insights_Hub)};
+  AI_moderated:{Outset(scale_conversational_interviews),Maze_AI(follow_up_probing)};
+  repo_synthesis:{Dovetail(AI_transcribe+tag+PII_redact),Condens(PII_redact+GDPR),Marvin,Great_Question(all-in-one_CRM+recruit+incentives+repo)};
+  analytics_replay:{Contentsquare(Hotjar_legally_merged_2025-07;Experience_Analytics_self_serve),Microsoft_Clarity(free_replays+heatmaps),PostHog(OSS_analytics+replays+surveys+flags),FullStory/LogRocket(console+network_debug_replays),Matomo(GDPR_self_host)};
+  surveys_voc:{Formbricks(OSS_product_surveys),Qualtrics,Typeform};
+  vetted_panels:{Prolific,User_Interviews,Ethnio};
+  mapping_design:{Figma/FigJam,Miro,Lucidchart}
+}
+§PAT:Steps{
+  1_Scope:define(decision_to_inform,research_Qs,hypotheses,target_segments,timeline,success_thresholds);
+  2_Recruit:vetted_panels≻open_links;obscure_eligibility_criteria;layer_fraud_checks(see_ai-and-fraud-guardrails.md);include_disabilities+cross_demographics;
+  3_Collect:capture(informed_consent+DSAR_id_map)≺record;interviews→transcripts+clips(repo);surveys→CSV;analytics/replays→event+funnel_exports;
+  4_Clean:redact(PII,faces,voices)≺LLM∨VC;drop(dups,missing>30%,fraud_flags);norm(cols,Likert→1..5);
+  5_Analyze:small(N<100)⇒manual_thematic+freq;coded_scale(N≥100)⇒LLM_few_shot+IRR(κ≥0.80);exploratory(N>500)⇒BERTopic(see_metrics-and-analysis.md);
+  6_Artifacts:archetypes/JTBD(3..5_clusters,≥5/cluster)+journey_map(touchpoint,action,emotion,pain,opportunity,+alt_paths);
+  7_TestPlan:realistic_scenario_tasks(¬UI_jargon_hints)+success_criteria+segment/AT_mix+pilot_run(1..2_sessions)≺field;
+  8_Capture:log(quant:pass/fail,time_s,err_cnt,SEQ,SUS/UX-Lite)+qual(think_aloud,verbatims,hesitations,AT_barriers)→CSV+timestamped_clips;
+  9_Validate:atomic_nuggets(evidence→insight→implication)→impact/effort_prio→Figma_Δ→retest_same_segments_vs_baseline(Adjusted_Wald_CI,geom_time)
+}
+§PAT:Artifacts{
+  archetype_JTBD:{Name,JTBD(when_situation→I_want_motivation→so_I_can_outcome),Behaviors(freq,device,ctx),Goals,PainPoints,CurrentWorkarounds,Scenario(<150w),Evidence(n_supporting/N_total),Demographics(only_if_behaviorally_predictive)};
+  journey_stages:Awareness(ad/search,curious,jargon)→Consideration(pricing/docs,evaluative,unclear_fit)→Acquisition(checkout/signup,anxious,val_errs)→Onboarding_Use(first_run,hopeful,UI_friction)→Support_Retention(help/chat,frustrated,wait_time);
+  journey_fields:∀stage⇒{touchpoint,user_action,emotion,pain_point,opportunity,metric}+alt_paths/error_recovery
+}
+§PAT:HeuristicEval{
+  use:fast_expert_sweep≺spending_participant_budget(¬replaces_real_users);
+  evaluators:3..5_independent_passes→consolidate(single_evaluator_misses_issues);
+  heuristics_Nielsen10:{1_system_status,2_real_world_match,3_user_control_undo,4_consistency_stds,5_error_prevention,6_recognition_over_recall,7_flexibility_efficiency,8_minimalist_design,9_error_recovery,10_help_docs};
+  severity:{0:none,1:cosmetic,2:minor,3:major_high_prio,4:usability_catastrophe_ship_blocker}
+}
+§PAT:InclusiveAT{
+  drivers:ISO_9241-11(all_capabilities)+ISO_9241-210+WCAG_2.2(cognitive,low_vision,touch)+EAA(EU_Dir_2019/882);
+  recruit:blind,low_vision,motor_impaired,deaf_HoH,neurodivergent_participants_using_daily_driver_AT;
+  AT_matrix:{screen_readers(JAWS,NVDA,VoiceOver,TalkBack),magnifiers+high_contrast,alt_input(kbd_only,switch,voice,eye_track)};
+  observe:task_success+geom_time+cognitive_fatigue+semantic_gaps+focus_traps+missing_announcements;
+  logistics:allow_extra_session_time(1.5x),accessible_consent/screener_forms,verify_screen_share_compat_w_AT
+}
+§D{
+  discovery_unknown_problem⇒contextual_inquiry∨depth_interviews¬usability_test_prototype;
+  validate_IA_navigation⇒card_sort(open/closed)+tree_test(Lyssna)¬guess_menu_hierarchy;
+  formative_usability_iter⇒~5_users/homogeneous_segment→fix→retest¬1_giant_30_user_round_pre_fix;
+  summative_benchmark_or_exec_KPI⇒N≥20..40/segment+Adjusted_Wald_CI+geom_time¬5_user_point_estimate;
+  high_friction_in_live_funnel⇒pair(replay_heatmaps:Contentsquare/Clarity/PostHog+targeted_usability_test)¬analytics_guessing_alone
+}
+§ANTI{
+  raw_PII_in_git;leading_task_prompts("Click Settings to...");demographic_stereotype_personas_without_behavior_basis;skipping_pilot_test;testing_only_able_bodied_mouse_users;declaring_fix_valid_without_retest;treating_heuristic_eval_as_user_validation
+}
+§CHK{
+  [scope+hypotheses,vetted_recruit+fraud_filters,consent+DSAR_map,PII_redacted≺LLM/VC,cleaned_data,JTBD_archetypes+evidence,journey+alt_paths,pilot_tested_script,inclusive_AT_coverage,quant+qual_CSV,atomic_insights+impact/effort,retest_vs_baseline,shared_in_repo]
+}

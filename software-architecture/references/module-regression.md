@@ -10,6 +10,7 @@
   ../../unit-testing-patterns/references/ai-regression-testing.md:exec_defect_tests;
   ../../backend-development/references/contract-first.md:cross_svc|client_contracts;
   module-governance.md:bounds+owners;
+  fitness-and-c4.md:dep_graph_&_fitness_scans;
   ../../code-review/references/change-impact.md:blast_radius
 }
 §R{
@@ -21,7 +22,7 @@
 §SCHEMA{
   loc:root∨`docs/`∧link∈proj_map|rules(¬orphan);
   fields:{
-    Downstream_consumers:dep_graph|build|repro_import_call_scan(eco_specific,¬universal);unproven_edge=`unverified`(blocks_green_till_human_confirms∨included);
+    Downstream_consumers:dep_graph|build|repro_import_call_scan(eco_specific,¬universal:TS=`depcruise --output-type json`,Py=`tach show`/`lint-imports`,Go=`go list -deps`,Java=`Spring_Modulith`/`ArchUnit`,Rust=`cargo-modules`);unproven_edge=`unverified`(blocks_green_till_human_confirms∨included);
     Dependency_evidence:`<scan|graph_cmd>`;refresh_via_repro_scan_only(rerun_on_dep_Δ,¬hand_edit);
     Regression_acceptance_cmd:exec(tests,reconcile,golden_diff);prefer_reconcile(golden,upstream_totals,accounting)>assertions|mocks;none=`MISSING`(¬fake_green);
     Propagation_rule:downstream_set+exempt_cond(ext_Δ→run;internal+green_mod→exempt);

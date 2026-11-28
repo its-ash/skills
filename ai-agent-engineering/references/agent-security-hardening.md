@@ -36,5 +36,16 @@ def workspace_path(workspace:Path,requested:str)->Path:
 }
 §GATE{real_entry:[1:untrusted_instr=data(¬tool|write),2:irreversible¬(op_res_authz∧(confirm|scoped_preapproval))⇒0_side_eff,3:cross_tenant|cross_ws_id_rejected@bound,4:traversal|symlink_escape⇒fs_unchanged,5:forced_fail⇒0_cred_tmp|logs,6:oversized|malformed_out⇒explicit_bounded_err];report:{cmd,exit_status,rejected_in,no_side_eff};mock_only≠proof(OS_perms,symlinks,subproc_iso,net_egress)}
 §ISSUES{prompt_only_val⇒determ_code_pre_side_eff∧test_violating_model_out;prefix_escape(/work/app vs /work/application)⇒resolve∧comp_contain∧test_symlinks;post_log_redact⇒redact_pre(logger,tracer,exc,ctx)∧sentinel_cap_test}
-§GUARD{advisory(¬enforced):careful(stop,explain,ask_confirm,safer_alt)⇐{`rm -rf`(esp `/`,`~`,root),`git push --force`,`git reset --hard`,`git checkout .`,`DROP TABLE`,`DROP DATABASE`,`docker system prune`,`kubectl delete`,`chmod 777`,`sudo rm`,`npm publish`,`--no-verify`};freeze:lock_edits→1_tree(e.g.`src/components/`)∧explain_outside;guard:careful∧freeze(e.g.write→`src/api/`,read_any)until_stopped;hard_enforce:Claude_Code_deny_rules(https://code.claude.com/docs/en/permissions,e.g.`Bash(rm -rf *)`)∨PreToolUse_hook(https://code.claude.com/docs/en/hooks);no_prompt_sess(e.g.`codex -a never`)⇒careful_on_default}
-§REL{references/agent-harness-construction.md,references/mcp-dependency-review.md,references/enterprise-agent-ops.md}
+§STANDARDS{
+  OWASP_Agentic_2026:{ASI01:Agent_Goal_Hijack(indirect_inj∈{email,PDF,web,tool_out});ASI02-10:Tool_Misuse_Exploit,Identity_Priv_Abuse,Memory_Context_Poison,Insecure_InterAgent_Trust(A2A/MCP),Unbounded_Consumption};
+  OWASP_ACS(Agent_Control_Standard):inspectable∧traceable∧controllable@runtime⇒dynamic_capability_scoping+runtime_approval_gates+strict_sandboxes;
+  A2A_Trust:peer_agent_out=untrusted⇒strict_identity_bounds+least_priv_token_delegation+crypto_sign/verify+schema_val_pre_action;
+  MCP_Sec:secrets/payments⇒MCP_Elicitation_URL_mode(¬in_client_payload);MCP_Apps(SEP-1865)⇒review_prefetched_HTML_templates@sandboxed_iframe
+}
+§SANDBOX{
+  layers:[built_in_sandboxed_Bash(`--auto-allow-bash-if-sandboxed`),OS_sandbox(`bubblewrap`@Linux,Seatbelt@macOS),Docker/Dev_Containers];
+  isolate:{fs_writes→workspace_only,net_egress→allowlist|none,proc_caps→minimal};
+  hooks:Claude_Code_lifecycle_hooks(`PreToolUse`,`PermissionRequest`;array_cfg;stdin_JSON;exit_2⇒programmatic_block)
+}
+§GUARD{advisory(¬enforced):careful(stop,explain,ask_confirm,safer_alt)⇐{`rm -rf`(esp `/`,`~`,root),`git push --force`,`git reset --hard`,`git checkout .`,`DROP TABLE`,`DROP DATABASE`,`docker system prune`,`kubectl delete`,`chmod 777`,`sudo rm`,`npm publish`,`--no-verify`};freeze:lock_edits→1_tree(e.g.`src/components/`)∧explain_outside;guard:careful∧freeze(e.g.write→`src/api/`,read_any)until_stopped;hard_enforce:Claude_Code_deny_rules(https://code.claude.com/docs/en/permissions,e.g.`Bash(rm -rf *)`)∨`PreToolUse`_hook(https://code.claude.com/docs/en/hooks,exit_2_block)∨sandbox;no_prompt_sess(e.g.`codex -a never`)⇒careful_on_default}
+§REL{references/agent-harness-construction.md;references/mcp-dependency-review.md;references/enterprise-agent-ops.md;../../secure-coding/SKILL.md}

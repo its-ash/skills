@@ -1,44 +1,52 @@
 ---
 name: browser-extensions
-description: "AUTO_INVOKE(silent)⇔prompt∈{Chrome_extension,Firefox_extension,Edge_extension,WebExtension,Manifest_V3,MV3,MV2_to_MV3,manifest.json,content_script,service_worker,popup,options_UI,chrome.storage,chrome.alarms,chrome.runtime,chrome.tabs,declarativeNetRequest,webRequestBlocking,optional_permissions,host_permissions,offscreen,CSP,XSS,web-ext_lint,Chrome_Web_Store}|SUB:{extension-code,publishing}"
+description: "AUTO_INVOKE(silent)⇔prompt∈{Chrome_extension,Firefox_extension,Edge_extension,Safari_Web_Extension,WebExtension,Manifest_V3,MV3,manifest.json,WXT,CRXJS,Plasmo,content_script,service_worker,sidePanel,offscreen,scripting,userScripts,popup,options_UI,chrome.storage,storage.session,chrome.alarms,chrome.runtime,onMessage,chrome.tabs,declarativeNetRequest,optional_host_permissions,data_collection_permissions,Shadow_DOM,CSP,XSS,web-ext,Playwright_extension,Chrome_Web_Store,CWS_API_v2,AMO}|SUB:{extension-code,tooling-and-testing,publishing}"
 ---
 @SKL:browser-extensions
 §R{
-  target:{Chrome,Edge,Firefox}∧manifest_version≡3∧folder_per_ctx({background,content,popup,options});
-  perm≡min_needed∧on_demand_features→optional_permissions;
-  host_permissions≡specific_match_patterns∧¬<all_urls>_if_avoidable;
-  sw_stops_when_idle⇒(globals_state≡∅∧persist→chrome.storage);
-  schedule_work⇒chrome.alarms¬(setTimeout∨setInterval);
-  ¬block_sw_thread:(¬long_loops∧¬sync_XHR);
-  msg_listener∧async_reply⇒(sendResponse∧return true);
-  content_script:page_data≡untrusted⇒validate_before_use;
-  DOM_write⇒(textContent∧createElement)¬(innerHTML∨eval)[XSS,CSP];
-  ¬load_remote_scripts(strict_CSP@ext_pages);
-  net_filter⇒declarativeNetRequest¬(webRequest∨webRequestBlocking);
-  content_scripts⇒set(run_at∧precise_matches);
-  target_sites⇒stable_selectors+fallback_logic∧monitor_breakage;
-  test∈{Chrome,Edge,Firefox}∧lint:web-ext lint;
+  MV3_only(Chrome_MV2_removed)∧target∈{Chrome,Edge,Firefox,Safari}∧zero_remote_code(bundle_all_deps);
+  tooling:new⇒WXT(v0.21+,Vite,cross_browser)⊕existing_Vite⇒CRXJS_v3⊕tiny⇒vanilla_MV3;
+  perm≡min_needed∧prefer(activeTab,optional_permissions,optional_host_permissions)¬<all_urls>;
+  sw_ephemeral(~30s_idle)⇒(global_state≡∅∧persist→chrome.storage∧register_listeners_sync@top_level);
+  schedule_work⇒chrome.alarms(min_30s)¬(setTimeout∨setInterval);
+  sw_DOM|audio|clipboard⇒chrome.offscreen(max_1_doc,guard_runtime.getContexts)¬block_sw_thread;
+  chrome.*_APIs⇒native_Promises(await)¬legacy_callback_wrappers;
+  onMessage_async⇒sync_listener+return_true(sendResponse)∨Promise_iff_matched(Chrome144+;¬top_async_fn);
+  cross_browser_bg⇒both(service_worker∧scripts)∨WXT_per_target∧Firefox_gecko(id+data_collection_permissions);
+  content_script:page_data≡untrusted⇒validate@boundary∧world:"ISOLATED"(world:"MAIN"_iff_page_JS_req);
+  UI_in_page⇒Shadow_DOM(mode:"open")+safe_DOM(createElement,textContent)¬(innerHTML∨eval)[XSS,CSP];
+  net_filter⇒declarativeNetRequest(declarativeNetRequestWithHostAccess+quotas)¬blocking_webRequest(Firefox_only);
+  storage.session(10MB_RAM)⇒trusted_only_default∧explicit_setAccessLevel_iff_content_script_needs;
+  userScripts(Chrome138+)⇒per_ext_"Allow_User_Scripts"_toggle(¬global_DevMode);
+  verify⇒Playwright_persistent_ctx(SW_lifecycle)+web-ext_lint(0_err)+CWS_API_v2(v1_sunset_Oct2026);
 }
 §D{
-  popup→background⇒chrome.runtime.sendMessage¬direct_global_access;
-  background→page⇒chrome.tabs.sendMessage(tabId,…)¬content_script_polling;
-  content→background⇒chrome.runtime.sendMessage¬window.postMessage_to_worker;
-  user_roaming_settings⇒chrome.storage.sync(100KB_tot,8KB_per_item)¬localStorage;
-  larger_local_data⇒chrome.storage.local(10MB;5MB_pre_Chrome114)¬sync_bulk_data;
-  heavy_work⇒content_script∨offscreen_work¬long_tasks_in_sw;
-  periodic_task⇒chrome.alarms¬timers_in_worker;
-  block∨redirect_req⇒declarativeNetRequest_rulesets¬webRequestBlocking;
-  UI_in_page⇒safe_DOM_nodes+fixed_pos+high_z-index¬innerHTML_templates;
+  new_extension⇒WXT(entrypoints/,multi_browser,wxt_submit)¬manual_bundler_boilerplate;
+  existing_Vite_app+explicit_manifest⇒CRXJS_v3(content_HMR)¬rewrite_to_Plasmo;
+  persistent_companion_UI⇒chrome.sidePanel(setOptions/setPanelBehavior)¬ephemeral_popup;
+  popup|sidePanel|content→bg⇒chrome.runtime.sendMessage¬direct_globals∨window.postMessage_to_sw;
+  bg→tab⇒chrome.tabs.sendMessage(tabId,…)¬content_script_polling;
+  roaming_prefs⇒chrome.storage.sync(100KB,8KB/item)¬localStorage;
+  local_state⇒chrome.storage.local(10MB)⊕session_RAM⇒chrome.storage.session(10MB);
+  DOM_parse|audio|clipboard@bg⇒chrome.offscreen(1_doc_guard)¬hidden_tab_hack;
+  page_JS_interop⇒chrome.scripting.executeScript(world:"MAIN")¬inline_script_tag[CSP];
+  block|redirect|headers⇒DNR(30k_static/30k_safe_dyn/5k_unsafe_dyn)¬webRequestBlocking;
+  injected_page_UI⇒Shadow_DOM(open)+high_z-index+safe_DOM¬unisolated_CSS∨innerHTML;
+  Firefox_no_telemetry⇒gecko.data_collection_permissions.required:["none"]¬omit[AMO_reject];
+  E2E_test_MV3⇒Playwright_launchPersistentContext(channel:"chromium")¬default_ephemeral_ctx;
+  CI_store_publish⇒CWS_API_v2(ServiceAccount/WIF)+wxt_submit(--dry-run)¬CWS_API_v1;
 }
 §REF{
-  folder_layout,manifest.json_tpl,content_script,UI_injection,service_worker,popup,storage,anti_patterns→references/extension-code.md;
-  package,store_upload,monetization,release_checklist→references/publishing.md;
+  layout,manifest_MV3,gecko_data_collection,SW_lifecycle,onMessage_Chrome144,storage_session,sidePanel,offscreen,scripting,userScripts,DNR_limits,Shadow_DOM,security,anti_patterns→references/extension-code.md;
+  WXT,CRXJS,Plasmo,vanilla_MV3,Firefox_Safari_targets,safari-web-extension-converter,web-ext,Playwright_MV3_testing,Shadow_DOM_tests,SW_recycle,debugging→references/tooling-and-testing.md;
+  packaging,CWS_API_v2,Limited_Use_policy,AMO_data_consent,AMO_enterprise,Edge_Partner_Center,Safari_Xcode,wxt_submit,monetization,release_checklist→references/publishing.md;
 }
 §REL{
-  ../frontend-development/SKILL.md:React_UI@popup,options;
+  ../frontend-development/SKILL.md:React_Vue_UI@popup,sidePanel,options;
   ../typescript/SKILL.md:typed_ext_code;
-  ../typescript/references/javascript.md:event_loop,closures,this;
+  ../typescript/references/javascript.md:event_loop,Promises,closures;
   ../frontend-development/references/progressive-web-app.md:web_sw,manifest;
-  ../web-quality-audit/references/web-accessibility.md:a11y_popup,injected_UI;
-  ../secure-coding/SKILL.md:XSS,input_val;
+  ../web-quality-audit/references/web-accessibility.md:a11y_popup,sidePanel,injected_UI;
+  ../unit-testing-patterns/SKILL.md:Playwright,Vitest,test_patterns;
+  ../secure-coding/SKILL.md:XSS,CSP,input_val;
 }

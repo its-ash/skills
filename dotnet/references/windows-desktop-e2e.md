@@ -1,27 +1,45 @@
 @REF:windows-desktop-e2e
-§SCOPE{pywinauto(backend="uia")+Windows_UIA;targets:WPF,WinForms,Win32/MFC,Qt5.x/6.x}
+§SCOPE{Windows_UIA;drivers:FlaUI(.NET/C#,UIA3/UIA2,preferred_for_.NET_solutions)⊕pywinauto(Py,backend="uia",preferred_for_Qt/Win32/cross-stack);targets:WPF,WinForms,WinUI3,Win32/MFC,Qt5.x/6.x}
 §USE{win_native_GUI_E2E;suite_setup;flaky_debug;testability(AutomationId,accessible_names);CI(windows-latest)}
 §SKIP{web⇒[playwright](../../unit-testing-patterns/references/playwright.md);Electron|CEF|WebView2⇒browser_automation(HTML_layer,¬UIA);mobile⇒UIAutomator|XCUITest;headless_unit/int⇒¬GUI}
 
 §CORE{
-  stack:test(Py)→pywinauto(UIA)→Windows_UIA_API→App_UIA_provider→.exe;
-  uia:{WPF:5/5,Exc,"x:Name→AutomationId";WinForms:4/5,Good,"AccessibleName=AutomationId";UWP|WinUI3:5/5,Exc,"full_MS";Qt6.x:5/5,Exc,"a11y_on_default;cls=Qt6*";Qt5.15+:4/5,Good,"improved_a11y";Qt5.7-5.14:3/5,Fair,"req QT_ACCESSIBILITY=1;manual objectName";Win32|MFC:3/5,Fair,"rc_IDs;text_match"}
+  stack_dotnet:test(C#/xUnit_v3)→FlaUI.UIA3→Windows_UIA_API→App_UIA_provider→.exe;
+  stack_py:test(Py/pytest)→pywinauto(UIA)→Windows_UIA_API→App_UIA_provider→.exe;
+  uia:{WPF:5/5,Exc,"x:Name→AutomationId";WinForms:4/5,Good,"AccessibleName=AutomationId";UWP|WinUI3:5/5,Exc,"full_MS;x:Name/AutomationProperties.AutomationId";Qt6.x:5/5,Exc,"a11y_on_default;cls=Qt6*";Qt5.15+:4/5,Good,"improved_a11y";Qt5.7-5.14:3/5,Fair,"req QT_ACCESSIBILITY=1;manual objectName";Win32|MFC:3/5,Fair,"rc_IDs;text_match"}
 }
 
 §SETUP{
-  req:Python>=3.8∧Win;cli:`pip install pywinauto pytest pytest-html Pillow pytest-timeout`;
+  dotnet_flaui:`dotnet add package FlaUI.UIA3`+`xunit.v3`(.NET_10_LTS,Windows_TFM:`net10.0-windows`);
+  py_req:Python>=3.10(3.12_rec)∧Win;cli:`pip install pywinauto pytest pytest-html Pillow pytest-timeout psutil`;
   opt_rec:ffmpeg∈PATH(https://ffmpeg.org/download.html);
-  verify:`from pywinauto import Desktop; Desktop(backend="uia").windows()`;
-  inspector:"Accessibility Insights for Windows"(MS,free)
+  verify_py:`from pywinauto import Desktop; Desktop(backend="uia").windows()`;
+  inspector:"Accessibility Insights for Windows"(MS,active,free,supersedes_Inspect.exe)
 }
 
 §TESTABILITY{
   R:∀interactive_ctrl⇒stable AutomationId pre-test;
-  WPF:`<TextBox x:Name="usernameInput"/><PasswordBox x:Name="passwordInput"/><Button x:Name="btnLogin" Content="Login"/><TextBlock x:Name="lblError"/>`;
+  WPF_WinUI3:`<TextBox x:Name="usernameInput"/><PasswordBox x:Name="passwordInput"/><Button x:Name="btnLogin" Content="Login"/><TextBlock x:Name="lblError"/>`(or `AutomationProperties.AutomationId`);
   WinForms:`ctrl.AccessibleName="usernameInput"`(designer∨code);
   Win32_MFC:`// .rc ID→AutomationId str(IDC_EDIT_USERNAME→"1001"); SetWindowText→Name; +IAccessible`;
   Qt⇒§QT
 }
+
+§FLAUI{
+  when:C#/WPF/WinForms/WinUI3_repo⇒keep_E2E_in_.NET_solution(no_Py_toolchain,shared_DTOs/build);
+  wait:`Retry.WhileNull(()=>win.FindFirstDescendant(cf=>cf.ByAutomationId("btnLogin")),timeout:TimeSpan.FromSeconds(10)).Result`
+}
+```csharp
+using FlaUI.Core;
+using FlaUI.Core.AutomationElements;
+using FlaUI.Core.Tools;
+using FlaUI.UIA3;
+using var app = Application.Launch(@"C:\build\Release\MyApp.exe");
+using var uia = new UIA3Automation();
+var win = app.GetMainWindow(uia, TimeSpan.FromSeconds(15));
+var btn = Retry.WhileNull(() => win.FindFirstDescendant(cf => cf.ByAutomationId("btnLogin"))?.AsButton(), TimeSpan.FromSeconds(10)).Result;
+btn.ShouldNotBeNull(); btn.Click();
+```
 
 §POM{
   tree:"tests/{conftest.py,pytest.ini,config.py,pages/{__init__.py,base_page.py,login_page.py,main_page.py},tests/{__init__.py,test_login.py,test_main_flow.py},artifacts/}";
@@ -127,7 +145,7 @@ def restrict_process(pid: int):
 <Configuration><MappedFolders>
   <MappedFolder><HostFolder>C:\path\to\your\build\Release</HostFolder><SandboxFolder>C:\app</SandboxFolder><ReadOnly>true</ReadOnly></MappedFolder>
   <MappedFolder><HostFolder>C:\path\to\your\e2e_test</HostFolder><SandboxFolder>C:\e2e_test</SandboxFolder><ReadOnly>false</ReadOnly></MappedFolder>
-</MappedFolders><LogonCommand><Command>powershell -Command "winget install --id Python.Python.3.11 --silent --accept-package-agreements; $env:PATH += ';' + $env:LOCALAPPDATA + '\Programs\Python\Python311\Scripts'; cd C:\e2e_test; pip install -r requirements.txt; pytest tests\ -v"</Command></LogonCommand></Configuration>
+</MappedFolders><LogonCommand><Command>powershell -Command "winget install --id Python.Python.3.12 --silent --accept-package-agreements; $env:PATH += ';' + $env:LOCALAPPDATA + '\Programs\Python\Python312\Scripts'; cd C:\e2e_test; pip install -r requirements.txt; pytest tests\ -v"</Command></LogonCommand></Configuration>
 ```
 
 §ARTIFACTS{
@@ -150,7 +168,9 @@ def restrict_process(pid: int):
 
 §CI{
   file:".github/workflows/e2e-desktop.yml";
-  cfg:"runs-on: windows-latest (real GUI, ¬Xvfb); checkout@v4; setup-python@v5(3.11); pip install pywinauto pytest pytest-html Pillow; cmake --build build --config Release; env{APP_PATH:${{github.workspace}}\\build\\Release\\MyApp.exe, APP_TITLE:'My Application', CI:'true'}; pytest tests/ --html=artifacts/report.html --self-contained-html --junitxml=artifacts/results.xml -v; upload-artifact@v4(if:always(), name:e2e-artifacts, path:artifacts/, retention-days:14)"
+  self_hosted_caveat:"¬run self-hosted runner as Windows Service(Session_0_isolation_blocks_GUI)⇒run_interactive_logged_in_user_session";
+  cfg_py:"runs-on: windows-latest (real GUI, ¬Xvfb); checkout@v7; setup-python@v7(3.12); pip install pywinauto pytest pytest-html Pillow psutil; cmake --build build --config Release; env{APP_PATH:${{github.workspace}}\\build\\Release\\MyApp.exe, APP_TITLE:'My Application', CI:'true'}; pytest tests/ --html=artifacts/report.html --self-contained-html --junitxml=artifacts/results.xml -v; upload-artifact@v4(if:always(), name:e2e-artifacts, path:artifacts/, retention-days:14)";
+  cfg_flaui:"runs-on: windows-latest; checkout@v7; setup-dotnet@v4(10.0.x); dotnet build -c Release; dotnet test -c Release --no-build; upload-artifact@v4(if:always(), path:artifacts/)"
 }
 
 §QT{
@@ -170,6 +190,6 @@ def restrict_process(pid: int):
   diag:`debug_match(tpl,out="artifacts/match_debug.png",confidence=0.85)`(diagnosis-only,¬test):`cv2.imread(tpl)`(raise `RuntimeError` if `None`),`TM_CCOEFF_NORMED`,box `(0,255,0)` if pass else `(0,0,255)`,text `f"score={mv:.3f} thr={confidence}"`(`FONT_HERSHEY_SIMPLEX`,0.7,2),`cv2.imwrite`,return `mv`
 }
 
-§ANTI{"time.sleep(3)"⇒wait_visible/wait_until;"by_class('Edit',index=2)"⇒by_id("usernameInput");"pixel coords(left==120)"⇒state/text(get_text,is_enabled);"scope='session' app"⇒scope='function'(∨class)}
-§CMD{all:`pytest tests/ -v`;smoke:`pytest tests/ -m smoke -v`;file:`pytest tests/test_login.py -v`;env:`APP_PATH="C:\build\Release\MyApp.exe" APP_TITLE="MyApp" pytest tests/ -v`;flake:`pip install pytest-repeat && pytest tests/test_login.py --count=5 -v`}
+§ANTI{"time.sleep(3)"⇒wait_visible/wait_until/Retry.WhileNull;"by_class('Edit',index=2)"⇒by_id("usernameInput");"pixel coords(left==120)"⇒state/text(get_text,is_enabled);"scope='session' app"⇒scope='function'(∨class);"self-hosted Win Service"⇒interactive_user_session}
+§CMD{flaui:`dotnet test --project tests/MyApp.E2E/MyApp.E2E.csproj`;all:`pytest tests/ -v`;smoke:`pytest tests/ -m smoke -v`;file:`pytest tests/test_login.py -v`;env:`APP_PATH="C:\build\Release\MyApp.exe" APP_TITLE="MyApp" pytest tests/ -v`;flake:`pip install pytest-repeat && pytest tests/test_login.py --count=5 -v`}
 §REL{../../unit-testing-patterns/references/playwright.md:"web E2E";../../cpp/references/cpp-testing.md:"C++ GoogleTest";../../cpp/SKILL.md:"C++ style"}

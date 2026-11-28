@@ -1,5 +1,5 @@
 @REF:threejs-loaders
-§META{ver:"three.js r186",def_renderer:WebGLRenderer,webgpu_sec:WebGPURenderer}
+§META{ver:"three.js r187",def_renderer:WebGLRenderer,webgpu_sec:WebGPURenderer}
 
 §PAT{quick_start}
 ```js

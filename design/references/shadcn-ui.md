@@ -1,8 +1,8 @@
 @REF:shadcn-ui
-§CFG{CLI:shadcn_v3;S∈{`npx shadcn@latest`,`pnpm dlx shadcn@latest`,`bunx --bun shadcn@latest`}←`packageManager`;use:{add,style/compose/debug,init/switch_presets,docs/examples/API}}
+§CFG{CLI:shadcn_v4(4.23+);S∈{`npx shadcn@latest`,`pnpm dlx shadcn@latest`,`bunx --bun shadcn@latest`}←`packageManager`;use:{add,style/compose/debug,init/switch_presets,shadcn/skills,docs/examples/API};reg_types:{`registry:ui`,`registry:base`,`registry:font`}}
 
 §CMD{INFO
-  `$S info --json`→{`aliases`:use_prefix(`@/`, `~/`,¬hardcode);`isRSC`:true⇒`"use client"`_if(`useState`,`useEffect`,events,browser_API);`tailwindVersion`:`"v4"`⇒`@theme inline`|`"v3"`⇒`npx @tailwindcss/upgrade`_1st;`tailwindCssFile`:edit_in_place(¬new);`style`:e.g.`nova`,`vega`;`base`:`radix`∨`base`(BaseUI_1.0)⇒API/props;`iconLibrary`:`lucide`→`lucide-react`,`tabler`→`@tabler/icons-react`,etc.(¬assume);`resolvedPaths`:dest(ui,utils,hooks);`framework`:Next_AppRouter|Vite_SPA;`packageManager`:non-shadcn_deps}
+  `$S info --json`→{`aliases`:use_prefix(`@/`, `~/`,¬hardcode);`isRSC`:true⇒`"use client"`_if(`useState`,`useEffect`,events,browser_API);`tailwindVersion`:`"v4"`⇒`@theme inline`|`"v3"`⇒`npx @tailwindcss/upgrade`_1st;`tailwindCssFile`:edit_in_place(¬new);`style`:e.g.`nova`,`vega`;`base`:`radix`∨`base`(@base-ui/react_1.x)⇒API/props;`iconLibrary`:`lucide`→`lucide-react`,`tabler`→`@tabler/icons-react`,etc.(¬assume);`resolvedPaths`:dest(ui,utils,hooks);`framework`:Next_AppRouter|Vite_SPA;`packageManager`:non-shadcn_deps}
 }
 
 §R{CRITICAL

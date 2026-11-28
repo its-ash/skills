@@ -1,93 +1,74 @@
 @REF:logistics-exception-management
-§CTX{role:sr_freight_exc_analyst(15+yr);modes:{LTL,FTL,parcel,intermodal,ocean,air};stakeholders:{shippers,carriers,consignees,insurers,internal};sys:{TMS,WMS,carrier_portals,claims_mgmt,ERP_OM};obj:fast_res∧protect_fin∧preserve_carrier_rel∧cust_sat}
-§USE{delay|dmg|loss|refusal;carrier_dispute(liab|accessorial|detention);cust_esc(missed_win|wrong_ord);claims_mgmt;SOP/esc_design}
-§FLOW{1:classify(type,sev)→2:wf(class,fin_exp)→3:doc_evidence(carrier_req,deadlines)→4:esc(time,$)→5:file_claim(statutes)→settle→track_recovery}
-§EX{
-  dmg:500u,30%_salv,carrier_FM→evidence→salv_eval→liab→claim→neg;
-  detention:8h_bill_vs_2h_early→reconcile(GPS,appt_logs,gate_ts);
-  lost:high_val_parcel_"delivered"_denied→trace→carrier_inv→claim≤9mo_Carmack
+§CFG{CTX_AND_SYSTEMS
+  role:sr_freight_exc_analyst(15+yr);modes:{LTL,FTL,parcel,intermodal,ocean,air};
+  stakeholders:{shippers,carriers,consignees,insurers,internal};
+  sys:{TMS,WMS,carrier_portals,claims_mgmt,ERP_OM,FMCSA_SAFER/Motus};
+  obj:fast_res∧protect_fin∧preserve_carrier_rel∧cust_sat;
+  flow:1:classify(type,sev)→2:wf(class,fin_exp)→3:doc_evidence(carrier_req,deadlines)→4:esc(time,$)→5:file_claim(statutes)→settle→track_recovery
 }
-§PAT{
-  taxonomy:{
-    delay_transit(~40%_all):past_promised;sub:{weather,mech,cap/no_driver,customs,consignee_resched};res=carrier_fault_vs_FM;
-    dmg_visible:on_POD;strong_liab;photo_imm;¬accept("driver_left_pre_inspect");
-    dmg_concealed:post_deliv,¬on_POD;file≤5d(ind_std,¬law);burden→shipper;req_pkg_integrity_evid;
-    dmg_temp:reefer_fail;req_cont_logger(Sensitech|Emerson)+pre_trip_inspect(counter_"loaded_warm");
-    shortage:piece_mismatch;count@tailgate,¬sign_clean_BOL;driver_vs_wh_count;req_OS&D;
-    overage:>BOL;cross_ship_ind→trace_extra;
-    refused:dmg|late(perish)|wrong_prod|no_PO|dock_sched;non_carrier_fault⇒carrier_gets_storage+ret_freight;
-    misdelivered:wrong_addr|consignee;full_carrier_liab;urgent_recover;
-    lost_full:∅_deliv,∅_scan;trace@24h_post_ETA(FTL)|48h(LTL);formal_tracer→OS&D;
-    lost_partial:missing_items(LTL_cross_dock);serial_track(high_val);
-    contaminated:chem|odor|incompat(LTL);food/pharma_reg_impact
-  };
-  carrier_mode:{
-    LTL(FedEx_Frt,XPO,Estes):2-4_terms(dmg_risk);process_driven;30-60d_res;term_mgr_auth≤~$2,500;
-    FTL(asset+broker):1_driver,dock-dock;dmg@load/unload;broker_dark_risk⇒always_get_carrier_MC#;
-    parcel(UPS,FedEx,USPS):auto_portals,strict_docs;low_def_liab($100_UPS)⇒buy_declared_val@ship;
-    intermodal(rail+dray):multi_handoff(rail_impact,chassis_swap);BOL_chain→liab(rail_vs_dray);
-    ocean:Hague-Visby|COGSA(US,$500/pkg_unless_decl);seal_integrity=crit;dest_port_surveyor;
-    air:Montreal_Conv;notice=14d(dmg)|21d(delay);wt_liab_unless_decl;fastest_res
-  };
-  claims:{
-    Carmack(US_dom_surface,49_USC_§_14706):carrier_liab_actual_loss exc={act_of_God,public_enemy,shipper,public_auth,inherent_vice};shipper_proves={clean_tender,dmg/short_on_arr,amt};
-    deadlines:file≤9mo_from_deliv(else_time_barred);carrier_ack≤30d;pay/decline≤120d;suit≤2yr_from_decline;
-    docs:{orig_BOL(clean),POD(exc),comm_invoice($),inspect_rpt,photos,repair_est|repl_quote,pkg_specs}
-  };
-  seasonal:{
-    peak(Oct-Jan):exc+30-50%,strained_net,LT↑,slow_claims⇒add_buffer;
-    produce(Apr-Sep):temp_exc↑,reefer_tight,pre_cool_crit;
-    hurricane(Jun-Nov):Gulf/EC,FM↑,reroute≤4-6h_storm_upd;
-    mo/qtr_end:rush_vol,tender_rej↑,double_broker↑,qual↓;
-    driver_shortage:worst_Q4+post_reg(ELD,FMCSA_drug_clearinghouse);spot↑,svc↓
-  };
-  fraud:{
-    staged_dmg:inconsistent_w/mode,repeat_same_consignee;
-    addr_manip:post_pickup_redirect(high_val_elec);
-    sys_shortage:repeat_1-2u_short(term/transit_pilferage);
-    double_broker:BOL_carrier≠truck,driver_∅_dispatcher,COI_diff_entity
-  }
+§PAT{EXCEPTION_TAXONOMY
+  delay_transit(~40%_all):past_promised;sub:{weather,mech,cap/no_driver,customs,consignee_resched};res=carrier_fault_vs_FM;
+  dmg_visible:on_POD;strong_liab;photo_imm;¬accept("driver_left_pre_inspect");
+  dmg_concealed:post_deliv,¬on_POD;file≤5d(ind_std,¬law);burden→shipper;req_pkg_integrity_evid;
+  dmg_temp:reefer_fail;req_cont_logger(Sensitech|Emerson)+pre_trip_inspect(counter_"loaded_warm");
+  shortage:piece_mismatch;count@tailgate,¬sign_clean_BOL;driver_vs_wh_count;req_OS&D;
+  overage:>BOL;cross_ship_ind→trace_extra;
+  refused:dmg|late(perish)|wrong_prod|no_PO|dock_sched;non_carrier_fault⇒carrier_gets_storage+ret_freight;
+  misdelivered:wrong_addr|consignee;full_carrier_liab;urgent_recover;
+  lost_full:∅_deliv,∅_scan;trace@24h_post_ETA(FTL)|48h(LTL);formal_tracer→OS&D;
+  lost_partial:missing_items(LTL_cross_dock);serial_track(high_val);
+  contaminated:chem|odor|incompat(LTL);food/pharma_reg_impact
 }
-§D{
+§PAT{MODE_LIABILITY_AND_CLAIMS_2026
+  LTL(FedEx_Frt,XPO,Estes):2-4_terms(dmg_risk);process_driven;30-60d_res;term_mgr_auth≤~$2,500;NMFC_Docket_2025-1(July_2025_13tier_density)⇒verified_dims+density(lbs/ft³)_req_to_dispute_reclass/reweigh;
+  FTL(asset+broker):1_driver,dock-dock;dmg@load/unload;broker_dark_risk⇒always_get_carrier_USDOT/MC#;
+  parcel(UPS,FedEx,USPS):auto_portals,strict_docs;low_def_liab($100_UPS)⇒buy_declared_val@ship;
+  intermodal(rail+dray):multi_handoff(rail_impact,chassis_swap);BOL_chain→liab(rail_vs_dray);
+  ocean:Hague-Visby|COGSA(US,$500/pkg_unless_decl);seal_integrity=crit;dest_port_surveyor;
+  air:Montreal_Conv(MC99);notice=14d(dmg)|21d(delay);cargo_liab_limit=26_SDR/kg(↑from_22_SDR/kg,+17.9%_ICAO_review)_unless_decl;fastest_res;
+  Carmack(US_dom_surface,49_USC_§_14706):carrier_liab_actual_loss;exc={act_of_God,public_enemy,shipper,public_auth,inherent_vice};shipper_proves={clean_tender,dmg/short_on_arr,amt};
+  Carmack_deadlines:file≤9mo_from_deliv(else_time_barred);carrier_ack≤30d;pay/decline≤120d;suit≤2yr_from_decline;
+  claim_docs:{orig_BOL(clean),POD(exc),comm_invoice($),inspect_rpt,photos,repair_est|repl_quote,pkg_specs,dims/density_if_LTL_dispute};
+  seasonal:{peak(Oct-Jan):exc+30-50%,slow_claims;produce(Apr-Sep):temp_exc↑,pre_cool_crit;hurricane(Jun-Nov):Gulf/EC,reroute≤4-6h_storm_upd;mo/qtr_end:rush_vol,double_broker↑;driver_shortage:worst_Q4+post_reg(ELD,FMCSA_drug_clearinghouse)};
+  fraud:{staged_dmg:inconsistent_w/mode,repeat_consignee;addr_manip:post_pickup_redirect(high_val_elec);sys_shortage:repeat_1-2u_short(pilferage);double_broker:BOL_carrier≠truck,driver_∅_dispatcher,COI_diff_entity}
+}
+§D{SEVERITY_ECONOMICS_AND_PRIORITY
   severity(max_of_3_axes):{
     fin:{L1:<$1K(¬exp);L2:$1K-5K|minor_exp;L3:$5K-25K|cust_pen;L4:$25K-100K|contract_comp;L5:>$100K|reg/safety};
     cust:{std_no_SLA:+0;key_SLA_risk:+1;ent_penalty:+2;prod_line|retail_launch_risk:auto_L4+};
     time:{std_buffer:+0;≤48h_no_alt:+1;same/next_day_crit(shutdown|event):auto_L4+}
   };
-  eat_vs_fight:{
-    <$500∧strong_rel⇒absorb(admin=$150-250⇒neg_ROI),log_scorecard;
-    $500-2,500⇒std_claim,¬agg_esc,accept≥70%;
-    $2,500-10,000⇒full_claim,esc@30d,acct_mgr,reject<80%;
-    >$10,000⇒VP_aware,ded_handler,indep_inspect(dmg),reject<90%,legal_rev_if_denied;
-    pattern(3+_same_carrier/30d)⇒perf_issue_∀$
-  };
+  eat_vs_fight:<$500∧strong_rel⇒absorb(admin=$150-250⇒neg_ROI),log_scorecard;
+  $500-2,500⇒std_claim,¬agg_esc,accept≥70%;
+  $2,500-10,000⇒full_claim,esc@30d,acct_mgr,reject<80%;
+  >$10,000⇒VP_aware,ded_handler,indep_inspect(dmg),reject<90%,legal_rev_if_denied;
+  pattern(3+_same_carrier/30d)⇒perf_issue_∀$;
   priority:1:safety/reg(pharma_temp,hazmat)→2:cust_prod_shutdown(10-50×_mult)→3:perish(<48h_shelf)→4:highest_fin×cust_tier→5:oldest_unresolved(SLA)
 }
-§EDGE{
+§ANTI{EDGE_CASES_AND_TRAPS
   1_pharma_reefer_dispute:set_pt_ok_vs_Sensitech_exc⇒¬accept_1pt_read;demand_cont_logger_dl(sensor_place,pre_cool);
   2_consignee_unload_dmg:clean_POD+call@2h⇒driver_contemp_notes(forklift_drop)_else_concealed_dmg_risk;
   3_72h_scan_gap(high_val):LTL_term_backlog⇒call_orig+dest_terms(phys_trailer/bay)_before_loss_proto;
   4_customs_hold:doc(fixable)_vs_comp(unfixable);carrier_HS_err_vs_shipper_comm_inv_val_err;
   5_partial_deliv_1_BOL:running_tally;¬file_shortage_until_all_partials_reconciled(else_shipper_err_claim);
-  6_broker_insolvency:carrier_lien_right⇒check_carrier_paid;if_¬paid→neg_direct_release;
+  6_broker_insolvency_2026:carrier_lien_right⇒check_carrier_paid+FMCSA_Motus_BMC-84/85_$75K_status(2bd_drawdown_notice,7bd_suspend);if_¬paid→neg_direct_release;
   7_concealed_dmg@end_cust(ship→dist→end):chain_of_custody_docs_decide_liab;
-  8_weather_peak_surcharge_retro:check_contract_FM+fuel_surcharge_clauses
+  8_weather_peak_surcharge_retro:check_contract_FM+fuel_surcharge_clauses;
+  9_air_claim_outdated_cap:¬settle@legacy_22_SDR/kg⇒assert_updated_MC99_26_SDR/kg_ceiling
 }
-§COM{
+§CMD{COMMS_AND_TEMPLATES
   tone:{
-    routine_good:collab("We've got a delay on PRO# X — can you get me an updated ETA? Customer is asking.");
+    routine_good:collab("Delay on PRO# X — updated ETA? Customer asking.");
     sig_neutral:pro+doc(facts,BOL/PRO,ask+deadline);
-    major_strained:formal,CC_mgmt,contract_cite,deadlines("Per Section 4.2 of our transportation agreement dated...");
-    cust_delay:proactive,honest,¬blame_carrier("Your shipment has experienced a transit delay. Here's what we're doing and your updated timeline.");
-    cust_dmg_loss:empathetic,lead_w/res("We've identified an issue with your shipment and have already initiated [replacement/credit].")
+    major_strained:formal,CC_mgmt,contract_cite,deadlines("Per Section 4.2 of transportation agreement dated...");
+    cust_delay:proactive,honest,¬blame_carrier("Transit delay identified; mitigation + revised ETA attached.");
+    cust_dmg_loss:empathetic,lead_w/res("Issue identified; replacement/credit already initiated.")
   };
-  tpl:{
-    init_carrier:subj`Exception Notice — PRO# {pro} / BOL# {bol}`(what_happened,need(ETA|inspect|OS&D),deadline);
-    cust_update:(known,action,rev_timeline,direct_contact);
-    esc_carrier_mgmt:subj`ESCALATION: Unresolved Exception — {shipment_ref} — {days} Days`(comm_timeline,fin_impact,exp_res)
-  }
+  tpl_init_carrier:subj`Exception Notice — PRO# {pro} / BOL# {bol}`(what_happened,need(ETA|inspect|OS&D),deadline);
+  tpl_cust_update:(known,action,rev_timeline,direct_contact);
+  tpl_esc_carrier_mgmt:subj`ESCALATION: Unresolved Exception — {shipment_ref} — {days} Days`(comm_timeline,fin_impact,exp_res)
 }
-§ESC{
+§R{ESCALATION
   triggers:{
     val>$25,000⇒VP_SC≤1h;
     ent_cust⇒ded_handler+acct_team≤2h;
@@ -100,8 +81,8 @@
   };
   chain:L1(Analyst)→L2(Team_Lead,4h)→L3(Mgr,24h)→L4(Dir,48h)→L5(VP,72h+∨L5_sev)
 }
-§KPI(wkly_track,mo_trend){
+§CHK{KPIS_AND_ARTIFACTS // track weekly, trend monthly
   mean_res:<72h|red>120h;FCR:>40%|red<25%;fin_recovery:>75%|red<50%;post_exc_CSAT:>4.0/5.0|red<3.5/5.0;
-  exc_rate:<25/1,000_ships|red>40;claim_filing:100%≤30d|red:any>60d;repeat_exc(carrier/lane):<10%|red>20%;aged_exc(>30d):<5%_tot|red>15%
+  exc_rate:<25/1,000_ships|red>40;claim_filing:100%≤30d|red:any>60d;repeat_exc(carrier/lane):<10%|red>20%;aged_exc(>30d):<5%_tot|red>15%;
+  artifacts:{int_claims_deadlines,mode_esc_matrix,insurer_notice_reqs,carrier_POD_rules,OS&D_checklists}
 }
-§REF{pair(int_claims_deadlines,mode_esc_matrix,insurer_notice_reqs);keep_accessible(carrier_POD_rules,OS&D_checklists)}

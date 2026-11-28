@@ -17,9 +17,10 @@
     cmd:`claude -p`(headless+exit;`--output-format json`|`stream-json`for_parse);
     flow:`set -e`→impl(TDD,¬new_docs)→de-sloppify(cleanup_prev_commit,keep_biz_tests,run_suite)→verify(build+lint+type+test,fix,¬new_feat)→commit(conventional);
     rules:{fresh_ctx/call(¬bleed);seq_FS_handoff;¬neg_instr⇒sep_cleanup_pass(§5);`set -e`propagates_exit};
-    route:`--model opus`(Opus 5.5 arch/plan)|`--model sonnet`(Sonnet 5.5 impl)|`--model fable`(Fable 5.1 review,¬author_bias)|`--model haiku`(Haiku 5.5 fmt/test);
+    route:`--model claude-opus-5-5`(Opus 5.5 arch/plan)|`--model claude-sonnet-5-5`(Sonnet 5.5 impl)|`--model claude-fable-5-2`(Fable 5.2 review,¬author_bias)|`--model claude-haiku-5-5`(Haiku 5.5 fmt/test);
     ctx_file:write`.claude-context.md`→`claude -p`read→`rm .claude-context.md`;
-    tools:`--allowedTools "Read,Grep,Glob"`(ro_audit)|`"Read,Write,Edit,Bash"`(impl)
+    tools:`--allowedTools "Read,Grep,Glob"`(ro_audit)|`"Read,Write,Edit,Bash"`(impl);iso:`--worktree`(auto_git_wt)+sandbox(`--auto-allow-bash-if-sandboxed`|container)+`PreToolUse`hook(exit_2_blocks);
+    sdk_upgrade:shell_loop_outgrown⇒Claude_Agent_SDK(`@anthropic-ai/claude-agent-sdk`|`claude-agent-sdk`)¬brittle_bash_glue
   };
   2_PersistentREPL:{
     impl:`set -euo pipefail`;`SESSION_FILE="${HOME}/.claude/sessions/${1:-default}.md"`;loop:`read -r -p "> " msg`→append`## User`→`claude -p`w/_full_file→append`## Assistant`;
@@ -60,7 +61,7 @@
       medium:research→plan→impl→test→(PRD-review+code-review)→review-fix;
       large:research→plan→impl→test→(PRD-review+code-review)→review-fix→final-review
     };
-    stages_models:{Research:Sonnet5.5(ctx_doc);Plan:Opus5.5(steps);Implement:Sonnet5.5;Test:Haiku5.5(build+test_fail_sum);PRD_Review:Sonnet5.5(spec);Code_Review:Opus5.5(qual+sec);Review_Fix:Sonnet5.5;Final_Review:Fable5.1(large_only)};
+    stages_models:{Research:Sonnet5.5(ctx_doc);Plan:Opus5.5(steps);Implement:Sonnet5.5;Test:Haiku5.5(build+test_fail_sum);PRD_Review:Sonnet5.5(spec);Code_Review:Opus5.5(qual+sec);Review_Fix:Sonnet5.5;Final_Review:Fable5.2(`claude-fable-5-2`,large_only)};
     bias_rule:sep_process+ctx_window/stage;reviewer≠author;
     merge_queue:{
       overlap:non_overlapping⇒speculative_parallel_land;overlapping⇒1-by-1_rebase;

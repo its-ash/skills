@@ -1,15 +1,17 @@
 ---
 name: kotlin
-description: "AUTO_INVOKE(silent)⇔prompt∈{Kotlin,.kt,.kts,K2,Gradle_9,build.gradle.kts,KSP,jvmToolchain,detekt,ktlint,Kover,null_safety,sealed,coroutines,StateFlow,SharedFlow,Flow,Turbine,runTest,Ktor,Exposed,HikariCP,Flyway,Koin,Hilt,Kotest,MockK,Android,KMP,Room,SQLDelight,Jetpack_Compose,Compose_Multiplatform}|SUB:{kotlin-coroutines-flows,kotlin-testing,kotlin-ktor-patterns,kotlin-exposed-patterns,android-clean-architecture,compose-multiplatform-patterns}"
+description: "AUTO_INVOKE(silent)⇔prompt∈{Kotlin,.kt,.kts,K2,Gradle_9,AGP_9,build.gradle.kts,KSP2,jvmToolchain,detekt,ktlint,Kover,null_safety,sealed,context_params,backing_fields,coroutines,StateFlow,SharedFlow,Flow,Turbine,runTest,Ktor,Exposed,R2DBC,HikariCP,Flyway,Koin,Hilt,Kotest,MockK,Android,KMP,Room,SQLDelight,Jetpack_Compose,Compose_Multiplatform,Navigation_3}|SUB:{kotlin-idioms,kotlin-coroutines-flows,kotlin-testing,kotlin-ktor-patterns,kotlin-exposed-patterns,android-clean-architecture,compose-multiplatform-patterns}"
 ---
 @SKL:kotlin
 §R{
   types⇒non_nullable_def∧?.∧?:∧¬!!
   java_platform_types⇒treat_nullable@boundary
   immut⇒val∧readonly_colls∧data_class.copy()∧¬var∈data_class
-  single_expr_fn⇒expr_body∧when_expr
+  single_expr_fn⇒expr_body∧when_expr∧when_guards(is_T_if_cond)
   value_types⇒data_class∧typed_IDs(UserId,Email):@JvmInline_value_class(init{require(...)})
   closed_sets⇒sealed_class∨sealed_iface∧exhaustive_when∧¬else(sealed)
+  kotlin_2_4⇒K2_only(K1_removed)∧context_params(¬context_receivers)∧explicit_backing_fields∧unused_return_checker
+  stdlib_kmp⇒kotlin.time.{Instant,Clock}∧kotlin.uuid.Uuid(¬java.time/UUID∈commonMain)
   scope_fns⇒¬nest∧chain(user?.address?.city?.let{...})
   extensions⇒scoped(private∨class_member)⇔single_class_need
   concurrency⇒structured(coroutineScope,supervisorScope,viewModelScope)∧¬GlobalScope
@@ -18,13 +20,16 @@ description: "AUTO_INVOKE(silent)⇔prompt∈{Kotlin,.kt,.kts,K2,Gradle_9,build.
   expected_fail⇒T?∨Result<T>∧¬ex_for_ctrl_flow
   behavior_reuse⇒by_delegation(lazy,observable,iface_by)∧¬inheritance
   DSL_receivers⇒@DslMarker
-  build⇒Kotlin_2.4(K2)∧Gradle_9_kts∧version_catalog∧jvmToolchain∧detekt_2∧Kover∧KSP∧¬kapt
+  build⇒Kotlin_2.4.21(K2)∧Gradle_9_kts(config_cache)∧version_catalog∧jvmToolchain(21)∧dev.detekt(2.x)∧Kover_0.9.11∧KSP2∧¬kapt
 }
 §D{
   nullable_xform⇒x?.let{}¬(if(x!=null)_chains∨!!);
   cfg_new_obj⇒apply{}¬repeated(obj.);
   side_effect_keep_val⇒also{}¬temp_vars;
   compute_with_recv⇒run{}∨with(x){}¬nested_scope_fns;
+  readonly_vm_state⇒val_state:StateFlow<S>_field=MutableStateFlow(S())¬manual(_state+asStateFlow);
+  ambient_scope_dep⇒context(log:Logger)_fun_op()¬param_drilling∨deprecated_context_receivers;
+  when_extra_cond⇒is_T_if_cond->¬nested_if∈when;
   children_fail_alone⇒supervisorScope+per_child_try_catch¬coroutineScope(1_fail_cancels_all);
   parallel_indep_calls⇒coroutineScope{async{};async{}}¬seq_await_chains;
   suspend_in_finally⇒withContext(NonCancellable)¬plain_suspend(skipped_on_cancel);
@@ -32,15 +37,19 @@ description: "AUTO_INVOKE(silent)⇔prompt∈{Kotlin,.kt,.kts,K2,Gradle_9,build.
   index_or_group⇒associateBy∨groupBy∨partition¬manual(mutableMapOf_loops);
   domain_err_set⇒sealed_iface+exhaustive_when¬string_err_codes;
   expected_failure⇒T?∨runCatching→Result¬try/catch(normal_flow);
+  exposed_tx⇒suspendTransaction(exposed-r2dbc∨withContext(IO)_jdbc)¬deprecated_newSuspendedTransaction;
+  kmp_android_lib⇒com.android.kotlin.multiplatform.library(androidLibrary{})¬deprecated_androidTarget(AGP_9);
+  compose_nav⇒Navigation_3(NavKey+rememberNavBackStack+NavDisplay)¬opaque_NavController(new_apps);
+  android_sys_bars⇒enableEdgeToEdge()+WindowInsets¬deprecated_rememberSystemUiController;
 }
 §REF{
-  idioms,good/bad_ex,scope_fn_tbl,DSL_builders,delegation,build.gradle.kts_tpl+versions→references/kotlin-idioms.md;
-  coroutines,StateFlow,SharedFlow,Flow_ops,dispatchers,cancel,Turbine/runTest→references/kotlin-coroutines-flows.md;
-  Kotest,MockK,TDD,coroutine/Flow_tests,property_tests,Kover_gates→references/kotlin-testing.md;
-  Ktor_srv:routing,ContentNegotiation,JWT,StatusPages,CORS,Koin,WS,testApplication→references/kotlin-ktor-patterns.md;
-  Exposed_DSL/DAO,tx,HikariCP,Flyway,JSONB,pagination,H2_tests→references/kotlin-exposed-patterns.md;
-  Android/KMP:UseCases,repos,mappers,Room,SQLDelight,Koin/Hilt,conv_plugins→references/android-clean-architecture.md;
-  Compose/KMP:screen_state,nav,slots,recomposition,M3→references/compose-multiplatform-patterns.md;
+  idioms,Kotlin_2.4(context_params,backing_fields,when_guards,Instant,Uuid),DSL,delegation,Gradle_9+dev.detekt→references/kotlin-idioms.md;
+  coroutines,StateFlow,SharedFlow,Channel,Flow_ops,KMP_dispatchers,cancel,backgroundScope,Turbine→references/kotlin-coroutines-flows.md;
+  Kotest_6(io.kotest),MockK,TDD,coroutine/Flow_tests,property_tests,Testcontainers,Kover_0.9.11→references/kotlin-testing.md;
+  Ktor_3.6:routing,ContentNegotiation,JWT,RequestValidation,StatusPages,CORS,ktor-server-di,Koin,WS,testApplication→references/kotlin-ktor-patterns.md;
+  Exposed_1.6(v1):DSL/DAO,suspendTransaction,R2DBC,JDBC+HikariCP_7,Flyway_13,exposed-json(jsonb),pagination,H2/PG_tests→references/kotlin-exposed-patterns.md;
+  Android/KMP(AGP_9):UseCases,repos,mappers,Room_KMP,SQLDelight,Koin_4/Hilt+KSP2,androidLibrary_conv_plugins→references/android-clean-architecture.md;
+  Compose_1.12/KMP:backing_field_state,Navigation_3,slots,Strong_Skipping,enableEdgeToEdge,Hot_Reload,M3→references/compose-multiplatform-patterns.md;
 }
 §REL{
   ../java/SKILL.md:JVM_backends,SpringBoot,Quarkus,JPA;

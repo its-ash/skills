@@ -1,5 +1,5 @@
 @REF:threejs-asset-pipeline
-§META{target:three.js@r186;renderers:{WebGLRenderer(default),WebGPURenderer(WebGPU/TSL)}}
+§META{target:three.js@r187;renderers:{WebGLRenderer(default),WebGPURenderer(WebGPU/TSL)}}
 §CMD{inspect_validate:
   "npx @gltf-transform/cli inspect model.glb [--format csv]";//overview(generator,extensionsUsed,extensionsRequired)+scenes/meshes/materials/textures/animations tables;writing cmds log in/out bytes
   "npx @gltf-transform/cli validate model.glb --ignore ACCESSOR_WEIGHTS_NON_NORMALIZED";//official validator;nonzero exit on error(CI gate)

@@ -1,6 +1,6 @@
 ---
 name: design
-description: "AUTO_INVOKE(silent)⇔prompt∈{UI,design_system,frontend,a11y,WCAG2.2,typography,layout,motion,CSS,oklch,light-dark,@theme,Tailwind_4.3,shadcn/ui,Fluent,Material_M3,Carbon,Radix,Base_UI,Three.js,R3F,GSAP,Figma,Motion_Canvas,motion/react,HTML_slides,dialog,popover,CSS_anchor,@container,View_Transitions,:has(),:user-invalid,bento,glassmorphism,landing,dashboard,hero,mobile_UI,tokens}|SUB:{immersive-web,figma,mobile-design,brand-theming,motion-canvas,visual-design-direction,design-system,make-interfaces-feel-better,motion-react,html-slides,shadcn-ui,tailwind-css,threejs,gsap}"
+description: "AUTO_INVOKE(silent)⇔prompt∈{UI,design_system,a11y,WCAG2.2,typography,layout,motion,CSS,oklch,light-dark,@theme,Tailwind_v4,shadcn/ui,Fluent,Material,Carbon,Radix,Base_UI,Three.js,R3F,WebGPU,TSL,GSAP,Figma,Motion_Canvas,motion/react,slides,dialog,popover,anchor,@container,ViewTransitions,:has(),:user-invalid,field-sizing,bento,glassmorphism,landing,dashboard,hero,mobile,DTCG,tokens}|SUB:{component-library,immersive-web,figma,mobile-design,brand-theming,motion-canvas,visual-design-direction,design-system,make-interfaces-feel-better,motion-react,html-slides,shadcn-ui,tailwind-css,threejs,gsap}"
 ---
 @SKL:design
 §R{
@@ -15,7 +15,8 @@ description: "AUTO_INVOKE(silent)⇔prompt∈{UI,design_system,frontend,a11y,WCA
   forms(§4.6,§7)⇒filled_accent(checkbox,radio,pill_switch);labels>inputs;inline(:user-invalid);dynamic_nums⇒tabular-nums;
   badges/status(§7)⇒soft_tonal_fill(color-mix+hi_contrast_text+hairline)¬loud_solid∨decor_pulse_dot;
   web_native_first(§7,§25)⇒<dialog>(showModal(),closedby),popover,CSS_anchor,<details name>,:has(),@container,appearance:base-select,field-sizing:content,ViewTransitions¬div_modals∨JS_positioned_tooltips;
-  a11y(WCAG2.2_AA)(§4.5,§9)⇒pass_contrast(CTA,input,placeholder,focus_ring,badge,helper,err);target≥24px(touch≥44px);:focus-visible_never_obscured_by_sticky_chrome;
+  a11y(WCAG2.2_AA)(§4.5,§9)⇒semantic_HTML_1st;¬color_alone;pass_contrast(CTA,input,placeholder,focus_ring,badge,helper,err);target≥24px(desk≥36px_h,touch≥44px,gap≥8px);:focus-visible_never_obscured_by_sticky_chrome;
+  ux_states(§4.5)⇒prog_disclosure+max_1_primary_CTA/(vp∨card);∀interactive⇒7_states(def,hov,focus-vis,act,dis,load_no_CLS,err@aria-describedby);real_edge_cases(empty,trunc,0/big_nums,net_fail);
   layout/hero(§4.5,§4.7-4.9)⇒desktop_CTA_1_line(1_label/intent);hero∈viewport(min-h-dvh);explicit_mobile_collapse;real_content/imgs¬fake_div_screenshots;
   motion(§5,§6,§9)⇒1_sent_justification/anim;props∈{transform,opacity,clip-path};¬ease-in;UI_trans<300ms(exit<enter)+@starting-style;reduced_motion⇒cross_fade(¬rm_all_feedback);
   zero_scroll_jank(§8,§12)⇒CSS_scroll_driven∨IntersectionObserver∨motion_vals¬scroll_listeners∨scrollY_in_React_state∨rAF_on_React_state;
@@ -26,11 +27,11 @@ description: "AUTO_INVOKE(silent)⇔prompt∈{UI,design_system,frontend,a11y,WCA
 §D{
   dials(§1,§11;VAR[1:sym..10:chaos],MOT[1:stat..10:cine],DEN[1:airy..10:cockpit],base=8/6/4):min/editorial/Linear⇒5-6/3-4/2-3;prem_consumer/luxury⇒7/6/3;playful/Awwwards/agency⇒9-10/8-10/3;SaaS_landing⇒7/6/4;portfolio(des/dev)⇒8/7/3|6/5/4;editorial/blog⇒6/4/3;dash/prod_UI⇒4-5/4-5/6-8;trust_first/public_sector⇒3/2/5;redesign(preserve/overhaul)⇒=/+1/=|+2/+2/=;
   sys(§2):MS/enterprise⇒@fluentui/react-components¬custom_Fluent_lookalike;
-  sys(§2):Material⇒@material/web+M3_Expressive_tokens¬hand_rolled_M3_CSS;
+  sys(§2):Material⇒@material/web(M3_baseline,maint_mode;¬M3_Expressive_web)∨MUI_M3_tokens¬hand_rolled_M3_CSS;
   sys(§2):IBM_B2B⇒@carbon/react¬mix_2nd_sys;
   sys(§2):Shopify/Atlassian/GitHub⇒Polaris/@atlaskit/*/@primer/*¬copy_CSS;
   sys(§2):UK/US_public_sector⇒govuk-frontend/uswds¬custom_aesthetics;
-  sys(§2):a11y_React_base/own⇒Base_UI_1.0/@radix-ui/themes/shadcn_ui(CLI_3)¬default_unstyled_shadcn(§10);
+  sys(§2):a11y_React_base/own⇒@base-ui/react_1.x/@radix-ui/themes/shadcn_ui(CLI_4)¬default_unstyled_shadcn(§10);
   sys(§2):Tailwind_SaaS⇒Tailwind_4.3_CSS_first_@theme+light-dark()_tokens¬tailwind.config.js∨runtime_CSSinJS∨dark:_per_class;
   sys(§2):no_lib(aesthetic)⇒tonal_min∨bento∨glassmorphism(backdrop-filter+layered_borders+prefers-reduced-transparency_fallback)∨brutalism∨editorial∨dark_tech∨mesh_gradients∨kinetic_type¬claim_web_LiquidGlass_real(label_approx);
 }
@@ -40,6 +41,7 @@ description: "AUTO_INVOKE(silent)⇔prompt∈{UI,design_system,frontend,a11y,WCA
   §10_anti_slop,§21_preflight_chk→references/preflight.md;
   §25_CSS_rules,CSS_dec_guide,topic_files,CSS_preflight→references/css-implementation.md;
   §26_tokens_theming,extract_tokens,10dim_audit,AI_slop_chk→references/design-system.md;
+  comp_anatomy(layout,nav,btns,forms,tables,feedback,overlays),7_states,UX_core→references/component-library.md;
   iOS,Android,touch,React_Native,Flutter_layouts→references/mobile-design.md;
   brand_colors,type,identity(web,decks,docs)→references/brand-theming.md;
   Figma_node→code(1:1_parity)→references/figma.md;
@@ -47,12 +49,12 @@ description: "AUTO_INVOKE(silent)⇔prompt∈{UI,design_system,frontend,a11y,WCA
   Motion_Canvas_scenes,video_export→references/motion-canvas.md;
   opinionated_vis_dir,prod_UI_evidence_contract→references/visual-design-direction.md;
   polish(concentric_radius,optical_align,tabular_nums,hit_areas)→references/make-interfaces-feel-better.md;
-  motion/react_code_patterns→references/motion-react.md;
+  motion/react_v14+_code_patterns→references/motion-react.md;
   HTML_slide_decks,PPTX→HTML→references/html-slides.md;
-  shadcn/ui_comps,registries,CLI→references/shadcn-ui.md;
+  shadcn/ui_CLI_v4,presets,registries→references/shadcn-ui.md;
   Tailwind_4.3_setup,CSS_first_@theme,light-dark()_theming→references/tailwind-css.md;
-  Three.js_r186+_API,shaders/TSL,R3F_9→references/threejs.md;
-  GSAP_API,timelines,ScrollTrigger,useGSAP→references/gsap.md;
+  Three.js_r187+_API,WebGPU/TSL,R3F_9→references/threejs.md;
+  GSAP_3.15+_API,timelines,ScrollTrigger,useGSAP→references/gsap.md;
 }
 §REL{
   ../frontend-development/SKILL.md:React,Next.js,TS,MUI,TanStack;

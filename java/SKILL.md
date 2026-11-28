@@ -1,13 +1,13 @@
 ---
 name: java
-description: "AUTO_INVOKE(silent)⇔prompt∈{Java,Java21+,Java25,.java,pom.xml,build.gradle,Spring_Boot_4,Framework_7,Spring_Security,Quarkus_3,quarkus-rest,CDI,Mutiny,JPA,Hibernate_7,Panache_2,MyBatis,Camel,RabbitMQ,JUnit,AssertJ,Mockito,MockMvc,REST_Assured,Testcontainers,JaCoCo,GraalVM_native,N+1,HikariCP,Bucket4j,tinystruct,Optional,records,virtual_threads}|SUB:{springboot-patterns,springboot-security,springboot-testing,quarkus-patterns,quarkus-security,quarkus-testing,jpa-patterns,mybatis-patterns,tinystruct-patterns}"
+description: "AUTO_INVOKE(silent)⇔prompt∈{Java,Java21+,Java25,Java27,.java,pom.xml,build.gradle,Spring_Boot_4,Framework_7,Spring_Security_7,Quarkus_4,Quarkus_3_LTS,quarkus-rest,CDI,Mutiny,JPA,Hibernate_7,Hibernate_8,Panache_2,Jakarta_Data,MyBatis,Camel,RabbitMQ,JUnit_6,AssertJ,Mockito,RestTestClient,MockMvc,REST_Assured,Testcontainers_2,JaCoCo,GraalVM_native,JSpecify,Jackson_3,HikariCP,Bucket4j,tinystruct,records,virtual_threads}|SUB:{java-standards,springboot-patterns,springboot-security,springboot-testing,quarkus-patterns,quarkus-security,quarkus-testing,jpa-patterns,mybatis-patterns,tinystruct-patterns}"
 ---
 @SKL:java
 §R{
   detect_fw(build_file)⇒('quarkus'→[Q])⊕('spring-boot'→[S])⊕(∅→shared_only)
-  target≥Java21(25_LTS_cur)⇒records∧sealed_iface∧switch_patterns∧var∧text_blocks∧virtual_threads(IO_bound)
-  [S]Spring_Boot_4(Framework_7)⇒jakarta.*∧Jackson_3(tools.jackson)∧RestClient∧SecurityFilterChain∧JSpecify(@NullMarked)∧Boot_3.5=last_3.x
-  [Q]Quarkus_3_LTS(≥3.27)⇒jakarta.*∧quarkus-rest∧Hibernate_ORM_7(Panache_2)∧Mutiny_2
+  target≥Java21(25_LTS_rec,27_cur)⇒records∧sealed_iface∧switch_patterns∧var∧unnamed(_)∧flex_ctors∧virtual_threads(IO_bound)∧structured_concurrency
+  [S]Spring_Boot_4(4.2.x;Framework_7,Security_7,JakartaEE_11)⇒modular_starters∧Jackson_3(tools.jackson)∧RestClient/@ImportHttpServices∧native_API_ver∧JSpecify(@NullMarked)∧core_resilience(@Retryable,@ConcurrencyLimit)∧RFC9457_ProblemDetail∧Boot_3.5=last_3.x
+  [Q]Quarkus_4.0(Java21+,Vertx_5,Hibernate_8,Jackson_3,Quarkus_Data/Panache_2,HTTP/3)∨Quarkus_3_LTS(3.40/3.33;Hibernate_7)⇒jakarta.*∧quarkus-rest∧Mutiny_2∧@RunOnVirtualThread
   domain_types⇒record∧final_fields∧min_shared_mutable_state∧¬setters(except:Panache_entity)
   naming⇒PascalCase(types)∧camelCase(members)∧UPPER_SNAKE(consts)∧[S]:*Controller∧[Q]:*Resource
   find*⇒return_Optional∧(map∨orElseThrow)∧¬bare_get()
@@ -16,40 +16,44 @@ description: "AUTO_INVOKE(silent)⇔prompt∈{Java,Java21+,Java25,.java,pom.xml,
   errors⇒throw_unchecked_domain_ex(MarketNotFoundException)∧wrap_tech_ex(ctx)∧1_central_handler
   catch(Exception)⇒only(log∨rethrow_central)∧¬silent_catch
   generics⇒bounded_generics(reusable_utils)∧¬raw_types
-  validation⇒Bean_Validation(@NotNull,@NotBlank,@Valid)∧@Nullable_only_if_unavoidable
+  validation⇒Bean_Validation(@NotNull,@NotBlank,@Valid)∧JSpecify(@NullMarked,@Nullable_only_if_unavoidable)
   typed_cfg⇒[S]:@ConfigurationProperties(record)∧[Q]:@ConfigMapping(interface)
   log⇒structured_kv('fetch_market slug={}')∧[S]:SLF4J∧[Q]:JBoss_Logging
   file_layout⇒1_public_top_type/file∧order:(consts,fields,ctors,public,protected,private)
-  tests⇒JUnit_5/6∧AssertJ_3.27∧Mockito_5∧¬partial_mocks∧¬sleep∧deterministic
+  tests⇒JUnit_6(6.0.x)∧AssertJ≥3.27.7(CVE-2026-24400)∧Mockito_5∧JaCoCo_0.8.16∧Testcontainers_2∧¬partial_mocks∧¬sleep∧deterministic
   [Q]native_safety⇒build_time_proc∧¬runtime_reflection
 }
 §D{
   [Q]CDI_service_scope⇒@ApplicationScoped¬@Singleton(if_interception∨lazy_init:non_proxyable);
   [Q]field_inject⇒pkg_private(@Inject)¬private(@Inject);
   [Q]reactive_ep⇒Uni∨Multi∧.chain()¬blocking_in_pipeline;
+  [Q]blocking_IO_ep⇒@RunOnVirtualThread¬block_event_loop;
   [Q]shared_Uni_2x⇒Uni.memoize()¬subscribe_2x;
   [Q]REST_stack⇒1_stack:quarkus-rest(ex_RESTEasy_Reactive)¬mix(quarkus-rest,quarkus-resteasy);
-  [Q]Panache_style⇒1/bounded_ctx:(active_record⊕repo)¬both_in_1_ctx;
-  central_err_map⇒[S]:@RestControllerAdvice∧[Q]:(@ServerExceptionMapper∨ExceptionMapper)¬per_method_try_catch→HTTP;
+  [Q]HTTP_filters⇒@ServerRequestFilter/@ServerResponseFilter(RestResponse)¬HttpServletRequest;
+  [Q]Panache_style⇒1/bounded_ctx:(active_record⊕repo⊕Quarkus_Data)¬mix_in_1_ctx;
+  [S]resilience⇒Framework7_@Retryable/@ConcurrencyLimit¬hand_rolled_sleep_loops;
+  [S]rate_limit⇒Bucket4j_Bandwidth.builder()¬deprecated_Bandwidth.classic();
+  central_err_map⇒[S]:@RestControllerAdvice(ProblemDetail_RFC9457)∧[Q]:(@ServerExceptionMapper∨ExceptionMapper)¬per_method_try_catch→HTTP;
   many_params⇒DTO∨builder¬long_param_lists;
   shared_state⇒DI¬static_mutable_fields;
-  test_unit⇒[S]:JUnit_5/6+Mockito∧[Q]:JUnit_5/6+Mockito¬@QuarkusTest;
-  test_web_ctrl⇒[S]:@WebMvcTest+@MockitoBean(Boot4_rm_@MockBean)∧[Q]:@QuarkusTest+@InjectMock+REST_Assured;
-  test_repo⇒[S]:@DataJpaTest∧[Q]:@QuarkusTest+Dev_Services;
-  test_integ⇒[S]:@SpringBootTest∧[Q]:@QuarkusTest(@WithTestResource_custom);
-  test_DB_Kafka_Redis⇒[S]:Testcontainers+@ServiceConnection∧[Q]:Dev_Services>manual_Testcontainers;
+  test_unit⇒[S]:JUnit_6+Mockito∧[Q]:JUnit_6+Mockito¬@QuarkusTest;
+  test_web_ctrl⇒[S]:@WebMvcTest(spring-boot-starter-webmvc-test)+RestTestClient/MockMvc+@MockitoBean(Boot4_rm_@MockBean)∧[Q]:@QuarkusTest(quarkus-junit)+@InjectMock(quarkus-junit-mockito)+REST_Assured;
+  test_repo⇒[S]:@DataJpaTest(spring-boot-starter-data-jpa-test)∧[Q]:@QuarkusTest+Dev_Services;
+  test_integ⇒[S]:@SpringBootTest+RestTestClient¬TestRestTemplate∧[Q]:@QuarkusTest(@WithTestResource_custom);
+  test_DB_Kafka_Redis⇒[S]:Testcontainers_2+@ServiceConnection∧[Q]:Dev_Services>manual_Testcontainers;
 }
 §REF{
-  ex:naming,DI,Mutiny,ex_mappers,layout,log,cfg,tests→references/java-standards.md;
-  SpringBoot:ctrl,svc,cache,async,pagination,Bucket4j→references/springboot-patterns.md;
-  SpringSecurity,JWT_filters,@PreAuthorize,CORS,CSRF→references/springboot-security.md;
-  SpringBoot_TDD,MockMvc,Testcontainers,JaCoCo,verify_loop→references/springboot-testing.md;
-  Quarkus:resources,CDI,Panache,Camel+RabbitMQ,health→references/quarkus-patterns.md;
-  Quarkus:JWT/OIDC,@RolesAllowed,Vault,headers,audit_logs→references/quarkus-security.md;
-  Quarkus_TDD,REST_Assured,Camel_AdviceWith,native_build,k6→references/quarkus-testing.md;
-  JPA/Hibernate:entities,N+1,projections,tx,HikariCP→references/jpa-patterns.md;
-  MyBatis:mappers,#{}vs${},dyn_SQL,keyset_pagination→references/mybatis-patterns.md;
-  tinystruct:@Action,dispatcher,CLI/HTTP,SSE,MCP_tools→references/tinystruct-patterns.md;
+  ex:Java25,naming,DI,Mutiny,ex_mappers,layout,log,cfg,tests→references/java-standards.md;
+  SpringBoot4:ctrl,RestClient,resilience,cache,async,Bucket4j,OTel→references/springboot-patterns.md;
+  SpringSecurity7:JWT/OIDC,Passkeys,@PreAuthorize,CORS,CSRF→references/springboot-security.md;
+  SpringBoot4_TDD:RestTestClient,@MockitoBean,Testcontainers2,JaCoCo→references/springboot-testing.md;
+  Quarkus4/3LTS:resources,CDI,Panache2,Camel+RabbitMQ,health→references/quarkus-patterns.md;
+  Quarkus:JWT/OIDC,@RolesAllowed,@ServerRequestFilter,Vault,audit→references/quarkus-security.md;
+  Quarkus_TDD:quarkus-junit,REST_Assured,Camel_AdviceWith,native,k6→references/quarkus-testing.md;
+  JPA/Hibernate7/8:entities,N+1,projections,tx,HikariCP,Flyway13→references/jpa-patterns.md;
+  MyBatis3.6/Boot4:mappers,#{}vs${},dyn_SQL,keyset_pagination→references/mybatis-patterns.md;
+  tinystruct1.7.39:@Action,dispatcher,CLI/HTTP,SSE,MCP_tools→references/tinystruct-patterns.md;
 }
 §REL{
   ../backend-development/SKILL.md:API_design,resilience,o11y;

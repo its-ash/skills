@@ -1,46 +1,50 @@
 ---
 name: python
-description: "AUTO_INVOKE(silent)⇔prompt∈{Python,3.12+,.py,pyproject.toml,uv,uv.lock,ruff,mypy,pytest,pytest-asyncio,hypothesis,asyncio,asyncio.gather,Semaphore,ProcessPoolExecutor,FastAPI,Django,Flask,Celery,Pydantic,SQLAlchemy,httpx,asyncpg,cProfile,py-spy,pytest-benchmark,lru_cache,NumPy,Pandas,Nuitka,Dockerfile,async_vs_sync}|SUB:{python-patterns,python-testing,windows-installer}"
+description: "AUTO_INVOKE(silent)⇔prompt∈{Python,3.12+,3.14,3.15,.py,pyproject.toml,uv,uv.lock,uv_build,PEP_735,ruff,ty,pyrefly,basedpyright,mypy,pytest,pytest-asyncio,subtests,hypothesis,asyncio,TaskGroup,Semaphore,ProcessPoolExecutor,free-threading,t-strings,lazy_import,FastAPI,Django,Flask,Celery,Pydantic,SQLAlchemy,httpx,asyncpg,memray,scalene,py-spy,Tachyon,pytest-benchmark,Polars,NumPy,Pandas,Nuitka,Dockerfile,pip-audit,async_vs_sync}|SUB:{project-setup,python-patterns,python-testing,windows-installer}"
 ---
 @SKL:python
 §R{
-  Python≥3.12;env+deps:uv∧commit(uv.lock);
-  single_pyproject.toml:{proj,ruff,mypy(strict)}∧run∈{pre-commit,CI};
-  type_hint(∀{public_fn,class,API_model});
-  validate({reqs,settings})via(Pydantic);
+  Python≥3.12(active:3.14,latest:3.15;3.9/3.10_EOL);env+deps+py_ver:uv(sync/run)∧commit(uv.lock)∧PEP_735([dependency-groups]);
+  single_pyproject.toml:{[project],[dependency-groups],[tool.ruff],[tool.pytest],type_checker}∧CI+pre-commit;
+  lint+fmt+sec_rules:ruff(check+format+S)¬{black,isort,flake8,pylint,bandit};types:ty⊕pyrefly⊕basedpyright⊕mypy_2.x(strict);
+  type_hint(∀{public_fn,class,API_model})∧PEP_695(type_alias,def_fn[T])∧py≥3.14_deferred_ann(PEP_649);
+  validate({reqs,settings})via(Pydantic_v2);
   business_logic∈services/∧∉{routes,views};
   DI({DB_sessions,auth,config})via(FastAPI_Depends,yield_deps);
-  err_model:base(AppError)+subclasses∧handlers→JSON_err_obj;
-  close_async_res via(async_with∨yield_deps);
-  ¬blocking_libs(requests,sync_DB_drivers)∈async_def⇒use(httpx/asyncpg∨run_in_executor);
-  profile_before_opt:{cProfile:hotspots,py-spy:low_overhead_sampling,pytest-benchmark:micro_bench};
-  cache(pure_repeated_calls)via(functools.lru_cache);
-  ¬ORM_N+1⇒Django(select_related/prefetch_related)∨SQLAlchemy(eager_load);
-  large_data⇒vectorized(NumPy/Pandas)∧¬Python_loops;
-  tests:pytest+pytest-asyncio+hypothesis(edge_cases)∧core_cov>90%;
-  containerize:multi_stage_Dockerfile;
+  err_model:base(AppError)+subclasses∧chain(raise_from_e)∧handlers→JSON_err_obj(¬leak_internals);
+  close_async_res via(async_with∨yield_deps)∧structured_conc(asyncio.TaskGroup,asyncio.timeout);
+  ¬blocking_libs(requests,sync_DB_drivers)∈async_def⇒use(httpx/asyncpg/SQLAlchemy[asyncio]∨asyncio.to_thread);
+  profile_before_opt:{py≥3.15:profiling.sampling(Tachyon),py-spy,cProfile,memray/scalene(mem),pytest-benchmark}∧cache(lru_cache/cache);
+  ¬ORM_N+1⇒Django(select_related/prefetch_related)∨SQLAlchemy_2.1(selectinload/joinedload);
+  large_data⇒Polars_2.x(default_streaming)∨vectorized(NumPy/Pandas_3.x_CoW)∧¬Python_loops;
+  tests:pytest_9(strict,native_subtests,[tool.pytest])+pytest-asyncio_1.x(asyncio_default_fixture_loop_scope)+hypothesis∧core_cov>90%;
+  supply_chain+deploy:pip-audit∧multi_stage_Dockerfile(ghcr.io/astral-sh/uv,UV_COMPILE_BYTECODE=1,uv_sync_--frozen_--no-dev,non_root);
 }
 §D{
   pick_framework⇒ask({admin_needs,team_async_skill,curr_infra})_first¬guess;
-  API_first∨microservice∨ML_serving⇒FastAPI(async,Pydantic)¬Django_for_thin_API;
-  full_stack_web∨CMS∨admin_req⇒Django¬hand_rolled_admin_on_FastAPI;
+  API_first∨microservice∨ML_serving⇒FastAPI(async,Pydantic_v2)¬Django_for_thin_API;
+  full_stack_web∨CMS∨admin_req⇒Django_6.x(native_Tasks,CSP)¬hand_rolled_admin_on_FastAPI;
   small_script∨learning_proj⇒Flask∨plain_script¬heavy_fw;
-  dist_bg_jobs⇒Celery+any_fw¬threads_in_web_proc;
-  IO_bound(HTTP,DB,files,WS)⇒async+asyncio.gather+cap(asyncio.Semaphore)¬seq_awaits_in_loop;
-  CPU_bound⇒ProcessPoolExecutor/multiprocessing+sync¬async_for_CPU_loops;
-  only_blocking_libs⇒sync∨run_in_executor¬blocking_call_in_async_def;
+  dist_bg_jobs⇒Celery∨Django_6_Tasks¬threads_in_web_proc;
+  IO_bound(HTTP,DB,files,WS)⇒async+asyncio.TaskGroup/gather+cap(asyncio.Semaphore)+asyncio.timeout¬seq_awaits_in_loop;
+  CPU_bound⇒ProcessPoolExecutor∨py≥3.14_free_threaded/concurrent.interpreters+sync¬async_for_CPU_loops;
+  only_blocking_libs⇒sync∨asyncio.to_thread¬blocking_call_in_async_def;
   Flask_app⇒sync(unless_async_ext_added)¬unplanned_mixed_sync_async;
+  type_checker⇒ty(Astral_fast)⊕pyrefly(infer/ML)⊕basedpyright(max_strict)⊕mypy_2.x(plugins)¬untyped_code;
+  tabular_data⇒Polars_2.x(large/streaming)⊕Pandas_3.x(CoW/ecosys)¬Python_row_loops;
 }
 §REF{
-  uv_cmds,layouts,pyproject.toml,pre-commit,toolbox,ship_checklist→references/project-setup.md;
-  PEP8,Protocols,EAFP,ctx_mgrs,generators,dataclasses,decorators,concurrency,__slots__,anti-patterns→references/python-patterns.md;
-  pytest,TDD,fixtures,conftest.py,parametrize,markers,mocks/autospec,async_httpx_tests,coverage→references/python-testing.md;
-  Nuitka,32/64-bit,dist_slim,DLLs,VC++_runtime,Inno_Setup→references/windows-installer.md;
+  uv_cmds,PEP_735,uv_build,layouts,pyproject.toml,pre-commit,CI,Docker,toolbox,ship_checklist→references/project-setup.md;
+  PEP8,PEP_695,PEP_649,t-strings,lazy_import,Protocols,EAFP,ctx_mgrs,generators,dataclasses,decorators,concurrency,__slots__,anti-patterns→references/python-patterns.md;
+  pytest_9,native_TOML,subtests,TDD,fixtures,conftest.py,parametrize,markers,mocks/autospec,pytest-asyncio_1.x,async_httpx_tests,hypothesis,coverage→references/python-testing.md;
+  Nuitka_4,--mode=standalone,PySide6,32/64-bit,dist_slim,DLLs,VC++_runtime,Inno_Setup_6→references/windows-installer.md;
 }
 §REL{
-  ../backend-development/references/fastapi.md:FastAPI_endpoints,Pydantic_v2,SQLAlchemy_2.0;
-  ../backend-development/references/django.md:Django_5,DRF,Celery,Channels;
+  ../backend-development/references/fastapi.md:FastAPI_endpoints,Pydantic_v2,SQLAlchemy_async;
+  ../backend-development/references/django.md:Django,DRF,Celery,Channels;
   ../backend-development/SKILL.md:API_design,services,resilience;
   ../unit-testing-patterns/SKILL.md:cross_lang_unit_test_patterns;
   ../machine-learning/SKILL.md:ML_pipelines,PyTorch,serving;
+  ../devops-iac/SKILL.md:Docker,CI_CD,deployment;
+  ../secure-coding/SKILL.md:auth,secrets,injection,OWASP;
 }

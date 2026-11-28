@@ -1,26 +1,30 @@
 @REF:kotlin-exposed-patterns
 §R{
-  styles:DSL(SQL-like_expr)⊕DAO(entity_lifecycle);
-  tx:∀DB_op∈newSuspendedTransaction(db=database,transactionIsolation=...){...}(coroutine_safe∧atomic∧nested_savepoints);
-  repo:interface(UserRepository)←ExposedUserRepository(database)(decouple_logic∧H2_testable);
-  sec:LIKE⇒escape(\,%,_)_first⇒prevent_wildcard_inj;
-  migration:Flyway_startup_before_DatabaseFactory.create(config)
+  ver:Exposed_1.6.1⇒packages=`org.jetbrains.exposed.v1.{core,jdbc,r2dbc,dao,json,datetime}.*`;
+  styles:DSL(SQL-like_expr)⊕DAO(entity_lifecycle,JDBC);
+  tx_r2dbc(non_blocking):`org.jetbrains.exposed.v1.r2dbc.transactions.suspendTransaction(db=r2dbcDb){...}`⇒async_Flow(¬thread_blocking);
+  tx_jdbc(blocking):`withContext(Dispatchers.IO){org.jetbrains.exposed.v1.jdbc.transactions.suspendTransaction(db=jdbcDb,transactionIsolation=...){...}}`(isolates_blocking_JDBC_off_Ktor_event_loop;¬deprecated_newSuspendedTransaction);
+  jsonb:use_builtin_`exposed-json`(`org.jetbrains.exposed.v1.json.jsonb<T>(name,Json.Default)`)∧¬hand_rolled_PGobject_ColumnType;
+  repo:interface(UserRepository)←ExposedUserRepository(database)(decouple_logic∧testable);
+  sec:LIKE⇒escape(\,%,_)_first⇒prevent_wildcard_inj;¬`resultedValues!!`(use_insertReturning∨firstOrNull);
+  migration:Flyway_13_startup_before_DatabaseFactory.create(config)
 }
 §CFG{
-  hikari:{
+  hikari(JDBC):{
     HikariConfig().apply{driverClassName=config.driver;jdbcUrl=config.url;username=config.username;password=config.password;maximumPoolSize=config.maxPoolSize;isAutoCommit=false;transactionIsolation="TRANSACTION_READ_COMMITTED";validate()}→Database.connect(HikariDataSource(hikariConfig));
     DatabaseConfig(url:String,driver:String="org.postgresql.Driver",username:String="",password:String="",maxPoolSize:Int=10)
   };
+  r2dbc:{R2dbcDatabase.connect(url="r2dbc:postgresql://host:5432/db",driver="postgresql",user=cfg.username,password=cfg.password)};
   flyway:{
     Flyway.configure().dataSource(url,username,password).locations("classpath:db/migration").baselineOnMigrate(true).load().migrate();
     sql_path:"src/main/resources/db/migration/V1__create_users.sql"⇒UUID PRIMARY KEY DEFAULT gen_random_uuid(),VARCHAR(100|255|20),JSONB,TIMESTAMPTZ NOT NULL DEFAULT NOW(),CREATE INDEX idx_users_{email,role}
   };
   gradle_deps:{
-    exposed:"org.jetbrains.exposed:exposed-{core,dao,jdbc,kotlin-datetime,json}:1.0.0";
-    driver:"org.postgresql:postgresql:42.7.5";
-    pool:"com.zaxxer:HikariCP:6.2.1";
-    flyway:"org.flywaydb:flyway-{core,database-postgresql}:10.22.0";
-    test:"com.h2database:h2:2.3.232"
+    exposed:"org.jetbrains.exposed:exposed-{core,dao,jdbc,r2dbc,kotlin-datetime,json}:1.6.1";
+    driver_jdbc:"org.postgresql:postgresql:42.7.15";
+    pool_jdbc:"com.zaxxer:HikariCP:7.1.0";
+    flyway:"org.flywaydb:flyway-{core,database-postgresql}:13.13.0";
+    test:"com.h2database:h2:2.3.232"⊕Testcontainers_PostgreSQL(JSONB/PG_parity)
   }
 }
 §PAT{
@@ -31,7 +35,7 @@
   };
   dsl_crud:{
     ins_id:T.insertAndGetId{it[T.col]=v}.value;
-    ins_row:T.insert{it[col]=v}.resultedValues!!.first().toUser();
+    ins_row:T.insertReturning{it[col]=v}.single().toUser();
     sel:T.selectAll().where{T.id eq id}.map{it.toUser()}.singleOrNull();
     ord:T.selectAll().where{T.role eq Role.ADMIN}.orderBy(T.name[,SortOrder.DESC]);
     upd:T.update({T.id eq id}){it[email]=v;it[updatedAt]=CurrentTimestampWithTimeZone}>0;
@@ -66,30 +70,23 @@ class OrderEntity(id: EntityID<UUID>) : UUIDEntity(id) {
     val items by OrderItemEntity referrersOn OrderItemsTable.orderId
 }
 ```;
-    ops:UserEntity.find{UsersTable.email eq email}.firstOrNull()?.toModel() | UserEntity.new{...}.toModel() | UserEntity.findById(id)?.apply{req.name?.let{name=it};updatedAt=OffsetDateTime.now(ZoneOffset.UTC)}?.toModel() | UserEntity.all()
+    ops:UserEntity.find{UsersTable.email eq email}.firstOrNull()?.toModel() | UserEntity.new{...}.toModel() | UserEntity.findById(id)?.apply{req.name?.let{name=it};updatedAt=Clock.System.now().toOffsetDateTime()}?.toModel() | UserEntity.all()
   };
   tx:{
-    safe:runCatching{newSuspendedTransaction{...}};
-    isolation:newSuspendedTransaction(transactionIsolation=Connection.TRANSACTION_READ_COMMITTED|Connection.TRANSACTION_SERIALIZABLE);
+    r2dbc:`suspendTransaction(db = r2dbcDb) { UsersTable.selectAll().map { it.toUser() }.toList() }`;
+    jdbc:`withContext(Dispatchers.IO) { suspendTransaction(db = jdbcDb, transactionIsolation = Connection.TRANSACTION_READ_COMMITTED) { ... } }`;
+    nested:set_`useNestedTransactions = true`_on_DatabaseConfig⇒SAVEPOINT_nesting;
     atomic:debit+credit_in_single_tx⇒both_succeed⊕both_rollback
   };
   jsonb:```kotlin
-inline fun <reified T : Any> Table.jsonb(name: String, json: Json): Column<T> =
-    registerColumn(name, object : ColumnType<T>() {
-        override fun sqlType() = "JSONB"
-        override fun valueFromDB(value: Any): T = when (value) {
-            is String -> json.decodeFromString(value)
-            is PGobject -> json.decodeFromString(value.value ?: throw IllegalArgumentException("PGobject null: $name"))
-            else -> throw IllegalArgumentException("Unexpected value: $value")
-        }
-        override fun notNullValueToDB(value: T): Any =
-            PGobject().apply { type = "jsonb"; this.value = json.encodeToString(value) }
-    })
+import org.jetbrains.exposed.v1.json.jsonb
 @Serializable data class UserMetadata(val preferences: Map<String, String> = emptyMap(), val tags: List<String> = emptyList())
+// inside UsersTable: val metadata = jsonb<UserMetadata>("metadata", Json.Default).nullable()
 ```;
-  test_h2:{
-    beforeSpec:Database.connect(url="jdbc:h2:mem:test;DB_CLOSE_DELAY=-1;MODE=PostgreSQL",driver="org.h2.Driver");transaction(db){SchemaUtils.create(UsersTable)};
-    beforeTest:transaction(db){UsersTable.deleteAll()};
-    kotest:FunSpec({test("..."){shouldBe,shouldBeNull,shouldHaveSize}})
+  test_db:{
+    h2_fast:beforeSpec{Database.connect("jdbc:h2:mem:test;DB_CLOSE_DELAY=-1;MODE=PostgreSQL","org.h2.Driver");transaction(db){SchemaUtils.create(UsersTable)}};beforeTest{transaction(db){UsersTable.deleteAll()}};
+    pg_parity:Testcontainers(`PostgreSQLContainer("postgres:17-alpine")`)+Flyway.migrate()⇒verify_JSONB,indexes,constraints
   }
 }
+§ANTI{¬newSuspendedTransaction(deprecated→suspendTransaction);¬blocking_JDBC_on_event_loop(→withContext(Dispatchers.IO)∨exposed-r2dbc);¬custom_PGobject_jsonb(→exposed-json);¬unescaped_LIKE;¬`!!`_on_resultedValues}
+§REL{[kotlin-ktor-patterns.md](kotlin-ktor-patterns.md); [kotlin-testing.md](kotlin-testing.md)}

@@ -1,6 +1,6 @@
 @REF:gsap
 §REL{../SKILL.md:parent;immersive-web.md:scroll_story}
-§WHEN{scroll(pin,scrub,parallax,horiz),timeline,plugins(Flip,Draggable,SplitText,DrawSVG,MorphSVG,MotionPath,ScrollSmoother;free≥3.13,¬Club),React/Next/Vue/Nuxt/Svelte,FPS}
+§WHEN{GSAP_3.15+:scroll(pin,scrub,parallax,horiz),timeline,plugins(Flip,Draggable,SplitText,DrawSVG,MorphSVG,MotionPath,ScrollSmoother;all_free≥3.13,¬Club),React/Next/Vue/Nuxt/Svelte,FPS}
 §REF{
 tweens|to/from/fromTo|ease|stagger|defaults|matchMedia→gsap/gsap-core.md;
 seq|pos|labels|nested|playback→gsap/gsap-timeline.md;

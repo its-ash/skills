@@ -1,10 +1,11 @@
 @REF:mailtrap-email-integration
 §R{Core
-- env_sep:non-prod⇒Sandbox(`sandbox.api.mailtrap.io`,captures_no_delivery); prod⇒verified(`send.api.mailtrap.io`); ¬dev→prod
-- auth:`Authorization: Bearer ${MAILTRAP_API_TOKEN}`; scoped/project; sandbox≠prod tokens in separate env_vars
-- dns:prod requires `SPF`,`DKIM`,`DMARC` verified; skip⇒silent_fail∨spam
-- sdk:use `mailtrap` Node SDK∨Nodemailer 7 transport if in repo; raw `fetch`=0 deps
-- err:wrap `try/catch`,check `r.ok`/status,log `{recipient,template,timestamp,status}`,surface_err
+  env_sep:non-prod⇒Sandbox(`sandbox.api.mailtrap.io`,captures_no_delivery); prod⇒verified(`send.api.mailtrap.io`); ¬dev→prod;
+  auth:`Authorization: Bearer ${MAILTRAP_API_TOKEN}`; scoped/project; sandbox≠prod tokens in separate env_vars;
+  dns:prod requires `SPF`,`DKIM`,`DMARC` verified; skip⇒silent_fail∨spam;
+  sdk:use `mailtrap` Node SDK∨Nodemailer_10+(req_Node_20+) transport if in repo; raw `fetch`=0_deps∧preferred@edge;
+  edge_cf_workers:prefer Mailtrap REST API via `fetch()`(avoids_socket_hurdles); if Nodemailer required⇒set `compatibility_flags = ["nodejs_compat"]`∧SMTP_transport_only(¬`sendmail`,¬relaxed_TLS);
+  err:wrap `try/catch`,check `r.ok`/status,log `{recipient,template,timestamp,status}`,surface_err
 }
 §PAT{Send_API
 ```ts
@@ -14,9 +15,9 @@ if(!r.ok)throw new Error(`Email send failed: ${r.status}`);
 ```
 }
 §ANTI{
-- prod_endpoint in dev/test⇒inbox_spam∧test_data_leak→Sandbox
-- hardcoded_token⇒VCS_leak→env_vars/secrets_manager
-- pre-DNS(`SPF`/`DKIM`/`DMARC`)⇒silent_fail∨spam
-- ¬error_handle/retry⇒silent_loss(password_reset)→check_status,log,surface_err
+  prod_endpoint in dev/test⇒inbox_spam∧test_data_leak→Sandbox;
+  hardcoded_token⇒VCS_leak→env_vars/secrets_manager;
+  pre-DNS(`SPF`/`DKIM`/`DMARC`)⇒silent_fail∨spam;
+  ¬error_handle/retry⇒silent_loss(password_reset)→check_status,log,surface_err
 }
-§REL{`backend-development/references/api-design.md`, `secure-coding/SKILL.md`, `devops-iac/SKILL.md`}
+§REL{api-design.md,serverless.md,../../secure-coding/SKILL.md,../../devops-iac/SKILL.md}

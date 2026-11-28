@@ -4,17 +4,13 @@
 §TDD{RED(failing_test:create_user/check_password/¬is_staff)→GREEN(min_model/factory)→REFACTOR(keep_green)}
 
 §CFG{
-  pytest_ini:```ini
-[pytest]
-DJANGO_SETTINGS_MODULE = config.settings.test
-testpaths = tests
-python_files = test_*.py
-python_classes = Test*
-python_functions = test_*
-addopts = --reuse-db --nomigrations --cov=apps --cov-report=html --cov-report=term-missing --strict-markers
-markers =
-    slow: slow tests
-    integration: integration tests
+  pyproject_pytest:```toml
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings.test"
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = "--reuse-db --nomigrations --cov=apps --cov-report=html --cov-report=term-missing --strict-markers"
+markers = ["slow: slow tests", "integration: integration tests"]
 ```
   test_settings:```python
 # config/settings/test.py
@@ -25,8 +21,8 @@ class DisableMigrations:
     def __contains__(self, item): return True
     def __getitem__(self, item): return None
 MIGRATION_MODULES = DisableMigrations()
-PASSWORD_HASHERS = ['django.contrib.auth.hashers.MD5PasswordHasher']
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+PASSWORD_HASHERS = ['django.contrib.auth.hashers.MD5PasswordHasher']  # fast test-only hasher
+EMAIL_BACKEND = 'django.core.mail.backends.locmem.EmailBackend'
 CELERY_TASK_ALWAYS_EAGER = True
 CELERY_TASK_EAGER_PROPAGATES = True
 ```
@@ -81,10 +77,11 @@ class ProductFactory(factory.django.DjangoModelFactory):
   django_views(client,authenticated_client,db):`client.get(reverse('ns:name', kwargs={...}))`→`status_code∈{200,302}`, `response.context[...]`, unauth redirect `response.url.startswith('/accounts/login/')`, `authenticated_client.post(url, data)`→302∧`Model.objects.filter(...).exists()`;
   drf_serializers:`Serializer(obj).data` (`Decimal`→`str`), `s=Serializer(data=d)`→`s.is_valid()`→`s.save()`, invalid→`not s.is_valid() ∧ 'field' in s.errors` (`rest_framework.exceptions.ValidationError`);
   drf_viewsets(api_client,authenticated_api_client,db):
-    - list/filter/search: `api_client.get(reverse('api:product-list'), {'price_min':100}|{'search':'Apple'})`→`HTTP_200_OK`, `response.data['count']`
-    - retrieve: `api_client.get(reverse('api:product-detail', kwargs={'pk':id}))`→`HTTP_200_OK`
-    - unauth create: `api_client.post(...)`→`HTTP_401_UNAUTHORIZED`
-    - auth create/patch/delete: `HTTP_201_CREATED` / `patch`→`HTTP_200_OK` / `delete`→`HTTP_204_NO_CONTENT`
+    list/filter/search: `api_client.get(reverse('api:product-list'), {'price_min':100}|{'search':'Apple'})`→`HTTP_200_OK`, `response.data['count']`;
+    retrieve: `api_client.get(reverse('api:product-detail', kwargs={'pk':id}))`→`HTTP_200_OK`;
+    unauth create: `api_client.post(...)`→`HTTP_401_UNAUTHORIZED`;
+    auth create/patch/delete: `HTTP_201_CREATED` / `patch`→`HTTP_200_OK` / `delete`→`HTTP_204_NO_CONTENT`;
+  n_plus_1:`django_assert_max_num_queries(3)`∨Django_6.1_`QuerySet.fetch_mode(FETCH_RAISE)`(fails immediately on un-prefetched field access);
   mocking:```python
 from unittest.mock import patch
 @patch('apps.payments.services.stripe')
@@ -103,12 +100,12 @@ def test_email(db, order):
     assert len(mail.outbox) == 1 and order.user.email in mail.outbox[0].to and 'Order Confirmation' in mail.outbox[0].subject
 ```
   integration_e2e:register→login→browse(`response.content.decode()`)→cart_add→checkout_review→`with patch('apps.checkout.services.process_payment')`→complete→assert `Order.objects.filter(...).exists()`;
-  ref_map:{`@pytest.mark.django_db`:DB_access, `client`:Django_client, `api_client`:DRF_APIClient, `factory.create_batch(n)`:bulk_create, `patch('mod.fn')`:mock_ext, `override_settings`:temp_settings, `force_authenticate()`:bypass_DRF_auth, `assertRedirects`:302_check, `assertTemplateUsed`:template_check, `mail.outbox`:captured_emails}
+  ref_map:{`@pytest.mark.django_db`:DB_access, `client`:Django_client, `api_client`:DRF_APIClient, `factory.create_batch(n)`:bulk_create, `patch('mod.fn')`:mock_ext, `override_settings`:temp_settings, `force_authenticate()`:bypass_DRF_auth, `assertRedirects`:302_check, `assertTemplateUsed`:template_check, `mail.outbox`:captured_emails, `django_assert_num_queries`:N+1_guard}
 }
 
 §R{
   DO:{factories>manual_create, 1_assert/test, descriptive_name(`test_user_cannot_delete_others_post`), edge_cases(empty,`None`,bounds), mock_ext_services, fixtures>duplication, test_permissions, speed(`--reuse-db`∧`--nomigrations`), tests=executable_docs};
-  ANTI:{¬test_django_internals, ¬test_3rd_party, ¬ignore_failures, ¬order_dependent_tests, ¬over_mock(ext_only), ¬test_private_methods(public_iface_only), ¬prod_db}
+  ANTI:{¬test_django_internals, ¬test_3rd_party, ¬ignore_failures, ¬order_dependent_tests, ¬over_mock(ext_only), ¬test_private_methods(public_iface_only), ¬prod_db, ¬deprecated_DRF_`generateschema`(use_`drf-spectacular`)}
 }
 
 §COV{
@@ -118,12 +115,12 @@ def test_email(db, order):
 
 §CHK{
   loop_rule:sequential(P1..P9)∧(fail⇒STOP∧fix_before_continue)∧(manual_review∧staging_test_still_req);
-  P1_env:`python --version && which python && pip list --outdated && python -c "import os; print('DJANGO_SECRET_KEY set' if os.environ.get('DJANGO_SECRET_KEY') else 'MISSING: DJANGO_SECRET_KEY')"`
-  P2_quality:`mypy . --config-file pyproject.toml && ruff check . && ruff format --check . && python manage.py check --deploy` # alt: `black . --check`, `isort . --check-only` (skip if ruff sorts)
-  P3_migrations:`python manage.py showmigrations && python manage.py makemigrations --check --dry-run && python manage.py migrate --plan` # report: pending_count, conflicts, unmigrated_model_Δ
-  P4_tests:`pytest --cov=apps --cov-report=term-missing --reuse-db && pytest -m "not slow" && pytest -m integration` # report: passed/failed/skipped, overall+per-app_cov vs §COV.targets
-  P5_security:`pip-audit && bandit -r apps -f json -o bandit-report.json && python manage.py check --deploy` # + `gitleaks detect --source . --verbose` if installed
-  P6_runtime:`python manage.py collectstatic --noinput --dry-run && python manage.py check --database default && python -c "import django; django.setup(); from django.core.cache import cache; cache.set('healthcheck','ok',10); print(cache.get('healthcheck'))"` ∧ check N+1(DebugToolbar∨`assertNumQueries`)
+  P1_env:`python --version && which python && python -c "import os; print('DJANGO_SECRET_KEY set' if os.environ.get('DJANGO_SECRET_KEY') else 'MISSING: DJANGO_SECRET_KEY')"`;
+  P2_quality:`ruff check . && ruff format --check . && mypy . && python manage.py check --deploy`;
+  P3_migrations:`python manage.py showmigrations && python manage.py makemigrations --check --dry-run && python manage.py migrate --plan`;
+  P4_tests:`pytest --cov=apps --cov-report=term-missing --reuse-db && pytest -m "not slow" && pytest -m integration`;
+  P5_security:`pip-audit && bandit -r apps -f json -o bandit-report.json && python manage.py check --deploy`; # + `gitleaks detect --source . --verbose`
+  P6_runtime:`python manage.py collectstatic --noinput --dry-run && python manage.py check --database default && python -c "import django; django.setup(); from django.core.cache import cache; cache.set('healthcheck','ok',10); print(cache.get('healthcheck'))"` ∧ check N+1(DebugToolbar∨`assertNumQueries`∨`FETCH_RAISE`);
   P7_prod_settings(prod_settings_mod):```python
 from django.conf import settings
 checks = {
@@ -136,10 +133,10 @@ checks = {
 }
 for k, ok in checks.items(): print(('PASS ' if ok else 'FAIL ') + k)
 ```
-  P8_drf_schema:`python manage.py generateschema --format openapi-json > schema.json && python -c "import json; json.load(open('schema.json'))"`
+  P8_drf_schema:`python manage.py spectacular --file schema.yml --validate`(via `drf-spectacular`;¬deprecated `generateschema`);
   P9_diff:`git diff --stat && git diff | grep -nE "print\(|breakpoint\(|import pdb|DEBUG = True"` ∧ assert{¬debug_stmts, ¬hardcoded_secrets, migrations_for_model_Δ, ext_call_err_handling, atomic_tx_for_multi_write};
   report_tpl:`DJANGO VERIFICATION REPORT` → `{Environment, Code quality, Migrations, Tests, Security, Runtime, Settings, Diff}: PASS|FAIL <detail>` → `RESULT: PASS | BLOCKED - <remediation>`;
-  pre_deploy:[tests_pass∧cov≥80%, ¬vuln_deps, ¬unapplied_migrations, `DEBUG=False`∧`SECRET_KEY`∧`ALLOWED_HOSTS`∈env, db_backups, static_collected_served, logging+err_monitor(Sentry), cache+Celery_workers(if_used), HTTPS];
+  pre_deploy:[tests_pass∧cov≥80%, ¬vuln_deps, ¬unapplied_migrations, `DEBUG=False`∧`SECRET_KEY`∧`ALLOWED_HOSTS`∈env, db_backups, static_collected_served, logging+err_monitor(Sentry), cache+workers(if_used), HTTPS];
   ci_gh_actions:```yaml
 name: Django Verification
 on: [push, pull_request]
@@ -148,17 +145,18 @@ jobs:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: postgres:16
+        image: postgres:17
         env: {POSTGRES_PASSWORD: postgres}
         ports: ['5432:5432']
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with: {python-version: '3.12', cache: pip}
-      - run: pip install -r requirements.txt ruff mypy pytest pytest-django pytest-cov bandit pip-audit
-      - run: ruff check . && ruff format --check . && mypy . && bandit -r apps && pip-audit
+      - uses: astral-sh/setup-uv@v5
+        with: {python-version: '3.13', enable-cache: true}
+      - run: uv sync --frozen --all-groups
+      - run: uv run ruff check . && uv run ruff format --check . && uv run mypy . && uv run bandit -r apps && uv run pip-audit
       - env: {DATABASE_URL: 'postgres://postgres:postgres@localhost:5432/postgres', DJANGO_SECRET_KEY: ci-only-secret-key}
-        run: python manage.py makemigrations --check --dry-run && pytest --cov=apps --cov-report=term-missing
+        run: uv run python manage.py makemigrations --check --dry-run && uv run pytest --cov=apps --cov-report=term-missing
 ```
 }
+§REL{django.md,django-security.md,django-celery.md,../../unit-testing-patterns/SKILL.md}

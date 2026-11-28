@@ -1,42 +1,50 @@
 ---
 name: product-strategy
-description: "AUTO_INVOKE(silent)⇔prompt∈{product_strategy,PRODUCT-BRIEF.md,product_brief,go/no-go,PMF_review,user_journey_audit,ICE_score,capability_plan,PRD_to_SRS,TAM,SAM,SOM,investor_diligence,competitor_benchmark,competitive_landscape,white_space,brand_discovery,brandbook,positioning,MVP,anti-goal,pressure_test_direction,feature_prioritization}|SUB:{product-capability,market-research,competitive-platform-analysis,benchmark-methodology,competitive-report-structure,brand-discovery}"
+description: "AUTO_INVOKE(silent)⇔prompt∈{product_strategy,PRODUCT-BRIEF.md,go/no-go,PMF,Sean_Ellis,OST,strategy_kernel,journey_audit,ICE,RICE,WSJF,Shape_Up,North_Star,capability_plan,PRD_to_SRS,AI_PRD,TAM,SAM,SOM,AI_pricing,unit_economics,burn_multiple,Rule_of_X,investor_diligence,competitor_benchmark,competitive_landscape,GEO_visibility,white_space,brand_discovery,brandbook,positioning,MVP,anti-goal,prioritization}|SUB:{product-diagnostics,product-capability,market-research,competitive-platform-analysis,benchmark-methodology,competitive-report-structure,brand-discovery}"
 ---
 @SKL:product-strategy
 §R{
-  scope:decide({what,whom,why_now})∧¬write_impl_spec_here;
-  user_target≡specific_user∧¬generic_cat('developers');
-  pain≡quantified({freq,severity,curr_workaround});
-  success≡metric∧¬feeling;
-  define({MVP,anti-goal(¬build)});
-  ask_hard_Qs:1@a_time;
+  scope:decide({what,whom,why_now,how_monetize})∧¬write_impl_code_here;
+  strategy≡Rumelt_kernel(Diagnosis+Guiding_Policy+Coherent_Actions)∧¬goal_wishlist;
+  user_target≡specific_ICP/HXC∧¬generic_cat('developers');
+  pain≡quantified({freq,severity,curr_workaround,budget_sig});
+  discovery≡OST(Outcome→Opportunity→Solution→Assumption_Test)∧¬jump_to_features;
+  success≡North_Star+input_metrics+guardrail∧¬feeling;
+  PMF≡measurable({Sean_Ellis≥40%,cohort_flatten,First_Round_4_levels})∧¬vibes;
+  define({MVP,anti-goal(¬build),appetite_cap});
+  pricing(AI|var_COGS)⇒hybrid(base+credits/usage)∨outcome_tied∧¬flat_seat_underwater;
+  AI_capability_spec⇒evals_as_PRD({golden_set,scorers,latency/cost_budget,HITL/fallback});
+  interaction:ask_hard_Qs(1@a_time)∧ask_before(write(repo/PRODUCT-BRIEF.md));
   output≡actionable_docs∧¬essays;∀rec→1_next_step;
-  ask_user_before(write(repo/PRODUCT-BRIEF.md));
   on('go')⇒handoff_immediate(capability_plan)∧¬continue_discussion;
-  claims(market∨competitor)⇒cite_sources∧treat_src_as_untrusted;
+  claims(market∨competitor)⇒cite_sources∧bottom_up_math∧treat_src_as_untrusted;
+  positioning_check⇒AI_mirror_test(ChatGPT/Claude/Gemini/Perplexity_shortlist_consensus);
 }
 §D{
-  vague_idea∧¬brief⇒Mode1_diag→PRODUCT-BRIEF.md+go/no-go¬start_eng_plan;
-  existing_proj∧unclear_dir⇒Mode2_founder_rev:PMF(0-10)+1_10x_lever¬unranked_feat_lists;
-  pre_launch∨onboard_doubt⇒Mode3_journey_audit:TTV+top3_fixes¬opinion_without_real_install;
-  10_ideas∧room_for_2⇒Mode4_ICE=(impact×confidence÷effort,1-5_ea)¬loudest_voice;
-  brief=='build'⇒capability_plan(constraints,invariants,states,interfaces)¬more_discussion;
-  market_size∨diligence⇒TAM/SAM/SOM+sources¬unsourced_top_down_nums;
-  competitor_landscape⇒ordered(1:scope/tier→2:score_9_dims→3:report)¬skip_scoping∨benchmark_all;
+  vague_idea∧¬brief⇒Mode1_diag(YC+OST+assumption_test)→PRODUCT-BRIEF.md+go/no-go¬start_eng_plan;
+  existing_proj∧unclear_dir⇒Mode2_founder_rev(First_Round_PMF+Sean_Ellis+unit_econ+1_10x_lever)¬unranked_feat_lists;
+  pre_launch∨onboard_doubt⇒Mode3_journey_audit(TTV+activation+top3_fixes)¬opinion_wo_real_install;
+  many_ideas∧limited_cap⇒Mode4_prioritize(ICE|RICE|WSJF|Shape_Up_appetite→NSM)¬loudest_voice;
+  brief=='build'⇒capability_plan(SDD_contract,invariants,states,ifaces,AI_evals)¬more_discussion;
+  market_size∨diligence⇒bottom_up(ICP×ACV)+Burn_Multiple+Rule_of_X+moat_audit¬unsourced_top_down;
+  competitor_landscape⇒ordered(1:scope/tier+AI_mirror→2:score_9_dims→3:report)¬skip_scoping∨benchmark_all;
+  brand_create∨reposition⇒8mod_resumable_brand_discovery→90_SYNTHESIS.md¬ad_hoc_taglines;
 }
 §REF{
-  Mode1-4_Q_lists,steps→references/product-diagnostics.md;
-  PRD/founder_note→impl_ready_capability_plan→references/product-capability.md;
-  TAM/SAM/SOM,competitor_cmp,investor_diligence,vendor_scans→references/market-research.md;
-  comp_step1:scope,tier(Direct,Adjacent,Aspirational),sources→references/competitive-platform-analysis.md;
-  comp_step2:9_weighted_dims,1-5_rubrics,profile_cards→references/benchmark-methodology.md;
-  comp_step3:landscape_map,heatmap,white_space,recs→references/competitive-report-structure.md;
-  brand_identity_interview→brandbook,positioning_brief→references/brand-discovery.md;
+  Mode1-4_Q_lists,OST,PMF_4levels,ICE/RICE/WSJF/Shape_Up,kernel→references/product-diagnostics.md;
+  PRD/founder_note→SDD_impl_ready_capability_plan,AI_evals_PRD→references/product-capability.md;
+  bottom_up_TAM/SAM/SOM,VC_diligence,Rule_of_X,AI_unit_econ,moats→references/market-research.md;
+  comp_step1:scope,tier(Direct,Adjacent,Aspirational,Substitutes),GEO/sources→references/competitive-platform-analysis.md;
+  comp_step2:9_weighted_dims,1-5_rubrics,AI_mirror,profile_cards→references/benchmark-methodology.md;
+  comp_step3:landscape_map,heatmap,white_space,recs,balance_guard→references/competitive-report-structure.md;
+  brand_identity_interview(8_mods)→brandbook,Dunford_positioning→references/brand-discovery.md;
 }
 §REL{
   ../software-architecture/SKILL.md:ADRs,arch_post_capability_plan;
+  ../ai-agent-engineering/SKILL.md:AI_eval_harness,agent_guardrails,LLM_cost;
   ../ux-research/SKILL.md:personas,journeys,real_user_usability_tests;
   ../design/SKILL.md:visual_polish_assessment;
+  ../seo/SKILL.md:GEO_AI_search_citation_visibility;
   ../web-quality-audit/SKILL.md:post_launch_canary_watch;
   ../conversion-optimization/SKILL.md:CRO_landing_pricing_signup_onboarding;
   ../content-writing/SKILL.md:launch_campaigns,brand_voice,investor_materials;

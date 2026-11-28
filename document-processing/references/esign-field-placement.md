@@ -1,7 +1,13 @@
 @REF:esign-field-placement
+§D{
+  vendor_esign_API_available⇒use_REST_API(anchor_tags|structured_tabs+audit_trail) ¬browser_DOM_automation;
+  no_API_access|template_review⇒attached_browser_composer_w/_trusted_origin_gate∧numeric_Location∧draft_only ¬click_to_send
+}
+
 §SCOPE{
   contract:written_workflow_contract(¬executable_browser_guard,¬browser_enforcement_proof);
   use:template(MD→DOCX|PDF)@attached_browser_composer(remote_debug_port,¬vendor_API)∧fix(drift|wrong_recipient)∧review(screenshots+draft);
+  compliance:eIDAS_2.0(EU)|ESIGN_UETA(US)⇒preserve_signer_auth,explicit_consent_intent,tamper_evident_audit_trail;
   pre:{
     sig_page:last_page∧own_page;fixed_layout:[our_block(By,Name,Title,Email,Date),counterparty_block];inspect_doc∧calibrate_pre_place;
     auth:human_signed_in;¬enter(creds|OTP|verification_codes);login_redirect⇒print(`LOGGED OUT`)∧exit(≠0,e.g.2)

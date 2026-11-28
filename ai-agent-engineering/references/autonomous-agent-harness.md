@@ -17,7 +17,7 @@
   continuous|scheduled_agent;periodic_workflows;cross_session_assistant;prompts∈{"run this every day","check on this regularly","keep monitoring"};replace:{Hermes,AutoGPT};comp_use+cron
 }
 §ARCH{
-  runtime:{Crons/Schedule,Dispatch/Remote,MemoryStore,ComputerUse}→layer1:{skills/,agents/,commands/,hooks/}→mcp:{memory,github,exa,supabase,browser-use}
+  runtime:{Crons/Schedule,Dispatch/Remote,MemoryStore,ComputerUse,Sandbox(`bubblewrap`|Docker)}→layer1:{`.claude/skills/`,agents/,hooks/(`PreToolUse`:exit_2_block),commands/}→sdk:Claude_Agent_SDK(`@anthropic-ai/claude-agent-sdk`|`claude-agent-sdk`)→mcp:{memory,github,exa,supabase,browser-use}
 }
 §PAT{
   mem:{
@@ -31,9 +31,10 @@
     exprs:{standup:`0 9 * * 1-5`(PRs,issues,deploy);weekly:`0 10 * * 1`(quality,cov);hourly:`0 * * * *`(prod_health,err_rate);nightly:`0 2 * * *`(full_tests,sec_scan);pre_mtg:`*/30 * * * *`(mtg_ctx)}
   };
   dispatch:{
-    entrypoint:[programmatic CLI mode](https://code.claude.com/docs/en/headless)(CI_job|webhook_receiver→`claude -p`in_owned_ws;¬public_Anthropic_dispatch_endpoint);
-    ci:`cd "/path/to/repo" && claude -p "Build failed on main. Diagnose the failure."`;
-    webhook:GH_webhook→auth_CI_runner→`claude -p`→reviewable_result;
+    entrypoint:[programmatic CLI mode](https://code.claude.com/docs/en/headless)(CI_job|webhook_receiver→`claude -p --output-format json`∨Claude_Agent_SDK_in_owned_sandboxed_ws;¬public_Anthropic_dispatch_endpoint);
+    sandbox:unattended_runs⇒sandbox(`bubblewrap`|container)+`--auto-allow-bash-if-sandboxed`+`PreToolUse`_hooks(array_cfg,exit_2_block)+`--worktree`(parallel);
+    ci:`cd "/path/to/repo" && claude -p "Build failed on main. Diagnose the failure." --output-format json`;
+    webhook:GH_webhook→auth_CI_runner→`claude -p`|Claude_Agent_SDK→reviewable_result;
     agent2agent:`claude -p "Analyze the output of the security scan and create issues for findings"`
   };
   computer_use:{

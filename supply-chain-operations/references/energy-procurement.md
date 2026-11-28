@@ -1,125 +1,76 @@
 @REF:energy-procurement
-
-§CTX{
+§CFG{CTX_AND_SYSTEMS
   scope:C&I_elec+gas($15M–$80M/yr,10–50+_sites:{mfg,DC,office,cold_storage},reg+dereg);
   stakeholders:Ops(load)↔Fin(budget)↔Sust(Scope2)↔Exec(PPA_>5yr);
   sys:{bill:Urjanet|EnergyCAP,interval:15min_kWh/kW,mkt:ICE|CME|Platts,proc:brokers|aggregators|direct_ISO};
-  obj:min(cost)∧budget_certainty∧sust∧ops_flex;¬trade(8%_save⇒$2M_polar_vortex_var)
+  obj:min(cost)∧budget_certainty∧sust∧ops_flex;¬trade(8%_save⇒$2M_polar_vortex_var);
+  flow:1:profile_15min_kWh/kW→2:tariff_opt(rate_switch,DR)→3:RFP(fixed|index|block+index|shaped)→4:eval_total_cost($/MWh+cap+T&D+ancillaries+risk_prem)→5:staggered/layered_exec→6:monitor+trigger_rebalance+mo_var_report
 }
-
-§FLOW{
-  use∈{multi_site_RFP,tariff_opt,demand_mitig,PPA_eval,budget/hedge,volatility(polar_vortex|heat_wave|reg_Δ)};
-  1:profile_15min_kWh/kW→2:tariff_opt(rate_switch,DR)→3:RFP(fixed|index|block+index|shaped)→4:eval_total_cost($/MWh+cap+T&D+ancillaries+risk_prem)→5:staggered/layered_exec→6:monitor+trigger_rebalance+mo_var_report;
-  ex:{
-    rfp:25_sites(PJM+ERCOT,$40M/yr)→6_bids→60%_fixed/40%_index;
-    demand:ConEd_mfg($28/kW,2MW)→top10_15min,500kW/2MWh_BESS_vs_curtail_vs_PF→payback;
-    vppa:15yr_solar@$35/MWh($5_hub_basis)→vs_fwd+hist_node_spread+high/low_gas_NPV→CFO
-  }
-}
-
-§BILL{
+§PAT{BILL_STRUCTURE_AND_MARKETS_2026
   energy:$/kWh(flat|TOU[on/mid/off-peak]|RTP[hourly_wholesale]);40–55%_C&I_bill;competitive_in_dereg;
   demand:max(15min_avg_kW/mo)×$8–$25/kW;20–40%_mfg_bill;1_bad_interval(comp+HVAC)=$5K–$15K/mo;
-  capacity:{PJM,ISO-NE,NYISO};PLC=load@prior_yr_CP(1–5_summer_hrs);CP_curtail⇒-15–30%_next_yr(highest_ROI_DR);
+  capacity_2026:{PJM,ISO-NE,NYISO};PLC=load@prior_yr_CP(1–5_summer_hrs);PJM_2026/27_BRA_cleared@FERC_cap_$329.17/MW-day_UCAP(+22%_vs_2025/26_$269.92;3rd_IA_$164.70)_driven_by_AI/DC_load+retirements⇒CP_curtail_ROI_surged(-15–30%_next_yr_cap_bill);
   T&D:reg(non-bypassable_even_w/_BTM_gen);Trans=regional_trans_peak;Dist=cust+demand_deliv+vol;
-  riders:RPS+nuc_decomm+transition+mandates;rate_case⇒+$0.005–$0.015/kWh⇒track_state_PUC
+  riders:RPS+nuc_decomm+transition+mandates;rate_case⇒+$0.005–$0.015/kWh⇒track_state_PUC;
+  reg_mkt(~35%_US_C&I):single_util,PUC_rate_cases;levers={tariff_switch,demand_mgmt,onsite};
+  dereg_mkt:REPs/direct/brokers;ISOs={PJM(Mid-Atl/MW,largest),ERCOT(TX,isolated),CAISO,NYISO,ISO-NE,MISO,SPP};
+  ERCOT_RTC+B(live_2025-12-05):5min_SCED_real_time_co-opt_of_energy+Ancillary_Services⇒BESS_dynamically_shifts_charge/discharge/AS_by_RT_SoC+congestion(¬DAM_lock-in,↓SASM);
+  LMP=Energy+Congestion+Loss;congestion=+$5–$30/MWh(constrained)⇒drives_VPPA_basis
 }
-
-§PROC{
+§PAT{PROCUREMENT_DEMAND_AND_RENEWABLES
   fixed(full_req):locked_$/kWh,12–36mo,+5–12%_prem_vs_fwd(absorbs_price+vol+basis);use⇒budget_certainty>min_cost;
   index:RT/DA_wholesale+$0.002–$0.006/kWh;lowest_avg,max_tail(ERCOT_Uri_Feb21=$9,000/MWh→5MW=$1.5M+/wk);req:active_hedge+var_tol;
   block+index:fixed_baseload(60–80%)+index_var;shape_match(e.g.3MW_24/7_ATC+2MW_on-peak);
-  layered:tranches/12–24mo(e.g.2027:25%_Q1'25,Q3'25,Q1'26,Q3'26);DCA⇒#1_risk_ctrl;
-  RFP_dereg:5–8_REPs;pkg={36mo_interval,load_factor,addrs,acct#,expiry,REC/carbon_reqs};eval={total_cost,credit(S&P/Moody's;default⇒util_tariff),flex(change_of_use,early_term),VAS(DR,sust,intel)}
-}
-
-§DEMAND{
+  layered:tranches/12–24mo(e.g.2028:25%_Q1'26,Q3'26,Q1'27,Q3'27);DCA⇒#1_risk_ctrl;
+  RFP_dereg:5–8_REPs;pkg={36mo_interval,load_factor,addrs,acct#,expiry,REC/carbon_reqs};eval={total_cost,credit(S&P/Moody's;default⇒util_tariff),flex(change_of_use,early_term),VAS(DR,sust,intel)};
   peak_ID:15min_data→top10/mo;6–8/10_from_6:00–9:00AM_simult_startup(chiller/comp/line);
   load_shift:batch/charging/thermal/water_heat→off-peak;500kW=$5K–$12.5K/mo_demand+energy_diff;
-  BESS:500kW/2MWh=$800K–$1.2M;@$15/kW=$7.5K/mo($90K/yr)→9–13yr_simple;stacked(+TOU_arb+PLC+DR)→5–7yr;
+  BESS_2026:500kW/2MWh=$800K–$1.2M;@$15/kW=$7.5K/mo($90K/yr)→9–13yr_simple;stacked(+TOU_arb+high_PJM_PLC+DR+ERCOT_RTC+B_AS)→5–7yr_or_better;Sec_48E_standalone_BESS_retains_30%_base_ITC_runway_into_2030s;
   DR:PJM_Econ_DR(pays_LMP),ERCOT_ERS(standby+energy);1MW=$15K–$80K/yr;
-  ratchet:billed_kW≥60–80%_max_prior_11mo(6MW_spike_vs_4MW⇒3.6–4.8MW_floor);check_tariff_pre_mod
-}
-
-§RENEW{
+  ratchet:billed_kW≥60–80%_max_prior_11mo(6MW_spike_vs_4MW⇒3.6–4.8MW_floor);check_tariff_pre_mod;
   phys_PPA:same_ISO,fixed_$/MWh,10–25yr,energy+RECs;risks={basis(node-zone),curtailment,shape};
   VPPA(CfD):strike(e.g.$35)vs_hub(+$10@$45,-$10@$25)+RECs;retail_unchanged;req:CFO/treasury,ISDA,MtM;
   RECs:1REC=1MWh;unbundled=$1–$5(nat_wind),$5–$15(solar),$20–$60(NE/PJM);Scope2_mkt_OK,¬additionality;
-  onsite(solar,CHP):PPA_$0.04–$0.08/kWh(loc,size,ITC);cuts_T&D+PLC;risks={net_metering_Δ,interconn,lease}
+  onsite_2026(solar,CHP):PPA_$0.04–$0.08/kWh(loc,size,ITC);cuts_T&D+PLC;US_2025_OBBBA_tax_shift⇒commercial_solar_PV_accelerated_cutoffs(start≤2026-07-04,complete≤2027-12-31_for_legacy_credits)≠standalone_BESS_Sec_48E_30%_ITC;risks={net_metering_Δ,interconn,lease};
+  load_profile:LF=Total_kWh/(Peak_kW×Hrs);>0.75(0.85)⇒flat,ATC_blocks,low_demand/kWh;<0.50(0.45)⇒spiky,shaped/TOU,high_peak_shave_ROI;mfg_share:{motors:30–45%,HVAC:25–35%,comp_air:10–15%(worst_peak/avg),light:5–10%,heat:5–15%}
 }
-
-§LOAD{
-  base(24/7:refrig,servers,cont_mfg,occ_light)_vs_var(sched,occ,HVAC);
-  LF=Total_kWh/(Peak_kW×Hrs);>0.75(0.85)⇒flat,ATC_blocks,low_demand/kWh;<0.50(0.45)⇒spiky,shaped/TOU,high_peak_shave_ROI;
-  mfg_share:{motors:30–45%,HVAC:25–35%,comp_air:10–15%(worst_peak/avg:unloaded+cycling),light:5–10%,heat:5–15%}
-}
-
-§MKT{
-  reg(~35%_US_C&I):single_util,PUC_rate_cases;levers={tariff_switch,demand_mgmt,onsite};
-  dereg:REPs/direct/brokers;ISOs={PJM(Mid-Atl/MW,largest),ERCOT(TX,isolated),CAISO,NYISO,ISO-NE,MISO,SPP};
-  LMP=Energy+Congestion+Loss;congestion=+$5–$30/MWh(constrained)⇒drives_VPPA_basis
-}
-
-§SUST{
+§CFG{SUSTAINABILITY_AND_RISK_2026
   Scope2_dual(GHG_Protocol):Location(grid_avg,US_eGRID)∧Market(RECs/PPA→RE100/SBTi_focus);
-  RE100:100%_renew_annual;ok={phys_PPA,VPPA+RECs,green_tariff,unbundled_RECs(tightening_add),onsite};
-  CDP:Sec_C8(Energy);SBTi:Paris_aligned(¬10+yr_fossil_lock-in)
-}
-
-§RISK{
+  Scope2_revision_2026:GHG_Protocol_consultations_trend_toward_hourly_matching(24/7_CFE)+strict_geographic_deliverability_for_REC/GO_claims(active_scrutiny,¬yet_immediate_mandate⇒contract_hourly_interval_data_rights_in_new_PPAs);
+  RE100:100%_renew_annual;ok={phys_PPA,VPPA+RECs,green_tariff,unbundled_RECs(tightening_add),onsite};CDP:Sec_C8(Energy);SBTi:Paris_aligned(¬10+yr_fossil_lock-in);
   hedges:layered+financial(swaps,options,HRCO);e.g.$50/MWh_put@$2–$5/MWh_caps_$200+_spikes;typical_C&I=60–80%_hedged/20–40%_index;
   weather:HDD/CDD;15%_colder_winter⇒+25–40%_gas;weather_derivs_vs_budget_reserves(most_C&I);
-  reg:rate_cases,cap_reform(PJM_3×_since_2015),carbon_price,net_metering_Δ
+  reg_risk:rate_cases,cap_reform(PJM_high_clearing_prices+AI_load),carbon_price,net_metering_Δ
 }
-
-§D{
-  strategy_sel:{
-    var>5%_triggers_rev⇒fixed|15–20%_ok⇒index/block+index;
-    fwds∈bottom_1/3_5yr⇒more_fixed|top_1/3⇒more_index|uncertain⇒layer;
-    tenor=12mo⇒small_prem|≥36mo⇒hybrid/layered;
-    LF>0.75⇒ATC_blocks|LF<0.50⇒shaped/TOU_index
-  };
-  PPA_eval:{
-    strike_vs_fwd(e.g.$35_vs_$45=+$10)_over_full_10–25yr(overbuild⇒underwater_risk);
-    basis:ERCOT_W→Houston=$3–$12/MWh⇒req≥5yr_hist_node_to_zone_data;
-    curtail:ERCOT_wind_3–8%/yr,CAISO_solar_5–12%_spring;gen_settle_cuts_RECs⇒neg_curtail_cap;
-    credit:IG_or_LC($50M_VPPA⇒$5–$10M_LC)⇒include_LC_cost
-  };
-  demand_ROI:{
-    cur=Peak_kW×rate×12;stack={demand+PLC(next_DY)+TOU_arb+DR};
-    payback<5yr⇒go|5–8yr⇒marginal(cap_avail)|>8yr⇒no(unless_sust)
-  };
-  timing:{
-    ¬call_bottom;vs_5yr_range:bottom_Q⇒accel_tranches|top_Q⇒decel+index;
-    signals:{+gen(bear),-gen(bull),gas_pipe_constraint(reg_spread),cap_auction(future_cap)}
-  }
+§D{DECISION_RULES
+  var>5%_triggers_rev⇒fixed¬index;15–20%_var_ok⇒index∨block+index;
+  fwds∈bottom_1/3_5yr⇒more_fixed|top_1/3⇒more_index|uncertain⇒layer;
+  tenor=12mo⇒small_prem|≥36mo⇒hybrid/layered;
+  LF>0.75⇒ATC_blocks|LF<0.50⇒shaped/TOU_index;
+  PPA_eval:model(strike_vs_fwd_10–25yr[overbuild⇒underwater],≥5yr_hist_node_to_zone_basis[ERCOT_W→Houston:$3–$12/MWh],curtail_cap[ERCOT_wind_3–8%,CAISO_solar_5–12%],credit/LC_cost[$50M_VPPA⇒$5–$10M_LC]);
+  demand_ROI:stack(demand+PLC_next_DY+TOU_arb+DR+48E_BESS_ITC);payback<5yr⇒go|5–8yr⇒marginal(cap_avail)|>8yr⇒no(unless_sust);
+  timing:¬call_bottom;vs_5yr_range(bottom_Q⇒accel_tranches|top_Q⇒decel+index);signals:{+gen(bear),-gen/+AI_DC_load(bull),gas_pipe_constraint(reg_spread),cap_auction(future_cap)}
 }
-
-§ANTI{
+§ANTI{TRAPS_AND_EDGE_CASES
   1:ERCOT_winter_index_unhedged(Uri_5MW=$1.5M+/wk)⇒price_cap/hedge_req;
   2:VPPA_congested_basis(ERCOT_W→Houston:-$3–$12/MWh)⇒net_cost;
   3:ratchet_trap(+50%_mod_peak→80%×11mo=$200K/yr_from_1_15min);
   4:mid-contract_rate_case(T&D/riders_passthrough;+$0.012/kWh@12MW=$150K/yr_on_fixed);
   5:neg_LMP@PPA_node⇒buyer_owes_diff_w/o_0_floor;
   6:BTM_solar_cuts_DR_baseline(¬cloudy_PM_peak)⇒shrinks_DR_rev;
-  7:PJM_PLC_surprise(backup_gen/heat_wave@5_CP⇒+20–40%_cap_next_DY);
-  8:re-regulation_post_spike⇒voids_REP_contract⇒util_tariff
+  7:PJM_PLC_surprise(backup_gen/heat_wave@5_CP_at_$329/MW-day⇒massive_cap_bill_jump_next_DY);
+  8:solar_vs_BESS_ITC_conflation⇒assuming_post_2026_solar_keeps_BESS_48E_timeline_breaks_pro_forma;
+  9:re-regulation_post_spike⇒voids_REP_contract⇒util_tariff
 }
-
-§COMM{
-  supplier:{
-    RFP:data-rich+interval⇒cuts_margin_pad;
-    renewal:lead_w/_partnership+vol_growth(¬price_demands);
-    challenge:cite_ICE_fwd(e.g.AEP_Dayton_$42_vs_$48=+14%_spread)
-  };
-  internal:{
-    Fin:budget+var+risk(75%_certain,±$400K_worst/$12M);
-    Sust:Scope2/RE100(50,000MWh=35%_RE100);
-    Ops:constraints(cut_400kW_summer_PM_¬prod_impact)
-  }
+§CMD{COMMS_AND_STAKEHOLDERS
+  supplier_RFP:data-rich+interval⇒cuts_margin_pad;
+  supplier_renewal:lead_w/_partnership+vol_growth(¬price_demands);
+  supplier_challenge:cite_ICE_fwd(e.g.AEP_Dayton_$42_vs_$48=+14%_spread);
+  internal_Fin:budget+var+risk(75%_certain,±$400K_worst/$12M);
+  internal_Sust:Scope2/RE100+hourly_matching_readiness(50,000MWh=35%_RE100);
+  internal_Ops:constraints(cut_400kW_summer_PM_¬prod_impact)
 }
-
-§ESC{
+§R{ESCALATION
   chain:Analyst→Mgr(24h)→Dir_Proc(48h)→VP_Fin/CFO(>$500K∨>5yr);
   triggers:{
     wholesale>2×_budget_≥5d⇒notify_Fin+eval_hedge/emerg_fixed(≤24h);
@@ -132,9 +83,7 @@
     grid_emerg/blackout⇒emerg_curtail+ops+insurance_doc(Immediate)
   }
 }
-
-§KPI{
-  freq:track_mo,review_qtr(Fin+Sust);
+§CHK{KPIS_AND_ARTIFACTS // track monthly, review quarterly (Fin+Sust)
   wtd_avg_cost_vs_budget:tgt_±5%|red_>10%;
   proc_vs_fwd@exec:tgt_≤3%|red_>8%;
   demand_%_bill(mfg):tgt_<25%|red_>35%;
@@ -142,9 +91,6 @@
   renew_%(Scope2_mkt):tgt_on_RE100|red_>15%_behind;
   renewal_lead:tgt_≥90d|red_<30d;
   PLC/ICAP_trend:tgt_≤0%|red_>+15%_YoY;
-  Q1_budget_acc:tgt_±7%|red_>12%
-}
-
-§RES{
-  maintain:{hedge_policy,approved_counterparties,tariff_change_cal,facility_load_shapes,util_contract_meta}
+  Q1_budget_acc:tgt_±7%|red_>12%;
+  artifacts:{hedge_policy,approved_counterparties,tariff_change_cal,facility_load_shapes,util_contract_meta}
 }

@@ -1,45 +1,56 @@
 ---
 name: software-architecture
-description: "AUTO_INVOKE(silent)⇔prompt∈{software_arch,system_design,Clean_Arch,Hexagonal,ports_adapters,DDD,CQRS,event_sourcing,Saga,monolith_split,modular_monolith,microservices,ADR,bounded_context,trade_off,acceptance_criteria,risky_change,module_ownership,REGRESSION.md}|SUB:{architecture-decision-records,hexagonal-architecture,intent-driven-development,module-governance,module-regression}"
+description: "AUTO_INVOKE(silent)⇔prompt∈{software_arch,system_design,Clean_Arch,Hexagonal,ports_adapters,vertical_slice,DDD,CQRS,event_sourcing,DCB,Saga,durable_execution,Temporal,outbox,monolith_split,modular_monolith,microservices,Team_Topologies,ADR,MADR,RFC,C4,arc42,Structurizr,LikeC4,fitness_function,ArchUnit,Spring_Modulith,Tach,bounded_context,trade_off,SDD,acceptance_criteria,risky_change,module_ownership,AGENTS.md,REGRESSION.md}|SUB:{patterns-and-ddd,architecture-decision-records,hexagonal-architecture,fitness-and-c4,intent-driven-development,module-governance,module-regression}"
 ---
 @SKL:software-architecture
 §R{
   choose_pattern≺capture(func_goals,nfr_constraints,biz_prio);
-  constraints⊇{regulation,existing_infra,team_skills,budget,timeline};
-  ∀choice⇒compare(≥2_alts)∈trade_off_table(pros,cons,risk,effort);
+  constraints⊇{regulation,existing_infra,team_skills,team_topologies,budget,timeline};
+  ∀choice⇒compare(≥2_alts)∈trade_off_eval(pros,cons,risk,effort);
   pick(simplest_pattern_meeting_constraints);simple_CRUD⇒¬(full_DDD∨microservices);
-  ∀sig_decision⇒write_ADR@references/architecture-decision-records.md;
+  default_macro⇒modular_monolith(schema_isolation+public_facade)+vertical_slices(Clean|Hex_only_in_complex_slices);
+  ∀sig_decision⇒record(MADR_4.0|Nygard_ADR)@references/architecture-decision-records.md;cross_team_debate⇒RFC_first;pre_build_how⇒Design_Doc;
   deps→inward;biz_logic∉(UI∨controllers);infra∈domain_owned_ifaces;
+  enforce_bounds∈CI(fitness_functions:ArchUnit,Spring_Modulith,dependency-cruiser,Tach,ArchUnitNET,go-arch-lint,cargo-modules)¬review_only@references/fitness-and-c4.md;
   mod_name⇒by_domain(OrderCalculator)¬(utils∨helpers∨common);
   write(custom_infra)≺search(maintained_lib∨svc);
-  risky_Δ∈{sec,data,migration,integration}⇒write(acceptance_criteria)_first@references/intent-driven-development.md;
-  finalize≺run(val_checklist@references/patterns-and-ddd.md#validation-checklist);
-  full_DDD⇔(|{complex_or_changing_rules_or_explicit_invariants,multi_team_overlapping_models,unstable_or_versioned_integ_contracts,crit_audit_traceability_or_reg_compliance}|≥2);
+  cross_mod_or_svc_async⇒transactional_outbox+idempotent_inbox¬dual_write;
+  model_as_code(C4+arc42:Structurizr_unified|LikeC4|D2|Mermaid)¬stale_manual_diagrams@references/fitness-and-c4.md;
+  risky_Δ∈{sec,data,migration,integration}⇒SDD_acceptance_brief_first@references/intent-driven-development.md;
+  mod_docs⇒lean_AGENTS.md(AAIF_std,≤150-200_rules)+single_owner_ptrs@references/module-governance.md;
+  full_DDD⇔(|{complex_or_changing_rules_or_invariants,multi_team_overlapping_models,unstable_or_versioned_contracts,crit_audit_or_reg_compliance}|≥2);
+  finalize≺run(val_checklist@references/patterns-and-ddd.md);
 }
 §D{
+  small_to_mid_team∨unclear_boundaries⇒modular_monolith(isolated_schemas,facade,events)¬early_microservices;
+  feature_velocity∧low_boilerplate⇒Vertical_Slice_Arch(Clean|Hex_only_where_complex)¬global_horizontal_layers;
   complex_biz_rules∧testability⇒Clean_Arch¬logic_in_controllers;
-  core_indep_of(DB,UI)∧many_adapters⇒Hexagonal(ports,adapters)¬fw_types_in_domain;
+  core_indep_of(DB,UI)∧many_adapters⇒Hexagonal(ports,adapters)+CI_fitness_tests¬fw_types_in_domain;
   rich_changing_domain∧many_teams∧ubiquitous_lang⇒DDD(pass_DDD_viability_≥2)¬DDD_for_CRUD;
   large_RW_imbalance∧indep_RW_scale⇒CQRS¬single_model_heavy_load;
-  audit∨replay∨complex_state_transitions⇒Event_Sourcing+aggregates¬mutable_rows_when_history_req;
-  long_running_multi_svc_tx⇒Saga+compensation¬dist_2PC;
-  indep_deploys∧team_autonomy∧varied_scaling⇒Microservices(own_data+API)¬shared_DB;
-  small_team∧unclear_boundaries⇒modular_monolith(split_later_by_slice)¬early_microservices;
+  audit∨replay∨complex_state_transitions⇒Event_Sourcing(aggregates∨DCB_if_cross_entity_invariants)¬mutable_rows_when_history_req;
+  long_running_multi_step_workflow⇒Durable_Execution(Temporal)∨Saga+compensation¬dist_2PC∨fragile_custom_state_tables;
+  indep_deploys∧stream_aligned_team_autonomy∧varied_scaling⇒Microservices(own_data+API+outbox)¬shared_DB;
+  legacy_modernization⇒Strangler_Fig+Branch_by_Abstraction+Expand_Contract¬big_bang_rewrite;
+  prevent_arch_drift⇒automated_fitness_functions+legacy_baseline∈CI¬static_wiki_rules;
+  C4_diagrams⇒LikeC4∨Structurizr_unified(`structurizr.war local`)∨D2∨Mermaid¬EOL_Structurizr_Lite|CLI;
 }
 §REF{
-  decision_steps,trade_off_tbl,pattern_traits,DDD_strategic_tactical,struct_rules,anti_patterns,val_chk,Mermaid→references/patterns-and-ddd.md;
-  numbered_ADRs@docs/adr/,status,index,why_X→references/architecture-decision-records.md;
-  ports_adapters(TS,Java,Kotlin,Go),composition_root,slice_migration→references/hexagonal-architecture.md;
-  ambiguous_or_high_risk_Δ→scoped_acceptance_criteria+brief→references/intent-driven-development.md;
-  local_mod_instr,domain_ctx_links,iface_ownership→references/module-governance.md;
+  patterns,modular_monolith,vertical_slice,DDD,DCB,outbox,durable_exec,Team_Topologies,migration,val_chk→references/patterns-and-ddd.md;
+  ADRs(MADR_4.0,Nygard,Y-statement),RFC_vs_DesignDoc_vs_ADR,docs/adr/→references/architecture-decision-records.md;
+  ports_adapters(TS,Java,Kotlin,Go,Python,.NET,Rust),composition_root,slice_migration→references/hexagonal-architecture.md;
+  fitness_functions(ArchUnit,Spring_Modulith,dependency-cruiser,Tach,ArchUnitNET,go-arch-lint,cargo-modules),C4,arc42,Structurizr,LikeC4,D2→references/fitness-and-c4.md;
+  SDD(Spec-First|Anchored|Source),ambiguous_or_high_risk_Δ,acceptance_brief→references/intent-driven-development.md;
+  local_AGENTS.md(AAIF),domain_ctx_links,iface_ownership→references/module-governance.md;
   REGRESSION.md_consumer_ledger,gate_Δ_on_exit_codes→references/module-regression.md;
 }
 §REL{
   ../clean-code/SKILL.md:naming,fn_design,deslop;
-  ../code-review/SKILL.md:review_Δ_pre_merge;
+  ../code-review/SKILL.md:review_Δ_pre_merge,change_impact;
   ../devops-iac/references/cloud-architecture.md:cloud_svc_design(AWS,Azure,GCP);
-  ../database-design/SKILL.md:data_layer,schema_modeling;
+  ../database-design/SKILL.md:data_layer,schema_modeling,migrations;
   ../documentation/SKILL.md:living_docs,glossaries,decision_logs;
   ../product-strategy/SKILL.md:capability_plans_pre_arch;
   ../backend-development/SKILL.md:APIs,svcs,messaging,resilience;
+  ../unit-testing-patterns/SKILL.md:test_design_from_AC,regression;
 }

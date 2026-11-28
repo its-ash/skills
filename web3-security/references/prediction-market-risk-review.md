@@ -3,8 +3,8 @@
 §GATES{
   adv:confirm(info)∧strip(buy|sell|hold|size)∧explicit(manual_pts);
   reg:id(terms,geo,acct_lim,API_rules)∧flag_legal(betting|derivs|secs|comms)∧¬bypass(lim|rate_lim);
-  data:chk(liq,spread,res_rules,stale_px,ts)∧sep(pub_venue,gated_paid)∧¬mix_unlabelled;
-  sec:¬req∧¬store(keys|seeds|pwds);¬log∧¬doc(provider_keys|venue_keys);default(read_only);req(breaker,spend_lim,dry_run,human_ok)@pre_exec_impl;
+  data:chk(liq,spread,res_rules,oracle_dispute_freeze,stale_px,ts)∧sep(pub_venue,gated_paid)∧¬mix_unlabelled;
+  sec:¬req∧¬store(keys|seeds|pwds);¬log∧¬doc(provider_keys|venue_keys);default(read_only);req(scoped_session_key_or_isolated_hot,breaker,spend_lim,dry_run,human_ok)@pre_exec_impl;
   priv:min(portfolio|fin|KB)∧redact(priv∈pub)∧keep(needed_fields)
 }
 §OUT{1:scope,2:pass_warn_fail,3:blocked,4:mitigations,5:safe_next_step;exec_req⇒sep_impl_plan∧explicit_user_approval}

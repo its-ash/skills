@@ -1,10 +1,10 @@
 @REF:customs-trade-compliance
-§CTX{
+§CFG{CTX_AND_SYSTEMS
   jurisdictions:{US,EU,UK,APAC};
-  sys:{ACE(US),CHIEF/CDS(UK),ATLAS(DE),broker_portals,DPS,ERP_GTM};
-  flow:classify(GRI+notes)→rates/FTA/FTZ/drawback/remedies→screen_all_parties→entry_docs→reg_watch→inquiry_resp(PD+mitigation)
+  sys:{ACE(US),CDS(UK,CHIEF_fully_retired),ATLAS(DE),ICS2(EU_pre_arrival),broker_portals,DPS,ERP_GTM};
+  flow:classify(GRI+notes)→rates/FTA/FTZ/drawback/CBAM/remedies→screen_all_parties→entry_docs→reg_watch→inquiry_resp(PD+mitigation)
 }
-§HS_CLASS{
+§PAT{HS_CLASSIFICATION
   struct:WCO_6d(2d=ch,4d=hdg,6d=subhdg);
   nat_10d:{US:HTS(imp)/Schedule_B(exp),EU:TARIC,UK:commodity_code(UKGT),CN:13d_HS};
   GRI_seq:strict(¬GRI3←GRI1_fails;¬GRI4←GRI1..3_fail){
@@ -18,25 +18,18 @@
     5:cases/containers/packing_rules(w/_or_sep);
     6:subhdg_follows_GRI1..5_within_hdg(subhdg_notes_precede)
   };
-  pitfalls:{
-    multi_func⇒primary_func(GRI3b)¬max_cost_part;
-    food(Ch21_prep vs Ch7..12_ingred)⇒check_prep_beyond_preservation;
-    textile_composite⇒fibre_weight%¬surface_area;
-    parts_vs_acc⇒Sec_XVI_Note2;
-    sw_on_phys_media⇒medium_governs(most_tariffs)
-  };
+  pitfalls:{multi_func⇒primary_func(GRI3b)¬max_cost_part;food(Ch21_prep_vs_Ch7..12_ingred)⇒check_prep_beyond_preservation;textile_composite⇒fibre_weight%¬surface_area;parts_vs_acc⇒Sec_XVI_Note2;sw_on_phys_media⇒medium_governs(most_tariffs)};
   ex_dispute:8542(IC,0%)_vs_8543(elec_mach,2.6%)⇒GRI1+3a+specs+binding_rulings+EN
 }
-§DOCS{
+§R{ENTRY_DOCS_AND_INCOTERMS_2020
   CI:{seller/buyer_name+addr,desc_for_HS,qty,unit_px,total,ccy,Incoterms,CoO,pay_terms;US:19_CFR_141.86;underval→19_USC_1592};
   PKL:{wt,dims/pkg,marks/nums≡BOL,piece_cnt;mismatch_vs_phys→exam};
   CO:{USMCA:cert(¬form,9_elems_Art5.2),EU_pref:EUR.1,GSP:Form_A,UK_EU_TCA:invoice_origin_decl};
   BOL_AWB:{ocean_BOL=title+carriage_contract+receipt;AWB=non_neg;≡CI;clauses("said_to_contain","SLAC")→limit_carrier_liab∧affect_risk_score};
   ISF_10+2:{US:≥24h_pre_vessel_load@foreign_port;10_imp(mfg,seller,buyer,ship_to,CoO,HS6,stuff_loc,consolidator,IOR#,consignee#)+2_carrier;late/err⇒$5000/viol_liq_dmg+↑exam_risk};
-  CBP_7501:{≤10_bd_post_entry;HS,val,rate,CoO,pref_claim;legal_decl→err=19_USC_1592}
-}
-§INCOTERMS_2020{
-  rule:contractual(¬law;must_invoke;¬apply_domestic_default;¬transfer_title);
+  EU_ICS2:{pre_arrival_electronic_ENS_safety_security_data_across_air,maritime,road,rail,postal⇒req_HS6+accurate_party_data_pre_load/arrival};
+  CBP_7501:{≤10_bd_post_entry;HS,val,rate,CoO,pref_claim;legal_decl→err=19_USC_1592};
+  Incoterms_2020:contractual(¬law;must_invoke;¬apply_domestic_default;¬transfer_title);
   EXW:min_seller;buyer=EOR_in_seller_ctry(export_comp_risk)⇒rarely_fit_intl;
   FCA:seller→carrier@named_place+exp_clear;2020:buyer_can_instruct_carrier→onboard_BOL_to_seller(LC);prefer_over_FOB_for_containers(CY_vs_ship_rail);
   CPT_CIP:risk@first_carrier,seller_pays_dest_freight;CIP_2020⇒ICC(A)_all_risks(Δ_vs_2010);
@@ -44,9 +37,9 @@
   DDP:seller_all_incl_duties(req_IOR_or_NRI);val=DDP−duties(deductive)⇒duty_in_CI=circular_val;
   val_diff:{US_CBP:excl_intl_freight+ins,EU:incl_transport+ins_to_EU_entry}
 }
-§DUTY_OPT{
+§PAT{DUTY_OPT_AND_DPS
   FTA:{
-    USMCA:Annex_4-B(tariff_shift,RVC,net_cost),cumul=US+MX+CA;
+    USMCA:Annex_4-B(tariff_shift,RVC,net_cost),cumul=US+MX+CA;2026_joint_review(July_1_2026_milestone):US_declined_clean_16yr_extension→active_under_current_terms_but_elevated_annual_review_risk(auto_RoO,labor_RRM);
     EU_UK_TCA:wholly_obtained∨sufficient_proc(Annex_ORIG-2),cumul=bilateral;
     RCEP:15_APAC_uniform+diagonal_cumul;
     AfCFTA:60%_cumul
@@ -54,41 +47,32 @@
   RVC:{TV:((TV-VNM)/TV)*100;NC:((NC-VNM)/NC)*100(excl_sales_promo/royalties/ship→often_higher_on_thin_margin)};
   FTZ:{outside_US_cust_terr;duty_deferral,inverted_tariff_relief,0%_waste/scrap,0%_re_exp;zone2zone_keeps_privileged_foreign};
   TIB_ATA:{ATA_Carnet:78+_ctry(equip/samples/exhib);US_TIB(19_USC_1202_Ch98):exp≤1y(ext≤3y),fail→full_duty+bond_prem};
-  drawback:{99%_refund;types:{mfg,unused_merch,subst(comm_interchange)};file≤5y_imp;TFTEA:¬1:1_imp_exp_entry_match_for_subst}
+  drawback:{99%_refund;types:{mfg,unused_merch,subst(comm_interchange)};file≤5y_imp;TFTEA:¬1:1_imp_exp_entry_match_for_subst};
+  DPS_lists:{US:{SDN(OFAC),Entity_List(BIS),DPL(BIS),UVL(BIS),MEU(BIS),Non-SDN_MBS(OFAC)};EU_UK:{EU_Consol_Sanctions,UK_OFSI_Consol,UK_ECJU};CN:{Unreliable_Entity_List}};
+  DPS_scope:{buyer,seller,consignee,end_user,FF,banks,interm_consignees};
+  DPS_red_flags:{reluctant_end_use,unusual_route(high_val_free_port),cash_high_val,FF/trader_no_end_user,cap>stated_app,no_biz_bg,inconsistent_orders};
+  DPS_FP_mgmt:{~95%_FP;check:{exact_vs_partial,addr,DOB,ctry_nexus,alias};doc_rationale_for_audit}
 }
-§DPS{
-  lists:{
-    US:{SDN(OFAC),Entity_List(BIS),DPL(BIS),UVL(BIS),MEU(BIS),Non-SDN_MBS(OFAC)};
-    EU_UK:{EU_Consol_Sanctions,UK_OFSI_Consol,UK_ECJU};
-    CN:{Unreliable_Entity_List}
-  };
-  scope:{buyer,seller,consignee,end_user,FF,banks,interm_consignees};
-  red_flags:{reluctant_end_use,unusual_route(high_val_free_port),cash_high_val,FF/trader_no_end_user,cap>stated_app,no_biz_bg,inconsistent_orders};
-  FP_mgmt:{~95%_FP;check:{exact_vs_partial,addr,DOB,ctry_nexus,alias};doc_rationale_for_audit}
-}
-§REG_SPEC{
+§CFG{REGIONAL_AND_PENALTIES_2026
   US_CBP:{CEEs(industry),C-TPAT,Trusted_Trader(C-TPAT+ISA),ACE,Focused_Assessment(PD_pre_FA_critical)};
-  EU:{CET,AEO(AEOC+AEOS),BTI(3y_certainty),UCC(2016+)};
-  UK:{UKGT(replaced_CET),NI_Protocol/Windsor_Framework(dual_status),CDS(replaced_CHIEF),UK_EU_TCA_RoO(0%_if_originating)};
-  CN:{CCC_pre_import,13d_HS,xborder_ecomm_modes(9610,9710,9810),Unreliable_Entity_List}
-}
-§PENALTIES{
-  US_19_USC_1592:{
-    negligence:2x_unpaid_duty∨20%_dut_val(1st_viol;mit→1x∨10%);
-    gross_neg:4x_unpaid∨40%_dut_val(mit_req_sys_compliance);
-    fraud:100%_domestic_val+crim_ref(no_mit_sans_extraord_coop)
-  };
+  US_Sec321_2026:CBP_interim_final_rules_indefinitely_suspended_$800_de_minimis_across_all_modes(incl_postal);Type_86_phased_out⇒formal∨informal_entry+applicable_duties_required;
+  EU:{CET,AEO(AEOC+AEOS),BTI(3y_certainty),UCC(2016+),ICS2_pre_arrival};
+  EU_CBAM_2026:definitive_financial_phase_eff_2026-01-01;scope:{iron/steel,aluminium,cement,fertilisers,hydrogen,electricity};threshold:≥50t/yr_mass⇒req_Authorized_CBAM_Declarant+purchase_EU_ETS_priced_CBAM_certs(net_origin_carbon_price);first_definitive_annual_decl_due_2027-09-30;
+  UK:{UKGT(replaced_CET),NI_Protocol/Windsor_Framework(dual_status),CDS_only(CHIEF_fully_retired),UK_EU_TCA_RoO(0%_if_originating)};
+  CN:{CCC_pre_import,13d_HS,xborder_ecomm_modes(9610,9710,9810),Unreliable_Entity_List};
+  US_19_USC_1592:{negligence:2x_unpaid_duty∨20%_dut_val(1st_viol;mit→1x∨10%);gross_neg:4x_unpaid∨40%_dut_val(mit_req_sys_compliance);fraud:100%_domestic_val+crim_ref(no_mit_sans_extraord_coop)};
   PD_19_CFR_162.74:{pre_inv/pre_penalty_notice⇒cap@interest(neg)∨1x_duty(gross_neg);req:{ID_viol,correct_info,tender_unpaid_duty}};
   records:{US_19_USC_1508:5y,EU:3y(some_MS:10y);missing→adverse_inference}
 }
-§FLOW_DEC{
+§D{DECISION_SEQUENCES
   classify:1.tech_spec(mat,func,dim,use;¬name_only)→2.Sec/Ch+notes(Ch>hdg)→3.GRI1→4.multi⇒GRI2→GRI3(ess_char:func/val/bulk)→5.GRI6+subhdg_notes+8/10d≡6d→6.rulings(CBP_CROSS,EU_BTI,WCO)→7.doc_rationale;
   FTA:1.ID_FTA→2.Annex_RoO(shift/RVC/both)→3.trace+classify_non_orig_BOM→4.max_RVC+verify_supplier_cost→5.cumul→6.cert(USMCA:9_elems,5y_ret;EUR.1:CoC/cust_endorse,EU_4y_ret);
   valuation_WTO_GATT_VII_strict:1.TV(~90%;+assists/royalties/comm/pack−post_imp/duty;fails:related_price_inf,no_sale[consign/lease/free],unquant_cond)→2.Identical(same_goods/CoO/lvl)→3.Similar(interchange,same_CoO)→4.Deductive(resale−profit/transp/duty/post_proc)→5.Computed(mat+fab+profit+gen_exp;req_exp_coop)→6.Fallback(flex_1..5;¬arbitrary/min/exp_dom_px);
-  DPS_hit:1.match(%name,addr,ctry,alias,DOB;<85%∧¬addr∧¬ctry→likely_FP→doc+clear)→2.verify(reg,D&B,web,tx_hist)→3.list(SDN→OFAC_lic;Entity→BIS_lic_presump_denial;DPL→abs_ban)→4.escalate_TP/ambig→counsel(¬proceed_unresolved)→5.doc_5y_min
+  DPS_hit:1.match(%name,addr,ctry,alias,DOB;<85%∧¬addr∧¬ctry→likely_FP→doc+clear)→2.verify(reg,D&B,web,tx_hist)→3.list(SDN→OFAC_lic;Entity→BIS_lic_presump_denial;DPL→abs_ban)→4.escalate_TP/ambig→counsel(¬proceed_unresolved)→5.doc_5y_min;
+  EU_CBAM_goods(≥50t/yr)⇒verify_Authorized_CBAM_Declarant_status+collect_verified_supplier_embedded_emissions_data_pre_import¬rely_on_legacy_transitional_defaults
 }
-§EDGE{
-  de_minimis:$800_Sec321⇒same_day_same_consignee_split_aggregated;waives_duty_only(¬quota/AD_CVD/PGA);
+§ANTI{EDGE_CASES_AND_TRAPS
+  de_minimis_assumption:US_$800_Sec321_suspended_&_Type_86_phased_out⇒¬route_ecomm_parcels_assuming_duty_free_clearance;budget_formal/informal_entry+duties+PGA;
   AD_CVD_transship:CN→VN_min_proc⇒EAPA(subpoena);subst_transf=new_name+char+use;
   EAR_ITAR:ITAR=item,EAR=item+end_use+end_user;ambig⇒CJ_req;wrong_regime=violates_both;
   TP_post_imp:final_px_unknown⇒CF7501_recon_flag,else_unpaid_duty+penalty;
@@ -97,22 +81,20 @@
   kits:retail_kit⇒GRI3b(ess_char)∨GRI3c(last_num);"put_up_for_retail"≠ind_assortment;
   temp→perm:discharge_Carnet/TIB(full_duty+penalties);expired⇒guarantee_called(CoC_liab)
 }
-§COMM{
+§CMD{COMMS_AND_TEMPLATES
   tone:{
     broker_routine:collab+precise+HS/GRI/ruling_ref(e.g.HS_8471.30,GRI1,HQ_H298456,CO_EOD);
     broker_hold:direct+factual+SLA(LA/LB→MID+prod_rec,≤2h_file);
     auth_ruling:formal,exact_fmt,samples_if_req,"position_that"¬"classified_as";
     auth_penalty:measured,coop,mit_factors,¬admit_fraud_if_neg;
     internal:impact+action+deadline(e.g.Mar1_UN38.3→$10K+/ship+hold);
-    supplier:structured+explain_FTA_savings
+    supplier:structured+explain_FTA_savings+CBAM_emissions_data_req
   };
-  tpl:{
-    broker_instr:"Entry Instructions — {PO/shipment_ref} — {origin} to {destination}"+{HS+GRI,val+Incoterm,FTA+doc_ref,PGA(FDA_PN,EPA_TSCA,FCC)};
-    PD:"to CBP_port_dir∨FP&F"+{entry#,dates,violations,correct_info,duty_owed,tender};
-    alert:"COMPLIANCE ACTION REQUIRED: {topic} — Effective {date}"+{impact→reg_basis→action→deadline+conseq}
-  }
+  tpl_broker:"Entry Instructions — {PO/shipment_ref} — {origin} to {destination}"+{HS+GRI,val+Incoterm,FTA+doc_ref,CBAM_decl_if_EU,PGA(FDA_PN,EPA_TSCA,FCC)};
+  tpl_PD:"to CBP_port_dir∨FP&F"+{entry#,dates,violations,correct_info,duty_owed,tender};
+  tpl_alert:"COMPLIANCE ACTION REQUIRED: {topic} — Effective {date}"+{impact→reg_basis→action→deadline+conseq}
 }
-§ESC{
+§R{ESCALATION
   triggers:{
     CBP_detention/seizure⇒VP+legal≤1h;
     DPS_TP⇒halt_tx+comp_off+legal(immed);
@@ -120,13 +102,12 @@
     exam_discrep⇒specialist+broker≤4h;
     SDN/denied_confirmed⇒global_stop(immed);
     AD_CVD_evasion⇒outside_counsel≤24h;
-    foreign_FTA_audit⇒notify_suppliers+doc_rev≤48h;
+    foreign_FTA_audit∨CBAM_declarant_lapse⇒notify_suppliers+doc_rev≤48h;
     VSD⇒legal_approval_pre_file
   };
   chain:L1(Analyst)→L2(Mgr,4h)→L3(Dir,24h)→L4(VP,48h)→L5(GC/C-suite;immed:seizure,SDN,>$100K)
 }
-§KPI{
-  track:monthly∧trend_quarterly;
+§CHK{KPIS_AND_ARTIFACTS // track monthly, trend quarterly
   class_acc_post_audit:>98%(red:<95%);
   FTA_util_elig:>90%(red:<70%);
   entry_rej:<2%(red:>5%);
@@ -134,8 +115,6 @@
   DPS_FP_adj:<4h(red:>24h);
   duty_sav(FTA+FTZ+drawback):trend(red:QoQ_down);
   CBP_exam:<3%(red:>7%);
-  annual_penalty:$0(red:>0_material)
-}
-§RES{
-  pair:{HS_log,broker_esc_matrix,NRI/FTZ_jurisdiction_list,US/EU/APAC_valuation_assumptions_log}
+  annual_penalty:$0(red:>0_material);
+  artifacts:{HS_log,broker_esc_matrix,NRI/FTZ_jurisdiction_list,US/EU/APAC_valuation_assumptions_log,CBAM_emissions_registry}
 }

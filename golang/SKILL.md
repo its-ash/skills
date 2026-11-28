@@ -1,42 +1,48 @@
 ---
 name: golang
-description: "AUTO_INVOKE(silent)⇔prompt∈{Go,Go1.21+,.go,go.mod,go.sum,go.work,go_test,-race,gofmt,go_vet,golangci-lint,goroutine,channel,context.Context,WaitGroup,errgroup,sync.Mutex,sync.Pool,atomic,errors.Is,errors.As,log/slog,net/http,gin,fiber,gRPC,database/sql,pgx,sqlx,wire,pprof,httptest,fuzz,Docker,K8s,race,deadlock,nil_panic,build_err}|SUB:{golang-patterns,golang-testing}"
+description: "AUTO_INVOKE(silent)⇔prompt∈{Go,Go1.26+,Go1.27,.go,go.mod,go.sum,go.work,go_tool,go_fix,go_test,-race,gofmt,go_vet,golangci-lint,goroutine,channel,context.Context,WaitGroup,errgroup,sync.Mutex,sync.Pool,atomic,errors.Is,errors.AsType,log/slog,json/v2,net/http,chi,gin,fiber,gRPC,ConnectRPC,database/sql,pgx,sqlc,sqlx,pprof,goroutineleak,synctest,httptest,fuzz,GOMEMLIMIT,Docker,K8s,race,deadlock,nil_panic,build_err}|SUB:{golang-patterns,golang-testing,production-stack}"
 ---
 @SKL:golang
 §R{
-  deps⇒Go_modules(go.mod,go.sum)∧multi-module_repo⇒go.work;
-  checks⇒gofmt∧go_vet∧golangci-lint∧CI_fail_on(lint_warnings);
-  errors⇒wrap(fmt.Errorf("...: %w",err))∧match(errors.Is∨errors.As)∧¬ignore(err);
-  ∀(IO∨blocking_fn)⇒arg0(context.Context)∧honor(ctx.Done());
-  ∀goroutine⇒owner∧exit_path(ctx∨closed_chan∨WaitGroup∨errgroup);
+  deps⇒Go_modules(go.mod,go.sum)∧dev_tools⇒go.mod_tool_directive(1.24+)∧multi-module⇒go.work;
+  checks⇒gofmt∧go_vet∧go_fix(1.26+_modernize)∧golangci-lint_v2∧govulncheck∧CI_fail_on(warnings);
+  errors⇒wrap(fmt.Errorf("...: %w",err))∧match(errors.Is∨errors.AsType[T](1.26+)∨errors.As)∧¬ignore(err);
+  ∀(IO∨blocking_fn)⇒arg0(context.Context)∧honor(ctx.Done())∧¬store_ctx_in_struct;
+  ∀goroutine⇒owner∧exit_path(ctx∨closed_chan∨WaitGroup.Go(1.25+)∨errgroup)∧profile(goroutineleak(1.27+));
   CI⇒go_test_-race_./...∧fix_all_races;
   pipelines⇒bound(buffered_chan∨worker_pool)∧¬unbounded_goroutines;
-  sync⇒prefer(chan∧WaitGroup);(sync.Mutex∨atomic)⇔shared_state_needs_it;
+  sync⇒prefer(chan∧WaitGroup.Go);(sync.Mutex∨atomic)⇔shared_state_needs_it;
   interfaces⇒small∧define@consumer(accept_interfaces,return_structs);
-  logging⇒log/slog;
-  DB∧HTTP_clients⇒pool_conns∧explicit(pool_limits);
-  tests⇒table-driven(exported_fns)∧benchmarks(hot_paths);
+  stdlib⇒log/slog∧encoding/json/v2(1.27+)∨omitzero(1.24+)∧stdlib_uuid(1.27+);
+  DB∧HTTP_clients⇒reuse_1_client∧pool_conns∧explicit(pool_limits∧timeouts);
+  tests⇒table-driven(exported_fns)∧synctest(concurrent)∧b.Loop(benchmarks)∧t.Context();
+  security⇒os.Root(1.24+_path_confinement)∧http.CrossOriginProtection(1.25+_CSRF)∧param_queries_only;
+  containers⇒multi-stage(CGO_ENABLED=0→distroless:nonroot)∧set(GOMEMLIMIT)∧native_cgroup_GOMAXPROCS(1.25+);
   failures⇒return_err(expected)∧panic(programmer_bugs_only);
 }
 §D{
   N_independent_jobs⇒worker_pool(jobs_chan+ctx)¬1_goroutine_per_item_unbounded;
   fail_fast_across_goroutines⇒errgroup.WithContext¬manual_WaitGroup+err_chan;
   multi-stage_stream⇒pipeline(buffered_chans,back-pressure)¬unbounded_slices;
-  simple_wait⇒sync.WaitGroup¬(busy_loops∨time.Sleep);
-  router⇒(net/http(small);gin∨fiber(rich_mw))¬heavy_fw_for_3_routes;
-  SQL⇒(database/sql+pgx;sqlx(named_params))¬gorm_on_hot_paths;
-  DI⇒constructors(wire_for_large_graphs)¬global_pkg_state;
-  slow_code⇒benchmark+pprof_first→fix_top_hotspot¬guess_tuning;
+  simple_wait⇒sync.WaitGroup.Go(1.25+)¬(manual_Add/Done∨busy_loops∨time.Sleep);
+  concurrent_time_test⇒testing/synctest(synctest.Test)¬time.Sleep;
+  router⇒(net/http_ServeMux(1.22+)∨chi;gin∨fiber_v3(rich_mw))¬heavy_fw_for_small_APIs;
+  RPC⇒ConnectRPC(net/http+gRPC+browser)∨gRPC+buf¬hand-rolled_framing;
+  SQL⇒(pgx/v5+sqlc(type-safe);sqlx(dynamic_SQL))¬(gorm_on_hot_paths∨lib/pq);
+  DI⇒manual_ctors(samber/do∨uber-go/dig_for_large_graphs)¬(google/wire[archived]∨global_pkg_state);
+  slow_code⇒b.Loop_bench+pprof_first→fix_top_hotspot¬guess_tuning;
   many_short_buffers⇒sync.Pool∧prealloc_slices¬alloc_per_call;
-  container_image⇒multi-stage_build→small_base¬ship_toolchain;
+  dev_tools⇒go_get_-tool+go_tool_<name>(1.24+)¬tools.go_blank_imports;
+  container_image⇒multi-stage_static_bin→distroless:nonroot∨scratch¬(ship_toolchain∨root_alpine);
 }
 §REF{
-  idioms,zero_values,error_types,worker_pool,errgroup,goroutine_leaks,graceful_shutdown,functional_options,sync.Pool,pkg_layout,.golangci.yml,anti-patterns→references/golang-patterns.md;
-  TDD,table-driven,subtests,t.Helper,t.Cleanup,golden_files,mocks,benchmarks,fuzzing,httptest,coverage,CI→references/golang-testing.md;
-  HTTP,gRPC,middleware,health,persistence,migrations,pprof,Dockerfile,K8s_probes,metrics,tracing,tooling,security_scans→references/production-stack.md;
+  idioms,Go1.22-1.27,zero_values,error_types,errors.AsType,worker_pool,WaitGroup.Go,errgroup,goroutine_leaks,graceful_shutdown,functional_options,sync.Pool,pkg_layout,golangci-lint_v2,.golangci.yml,anti-patterns→references/golang-patterns.md;
+  TDD,table-driven,subtests,synctest,t.Context,t.Helper,t.Cleanup,t.ArtifactDir,golden_files,mocks,mockgen,mockery_v3,b.Loop,benchmarks,fuzzing,httptest,coverage,CI→references/golang-testing.md;
+  Go1.27_stack,HTTP,chi,fiber_v3,ConnectRPC,gRPC,middleware,CrossOriginProtection,health,pgx_v5,sqlc,migrations,DI,pprof,goroutineleak,GOMEMLIMIT,Dockerfile,distroless,K8s_probes,metrics,OTel,go_tool,security_scans,os.Root→references/production-stack.md;
 }
 §REL{
   ../backend-development/SKILL.md:API_design,resilience,service_boundaries;
+  ../database-design/SKILL.md:SQL_schema,indexes,migrations,Postgres;
   ../web-quality-audit/references/performance.md:web_perf,CoreWebVitals;
   ../unit-testing-patterns/SKILL.md:test_structure,TDD;
   ../devops-iac/references/docker.md:Dockerfile_opt,container_security;
